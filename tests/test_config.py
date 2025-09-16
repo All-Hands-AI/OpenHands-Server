@@ -356,7 +356,7 @@ class TestConfigConstants:
     def test_config_constants_defined(self):
         """Test that all required constants are defined."""
         assert CONFIG_FILE_PATH_ENV == "OPENHANDS_SERVER_CONFIG_PATH"
-        assert SESSION_API_KEY_ENV == "OPENHANDS_SESSION_API_KEY"
+        assert SESSION_API_KEY_ENV == "SESSION_API_KEY"
         assert DEFAULT_CONFIG_FILE_PATH == "workspace/openhands_server_sdk_config.json"
 
     def test_constants_are_strings(self):
