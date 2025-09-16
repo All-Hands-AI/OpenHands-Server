@@ -6,11 +6,13 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from openhands.sdk import Event, Message
+from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands_server.sdk_server.config import Config
 from openhands_server.sdk_server.event_service import EventService
 from openhands_server.sdk_server.models import (
     ConversationInfo,
     ConversationPage,
+    ConversationSortOrder,
     StartConversationRequest,
     StoredConversation,
 )
@@ -41,39 +43,61 @@ class ConversationService:
         return ConversationInfo(**event_service.stored.model_dump(), status=status)
 
     async def search_conversations(
-        self, page_id: str | None = None, limit: int = 100
+        self,
+        page_id: str | None = None,
+        limit: int = 100,
+        status: AgentExecutionStatus | None = None,
+        sort_order: ConversationSortOrder = ConversationSortOrder.CREATED_AT_DESC,
     ) -> ConversationPage:
         if self._event_services is None:
             raise ValueError("inactive_service")
-        items = []
-        for id, event_service in self._event_services.items():
-            # If we have reached the start of the page
-            if page_id is not None:
-                try:
-                    # Convert page_id to UUID for comparison
-                    page_uuid = UUID(page_id)
-                    if id == page_uuid:
-                        page_id = None
-                except (ValueError, TypeError):
-                    # Invalid page_id, skip comparison and start from beginning
-                    page_id = None
 
-            # Skip past entries before the first item...
-            if page_id:
+        # Collect all conversations with their info
+        all_conversations = []
+        for id, event_service in self._event_services.items():
+            conversation_info = ConversationInfo(
+                **event_service.stored.model_dump(),
+                status=await event_service.get_status(),
+            )
+
+            # Apply status filter if provided
+            if status is not None and conversation_info.status != status:
                 continue
 
-            # If we have reached the end of the page, return it
-            if limit <= 0:
-                return ConversationPage(items=items, next_page_id=id.hex)
-            limit -= 1
+            all_conversations.append((id, conversation_info))
 
-            items.append(
-                ConversationInfo(
-                    **event_service.stored.model_dump(),
-                    status=await event_service.get_status(),
-                )
-            )
-        return ConversationPage(items=items)
+        # Sort conversations based on sort_order
+        if sort_order == ConversationSortOrder.CREATED_AT:
+            all_conversations.sort(key=lambda x: x[1].created_at)
+        elif sort_order == ConversationSortOrder.CREATED_AT_DESC:
+            all_conversations.sort(key=lambda x: x[1].created_at, reverse=True)
+        elif sort_order == ConversationSortOrder.UPDATED_AT:
+            all_conversations.sort(key=lambda x: x[1].updated_at)
+        elif sort_order == ConversationSortOrder.UPDATED_AT_DESC:
+            all_conversations.sort(key=lambda x: x[1].updated_at, reverse=True)
+
+        # Handle pagination
+        items = []
+        start_index = 0
+
+        # Find the starting point if page_id is provided
+        if page_id:
+            for i, (id, _) in enumerate(all_conversations):
+                if id.hex == page_id:
+                    start_index = i
+                    break
+
+        # Collect items for this page
+        next_page_id = None
+        for i in range(start_index, len(all_conversations)):
+            if len(items) >= limit:
+                # We have more items, set next_page_id
+                if i < len(all_conversations):
+                    next_page_id = all_conversations[i][0].hex
+                break
+            items.append(all_conversations[i][1])
+
+        return ConversationPage(items=items, next_page_id=next_page_id)
 
     async def batch_get_conversations(
         self, conversation_ids: list[UUID]
