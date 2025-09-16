@@ -92,7 +92,7 @@ async def send_message(conversation_id: UUID, request: SendMessageRequest) -> Su
     if event_service is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     message = Message(role=request.role, content=request.content)
-    await event_service.send_message(message)
+    await event_service.send_message(message, run=request.run)
     return Success()
 
 
@@ -129,7 +129,7 @@ async def socket(
             try:
                 data = await websocket.receive_json()
                 message = Message.model_validate(data)
-                await event_service.send_message(message)
+                await event_service.send_message(message, run=True)
             except WebSocketDisconnect:
                 await event_service.unsubscribe_from_events(subscriber_id)
             except Exception:

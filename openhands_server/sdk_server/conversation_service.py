@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from openhands.sdk import Event
+from openhands.sdk import Event, Message
 from openhands_server.sdk_server.config import Config
 from openhands_server.sdk_server.event_service import EventService
 from openhands_server.sdk_server.models import (
@@ -103,7 +103,10 @@ class ConversationService:
         await event_service.start()
         initial_message = request.initial_message
         if initial_message:
-            await event_service.send_message(initial_message)
+            message = Message(
+                role=initial_message.role, content=initial_message.content
+            )
+            await event_service.send_message(message, run=initial_message.run)
 
         status = await event_service.get_status()
         return ConversationInfo(**event_service.stored.model_dump(), status=status)

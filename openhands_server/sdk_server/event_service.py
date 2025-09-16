@@ -9,6 +9,7 @@ from openhands.sdk import (
     Conversation,
     EventBase,
     LocalFileStore,
+    Message,
     create_mcp_tools,
 )
 from openhands.sdk.conversation.state import AgentExecutionStatus
@@ -19,7 +20,6 @@ from openhands.sdk.utils.async_utils import (
 from openhands_server.sdk_server.models import (
     ConfirmationResponseRequest,
     EventPage,
-    SendMessageRequest,
     StoredConversation,
 )
 from openhands_server.sdk_server.pub_sub import PubSub
@@ -93,13 +93,12 @@ class EventService:
             results.append(result)
         return results
 
-    async def send_message(self, request: SendMessageRequest):
+    async def send_message(self, message: Message, run: bool = True):
         if not self._conversation:
             raise ValueError("inactive_service")
-        message = request.create_message()
         loop = asyncio.get_running_loop()
         future = loop.run_in_executor(None, self._conversation.send_message, message)
-        if request.run:
+        if run:
             await future
             loop.run_in_executor(None, self._conversation.run)
 
