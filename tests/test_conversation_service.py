@@ -384,7 +384,7 @@ class TestConversationServiceCountConversations:
             AgentExecutionStatus.FINISHED,
             AgentExecutionStatus.IDLE,  # Another IDLE one
         ]
-        
+
         for i, status in enumerate(statuses):
             stored_conv = StoredConversation(
                 id=uuid4(),

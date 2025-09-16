@@ -110,11 +110,11 @@ class ConversationService:
         count = 0
         for event_service in self._event_services.values():
             conversation_status = await event_service.get_status()
-            
+
             # Apply status filter if provided
             if status is not None and conversation_status != status:
                 continue
-                
+
             count += 1
 
         return count
