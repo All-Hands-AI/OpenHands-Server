@@ -108,6 +108,24 @@ class EventService:
 
         return EventPage(items=items, next_page_id=next_page_id)
 
+    async def count_events(
+        self,
+        kind: str | None = None,
+    ) -> int:
+        """Count events matching the given filters."""
+        if not self._conversation:
+            raise ValueError("inactive_service")
+
+        count = 0
+        with self._conversation.state as state:
+            for event in state.events:
+                # Apply kind filter if provided
+                if kind is not None and event.__class__.__name__ != kind:
+                    continue
+                count += 1
+
+        return count
+
     async def batch_get_events(self, event_ids: list[str]) -> list[EventBase | None]:
         """Given a list of ids, get events (Or none for any which were not found)"""
         results = []

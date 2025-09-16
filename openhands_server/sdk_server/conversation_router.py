@@ -13,6 +13,7 @@ from openhands_server.sdk_server.models import (
     ConversationInfo,
     ConversationPage,
     ConversationSortOrder,
+    CountResponse,
     StartConversationRequest,
     Success,
 )
@@ -50,6 +51,18 @@ async def search_conversations(
     return await conversation_service.search_conversations(
         page_id, limit, status, sort_order
     )
+
+
+@router.get("/count")
+async def count_conversations(
+    status: Annotated[
+        AgentExecutionStatus | None,
+        Query(title="Optional filter by agent execution status"),
+    ] = None,
+) -> CountResponse:
+    """Count local conversations matching the given filters"""
+    count = await conversation_service.count_conversations(status)
+    return CountResponse(count=count)
 
 
 @router.get("/{conversation_id}", responses={404: {"description": "Item not found"}})

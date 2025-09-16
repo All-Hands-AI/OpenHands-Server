@@ -170,3 +170,8 @@ class Success(BaseModel):
 class EventPage(BaseModel):
     items: list[EventBase]
     next_page_id: str | None = None
+
+
+class CountResponse(BaseModel):
+    """Response model for count endpoints."""
+    count: int

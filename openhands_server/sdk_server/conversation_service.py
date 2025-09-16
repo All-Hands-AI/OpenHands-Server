@@ -99,6 +99,26 @@ class ConversationService:
 
         return ConversationPage(items=items, next_page_id=next_page_id)
 
+    async def count_conversations(
+        self,
+        status: AgentExecutionStatus | None = None,
+    ) -> int:
+        """Count conversations matching the given filters."""
+        if self._event_services is None:
+            raise ValueError("inactive_service")
+
+        count = 0
+        for event_service in self._event_services.values():
+            conversation_status = await event_service.get_status()
+            
+            # Apply status filter if provided
+            if status is not None and conversation_status != status:
+                continue
+                
+            count += 1
+
+        return count
+
     async def batch_get_conversations(
         self, conversation_ids: list[UUID]
     ) -> list[ConversationInfo | None]:
