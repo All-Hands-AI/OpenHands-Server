@@ -5,12 +5,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from openhands.sdk import Event
+from openhands.sdk import Event, Message
+from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands_server.sdk_server.config import Config
 from openhands_server.sdk_server.event_service import EventService
 from openhands_server.sdk_server.models import (
     ConversationInfo,
     ConversationPage,
+    ConversationSortOrder,
     StartConversationRequest,
     StoredConversation,
 )
@@ -41,41 +43,70 @@ class ConversationService:
         return ConversationInfo(**event_service.stored.model_dump(), status=status)
 
     async def search_conversations(
-        self, page_id: str | None = None, limit: int = 100
+        self,
+        page_id: str | None = None,
+        limit: int = 100,
+        status: AgentExecutionStatus | None = None,
+        sort_order: ConversationSortOrder = ConversationSortOrder.CREATED_AT_DESC,
     ) -> ConversationPage:
         if self._event_services is None:
             raise ValueError("inactive_service")
-        items = []
-        for id, event_service in self._event_services.items():
-            # If we have reached the start of the page
-            if id == page_id:
-                page_id = None
 
-            # Skip pass entries before the first item...
-            if page_id:
+        # Collect all conversations with their info
+        all_conversations = []
+        for id, event_service in self._event_services.items():
+            conversation_info = ConversationInfo(
+                **event_service.stored.model_dump(),
+                status=await event_service.get_status(),
+            )
+
+            # Apply status filter if provided
+            if status is not None and conversation_info.status != status:
                 continue
 
-            # If we have reached the end of the page, return it
-            if limit <= 0:
-                return ConversationPage(items=items, next_page_id=id.hex)
-            limit -= 1
+            all_conversations.append((id, conversation_info))
 
-            items.append(
-                ConversationInfo(
-                    **event_service.stored.model_dump(),
-                    status=await event_service.get_status(),
-                )
-            )
-        return ConversationPage(items=items)
+        # Sort conversations based on sort_order
+        if sort_order == ConversationSortOrder.CREATED_AT:
+            all_conversations.sort(key=lambda x: x[1].created_at)
+        elif sort_order == ConversationSortOrder.CREATED_AT_DESC:
+            all_conversations.sort(key=lambda x: x[1].created_at, reverse=True)
+        elif sort_order == ConversationSortOrder.UPDATED_AT:
+            all_conversations.sort(key=lambda x: x[1].updated_at)
+        elif sort_order == ConversationSortOrder.UPDATED_AT_DESC:
+            all_conversations.sort(key=lambda x: x[1].updated_at, reverse=True)
+
+        # Handle pagination
+        items = []
+        start_index = 0
+
+        # Find the starting point if page_id is provided
+        if page_id:
+            for i, (id, _) in enumerate(all_conversations):
+                if id.hex == page_id:
+                    start_index = i
+                    break
+
+        # Collect items for this page
+        next_page_id = None
+        for i in range(start_index, len(all_conversations)):
+            if len(items) >= limit:
+                # We have more items, set next_page_id
+                if i < len(all_conversations):
+                    next_page_id = all_conversations[i][0].hex
+                break
+            items.append(all_conversations[i][1])
+
+        return ConversationPage(items=items, next_page_id=next_page_id)
 
     async def batch_get_conversations(
         self, conversation_ids: list[UUID]
     ) -> list[ConversationInfo | None]:
         """Given a list of ids, get a batch of conversation info, returning
-        None for any where were not found."""
+        None for any that were not found."""
         results = []
         for id in conversation_ids:
-            result = await self.get_event_service(id)
+            result = await self.get_conversation(id)
             results.append(result)
         return results
 
@@ -103,7 +134,10 @@ class ConversationService:
         await event_service.start(conversation_id=conversation_id)
         initial_message = request.initial_message
         if initial_message:
-            await event_service.send_message(initial_message)
+            message = Message(
+                role=initial_message.role, content=initial_message.content
+            )
+            await event_service.send_message(message, run=initial_message.run)
 
         status = await event_service.get_status()
         return ConversationInfo(**event_service.stored.model_dump(), status=status)
@@ -166,7 +200,7 @@ class ConversationService:
         if event_services is None:
             return
         self._event_services = None
-        # This stops convesations and saves meta
+        # This stops conversations and saves meta
         await asyncio.gather(
             *[
                 event_service.__aexit__(exc_type, exc_value, traceback)

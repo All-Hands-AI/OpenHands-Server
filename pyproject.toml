@@ -40,7 +40,6 @@ optional-dependencies.dev = [
   "pytest-asyncio>=0.21",
   "ruff>=0.11.8",
 ]
-
 scripts.openhands-sdk-server = "openhands_server.sdk_server.__main__:main"
 
 [dependency-groups]

@@ -8,6 +8,7 @@ from openhands.sdk import (
     Conversation,
     EventBase,
     LocalFileStore,
+    Message,
 )
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands.sdk.utils.async_utils import (
@@ -17,7 +18,7 @@ from openhands.sdk.utils.async_utils import (
 from openhands_server.sdk_server.models import (
     ConfirmationResponseRequest,
     EventPage,
-    SendMessageRequest,
+    EventSortOrder,
     StoredConversation,
 )
 from openhands_server.sdk_server.pub_sub import PubSub
@@ -27,7 +28,7 @@ from openhands_server.sdk_server.utils import utc_now
 @dataclass
 class EventService:
     """
-    Event service for a conversation running locally, analagous to a conversation
+    Event service for a conversation running locally, analogous to a conversation
     in the SDK. Async mostly for forward compatibility
     """
 
@@ -58,30 +59,52 @@ class EventService:
             return event
 
     async def search_events(
-        self, page_id: str | None = None, limit: int = 100
+        self,
+        page_id: str | None = None,
+        limit: int = 100,
+        kind: str | None = None,
+        sort_order: EventSortOrder = EventSortOrder.TIMESTAMP,
     ) -> EventPage:
         if not self._conversation:
             raise ValueError("inactive_service")
 
-        items = []
+        # Collect all events
+        all_events = []
         with self._conversation.state as state:
             for event in state.events:
-                # If we have reached the start of the page
-                if event.id == page_id:
-                    page_id = None
-
-                # Skip pass entries before the first item...
-                if page_id:
+                # Apply kind filter if provided
+                if kind is not None and event.__class__.__name__ != kind:
                     continue
+                all_events.append(event)
 
-                # If we have reached the end of the page, return it
-                if limit <= 0:
-                    return EventPage(items=items, next_page_id=event.id)
-                limit -= 1
+        # Sort events based on sort_order
+        if sort_order == EventSortOrder.TIMESTAMP:
+            all_events.sort(key=lambda x: x.timestamp)
+        elif sort_order == EventSortOrder.TIMESTAMP_DESC:
+            all_events.sort(key=lambda x: x.timestamp, reverse=True)
 
-                items.append(event)
+        # Handle pagination
+        items = []
+        start_index = 0
 
-        return EventPage(items=items)
+        # Find the starting point if page_id is provided
+        if page_id:
+            for i, event in enumerate(all_events):
+                if event.id == page_id:
+                    start_index = i
+                    break
+
+        # Collect items for this page
+        next_page_id = None
+        for i in range(start_index, len(all_events)):
+            if len(items) >= limit:
+                # We have more items, set next_page_id
+                if i < len(all_events):
+                    next_page_id = all_events[i].id
+                break
+            items.append(all_events[i])
+
+        return EventPage(items=items, next_page_id=next_page_id)
 
     async def batch_get_events(self, event_ids: list[str]) -> list[EventBase | None]:
         """Given a list of ids, get events (Or none for any which were not found)"""
@@ -91,13 +114,12 @@ class EventService:
             results.append(result)
         return results
 
-    async def send_message(self, request: SendMessageRequest):
+    async def send_message(self, message: Message, run: bool = True):
         if not self._conversation:
             raise ValueError("inactive_service")
-        message = request.create_message()
         loop = asyncio.get_running_loop()
         future = loop.run_in_executor(None, self._conversation.send_message, message)
-        if request.run:
+        if run:
             await future
             loop.run_in_executor(None, self._conversation.run)
 

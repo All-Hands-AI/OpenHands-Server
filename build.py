@@ -45,7 +45,7 @@ def create_spec_file(spec_file: str) -> None:
     spec_content = """# -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['openhands_server/main.py'],
+    ['openhands_server/sdk_server/__main__.py'],
     pathex=[],
     binaries=[],
     datas=[],

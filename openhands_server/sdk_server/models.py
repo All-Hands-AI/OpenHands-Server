@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Literal
 from uuid import UUID
 
@@ -14,6 +15,22 @@ from openhands.sdk import (
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands.sdk.llm.utils.metrics import MetricsSnapshot
 from openhands_server.sdk_server.utils import utc_now
+
+
+class ConversationSortOrder(str, Enum):
+    """Enum for conversation sorting options."""
+
+    CREATED_AT = "CREATED_AT"
+    UPDATED_AT = "UPDATED_AT"
+    CREATED_AT_DESC = "CREATED_AT_DESC"
+    UPDATED_AT_DESC = "UPDATED_AT_DESC"
+
+
+class EventSortOrder(str, Enum):
+    """Enum for event sorting options."""
+
+    TIMESTAMP = "TIMESTAMP"
+    TIMESTAMP_DESC = "TIMESTAMP_DESC"
 
 
 class SendMessageRequest(BaseModel):
@@ -58,7 +75,7 @@ class StartConversationRequest(AgentSpec):
 
 
 class StoredConversation(StartConversationRequest):
-    """Stored details regarding a conversation"""
+    """Stored details about a conversation"""
 
     id: UUID
     metrics: MetricsSnapshot | None = None
