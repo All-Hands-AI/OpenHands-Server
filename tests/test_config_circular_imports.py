@@ -113,9 +113,3 @@ def test_config_imports_are_external_only():
         # For now, we'll be permissive about other imports but log them
         if not is_allowed:
             print(f"Warning: Potentially internal import detected: {imp}")
-
-
-if __name__ == "__main__":
-    test_config_no_circular_imports()
-    test_config_imports_are_external_only()
-    print("All tests passed! Config module has no circular dependencies.")

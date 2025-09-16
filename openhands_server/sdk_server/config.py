@@ -1,6 +1,16 @@
+import json
+import os
 from pathlib import Path
 
 from pydantic import BaseModel, Field
+
+
+# Environment variable constants
+CONFIG_FILE_PATH_ENV = "OPENHANDS_SERVER_CONFIG_PATH"
+SESSION_API_KEY_ENV = "SESSION_API_KEY"
+
+# Default config file location
+DEFAULT_CONFIG_FILE_PATH = "workspace/openhands_server_sdk_config.json"
 
 
 class Config(BaseModel):
@@ -37,6 +47,27 @@ class Config(BaseModel):
     )
     model_config = {"frozen": True}
 
+    @classmethod
+    def from_json_file(cls, file_path: Path) -> "Config":
+        """Load configuration from a JSON file with environment variable overrides."""
+        config_data = {}
+
+        # Load from JSON file if it exists
+        if file_path.exists():
+            with open(file_path, "r") as f:
+                config_data = json.load(f) or {}
+        # Apply environment variable overrides for legacy compatibility
+        if session_api_key := os.getenv(SESSION_API_KEY_ENV):
+            config_data["session_api_key"] = session_api_key
+
+        # Convert string paths to Path objects
+        if "conversations_path" in config_data:
+            config_data["conversations_path"] = Path(config_data["conversations_path"])
+        if "workspace_path" in config_data:
+            config_data["workspace_path"] = Path(config_data["workspace_path"])
+
+        return cls(**config_data)
+
 
 _default_config: Config | None = None
 
@@ -45,5 +76,10 @@ def get_default_config():
     """Get the default local server config shared across the server"""
     global _default_config
     if _default_config is None:
-        _default_config = Config()
+        # Get config file path from environment variable or use default
+        config_file_path = os.getenv(CONFIG_FILE_PATH_ENV, DEFAULT_CONFIG_FILE_PATH)
+        config_path = Path(config_file_path)
+
+        # Load configuration from JSON file with environment variable overrides
+        _default_config = Config.from_json_file(config_path)
     return _default_config
