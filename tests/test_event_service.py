@@ -1,14 +1,3 @@
-import os
-import sys
-
-
-# Add site-packages to path to resolve namespace conflict
-site_packages = os.path.join(
-    os.path.dirname(__file__), "..", ".venv", "lib", "python3.12", "site-packages"
-)
-if os.path.exists(site_packages):
-    sys.path.insert(0, site_packages)
-
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock

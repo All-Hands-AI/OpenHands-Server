@@ -1,14 +1,3 @@
-import os
-import sys
-
-
-# Add site-packages to path to resolve namespace conflict
-site_packages = os.path.join(
-    os.path.dirname(__file__), "..", ".venv", "lib", "python3.12", "site-packages"
-)
-if os.path.exists(site_packages):
-    sys.path.insert(0, site_packages)
-
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import AsyncMock
@@ -159,7 +148,6 @@ class TestConversationServiceSearchConversations:
     async def test_search_conversations_sorting(self, conversation_service):
         """Test sorting conversations by different criteria."""
         # Create conversations with different timestamps
-        base_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         conversations = []
 
         for i in range(3):
