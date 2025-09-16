@@ -11,15 +11,15 @@ from typing import Set
 def get_imports_from_file(file_path: Path) -> Set[str]:
     """
     Parse a Python file and extract all import statements.
-    
+
     Returns a set of module names that are imported.
     """
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
-    
+
     tree = ast.parse(content)
     imports = set()
-    
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -27,7 +27,7 @@ def get_imports_from_file(file_path: Path) -> Set[str]:
         elif isinstance(node, ast.ImportFrom):
             if node.module:
                 imports.add(node.module)
-    
+
     return imports
 
 
@@ -38,23 +38,20 @@ def test_config_no_circular_imports():
     """
     # Get the path to the config.py file
     config_file = (
-        Path(__file__).parent.parent
-        / "openhands_server"
-        / "sdk_server"
-        / "config.py"
+        Path(__file__).parent.parent / "openhands_server" / "sdk_server" / "config.py"
     )
-    
+
     # Ensure the config file exists
     assert config_file.exists(), f"Config file not found at {config_file}"
-    
+
     # Get all imports from the config file
     imports = get_imports_from_file(config_file)
-    
+
     # Check that no imports start with 'openhands_server'
     openhands_server_imports = [
-        imp for imp in imports if imp.startswith('openhands_server')
+        imp for imp in imports if imp.startswith("openhands_server")
     ]
-    
+
     assert not openhands_server_imports, (
         f"Config module should not import from openhands_server package to prevent "
         f"circular dependencies. Found imports: {openhands_server_imports}"
@@ -69,55 +66,50 @@ def test_config_imports_are_external_only():
     """
     # Get the path to the config.py file
     config_file = (
-        Path(__file__).parent.parent
-        / "openhands_server"
-        / "sdk_server"
-        / "config.py"
+        Path(__file__).parent.parent / "openhands_server" / "sdk_server" / "config.py"
     )
-    
+
     # Get all imports from the config file
     imports = get_imports_from_file(config_file)
-    
+
     # Define allowed import patterns (standard library and external packages)
     allowed_patterns = [
-        'pathlib',
-        'pydantic',
-        'typing',
-        'os',
-        'sys',
-        'json',
-        'logging',
-        'dataclasses',
-        'enum',
-        'abc',
-        'collections',
-        'functools',
-        'itertools',
-        're',
-        'datetime',
-        'uuid',
-        'hashlib',
-        'base64',
+        "pathlib",
+        "pydantic",
+        "typing",
+        "os",
+        "sys",
+        "json",
+        "logging",
+        "dataclasses",
+        "enum",
+        "abc",
+        "collections",
+        "functools",
+        "itertools",
+        "re",
+        "datetime",
+        "uuid",
+        "hashlib",
+        "base64",
     ]
-    
+
     # Check each import
     for imp in imports:
         # Skip relative imports (they start with '.')
-        if imp.startswith('.'):
+        if imp.startswith("."):
             continue
-            
+
         # Check if it's an allowed pattern or a top-level external package
-        is_allowed = any(
-            imp.startswith(pattern) for pattern in allowed_patterns
-        ) or (
+        is_allowed = any(imp.startswith(pattern) for pattern in allowed_patterns) or (
             # Allow top-level external packages (no dots typically means external)
-            '.' not in imp.split('.')[0] and not imp.startswith('openhands')
+            "." not in imp.split(".")[0] and not imp.startswith("openhands")
         )
-        
+
         # Specifically disallow any openhands_server imports
-        if imp.startswith('openhands_server'):
+        if imp.startswith("openhands_server"):
             assert False, f"Config should not import from openhands_server: {imp}"
-        
+
         # For now, we'll be permissive about other imports but log them
         if not is_allowed:
             print(f"Warning: Potentially internal import detected: {imp}")
