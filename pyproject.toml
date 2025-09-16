@@ -24,6 +24,7 @@ dependencies = [
   "openhands-sdk @ git+https://github.com/All-Hands-AI/agent-sdk.git@0f2a602a7642b8af23ade78a60aa03c83da4ab74#subdirectory=openhands/sdk",
   "openhands-tools @ git+https://github.com/All-Hands-AI/agent-sdk.git@0f2a602a7642b8af23ade78a60aa03c83da4ab74#subdirectory=openhands/tools",
   "pydantic>=2",
+  "pyyaml>=6.0",
   "sqlalchemy>=2",
   "uvicorn>=0.31.1",
   "websockets>=12",
