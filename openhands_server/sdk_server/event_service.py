@@ -139,7 +139,7 @@ class EventService:
                 # inside Conversation, events will be saved to
                 # "file_store_path/{convo_id}/events"
             ),
-            conversation_id=str(conversation_id),
+            conversation_id=conversation_id,
             callbacks=[
                 AsyncCallbackWrapper(self._pub_sub, loop=asyncio.get_running_loop())
             ],
