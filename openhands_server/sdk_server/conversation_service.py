@@ -1,13 +1,14 @@
 import asyncio
 import logging
 import shutil
+from abc import abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID, uuid4
 
 from openhands.sdk import Event, Message
 from openhands.sdk.conversation.state import AgentExecutionStatus
-from openhands_server.sdk_server.config import Config
+from openhands_server.sdk_server.config import Config, WebhookSpec
 from openhands_server.sdk_server.event_service import EventService
 from openhands_server.sdk_server.models import (
     ConversationInfo,
@@ -31,6 +32,7 @@ class ConversationService:
 
     event_services_path: Path = field(default=Path("workspace/event_services"))
     workspace_path: Path = field(default=Path("workspace/project"))
+    webhook_specs: list[WebhookSpec] = field(default=[])
     _event_services: dict[UUID, EventService] | None = field(default=None, init=False)
 
     async def get_conversation(self, conversation_id: UUID) -> ConversationInfo | None:
@@ -149,7 +151,18 @@ class ConversationService:
             file_store_path=file_store_path,
             working_dir=self.workspace_path,
         )
-        await event_service.subscribe_to_events(_EventListener(service=event_service))
+
+        # Create subscribers...
+        await event_service.subscribe_to_events(_EventSubscriber(service=event_service))
+        asyncio.gather(
+            *[
+                event_service.subscribe_to_events(
+                    _WebhookSubscriber(service=event_service, spec=webhook_spec)
+                )
+                for webhook_spec in self.webhook_specs
+            ]
+        )
+
         self._event_services[conversation_id] = event_service
         await event_service.start(conversation_id=conversation_id)
         initial_message = request.initial_message
@@ -237,11 +250,29 @@ class ConversationService:
 
 
 @dataclass
-class _EventListener:
+class _EventSubscriber:
     service: EventService
 
+    @abstractmethod
     async def __call__(self, event: Event):
         self.service.stored.updated_at = utc_now()
+
+
+@dataclass
+class _WebhookSubscriber:
+    service: EventService
+    spec: WebhookSpec
+    queue: list[Event] = field(default_factory=list)
+
+    async def __call__(self, event: Event):
+        # TODO: Create an event in the queue. If the queue has reached the appropriate
+        # size, post the list of items in the queue to the webhook, retrying on error
+        # as appropriate
+        raise NotImplementedError
+
+    async def close(self):
+        # Post any remaining items in the queue to the webhook.
+        raise NotImplementedError
 
 
 _conversation_service: ConversationService | None = None

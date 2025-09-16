@@ -28,6 +28,7 @@ from openhands_server.sdk_server.models import (
     SendMessageRequest,
     Success,
 )
+from openhands_server.sdk_server.pub_sub import Subscriber
 
 
 router = APIRouter(prefix="/conversations/{conversation_id}/events")
@@ -139,6 +140,9 @@ async def respond_to_confirmation(
     return Success()
 
 
+# Subscribers
+
+
 @router.websocket("/socket")
 async def socket(
     conversation_id: UUID,
@@ -166,7 +170,7 @@ async def socket(
 
 
 @dataclass
-class _WebSocketSubscriber:
+class _WebSocketSubscriber(Subscriber):
     websocket: WebSocket
 
     async def __call__(self, event: EventBase):
