@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 # Environment variable constants
 CONFIG_FILE_PATH_ENV = "OPENHANDS_SERVER_CONFIG_PATH"
-SESSION_API_KEY_ENV = "SESSION_API_KEY"
+SESSION_API_KEY_ENV = "OPENHANDS_SESSION_API_KEY"
 
 # Default config file location
 DEFAULT_CONFIG_FILE_PATH = "workspace/openhands_server_sdk_config.json"
