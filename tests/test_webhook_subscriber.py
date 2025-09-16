@@ -8,7 +8,6 @@ without dependencies on the openhands.sdk module.
 import asyncio
 from dataclasses import dataclass, field
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
 
 import httpx
 import pytest
@@ -19,29 +18,26 @@ from openhands_server.sdk_server.config import WebhookSpec
 # Mock Event class
 class MockEvent:
     """Mock Event class for testing purposes."""
-    
+
     def __init__(self, event_type="test_event", data="test_data"):
         self.type = event_type
         self.data = data
-    
+
     def model_dump(self):
-        return {"type": self.type, "data": self.data}
-    
-    @property
-    def __dict__(self):
         return {"type": self.type, "data": self.data}
 
 
 # Mock EventService
 class MockEventService:
     """Mock EventService for testing purposes."""
+
     pass
 
 
 # Mock Subscriber base class
 class MockSubscriber:
     """Mock Subscriber base class."""
-    
+
     async def __call__(self, event):
         """Invoke this subscriber"""
         pass
@@ -55,7 +51,7 @@ class MockSubscriber:
 @dataclass
 class WebhookSubscriberForTesting(MockSubscriber):
     """Testable version of _WebhookSubscriber without external dependencies."""
-    
+
     service: MockEventService
     spec: WebhookSpec
     session_api_key: str | None = None
@@ -105,7 +101,7 @@ class WebhookSubscriberForTesting(MockSubscriber):
                     )
                     response.raise_for_status()
                     return
-            except Exception as e:
+            except Exception:
                 if attempt < self.spec.num_retries:
                     await asyncio.sleep(self.spec.retry_delay)
                 else:
@@ -199,7 +195,9 @@ class TestWebhookSubscriberCallMethod:
     """Test cases for _WebhookSubscriber.__call__ method."""
 
     @pytest.mark.asyncio
-    async def test_call_adds_event_to_queue(self, mock_event_service, webhook_spec, sample_event):
+    async def test_call_adds_event_to_queue(
+        self, mock_event_service, webhook_spec, sample_event
+    ):
         """Test that calling the subscriber adds event to queue."""
         subscriber = WebhookSubscriberForTesting(
             service=mock_event_service,
@@ -229,7 +227,7 @@ class TestWebhookSubscriberCallMethod:
         assert subscriber.queue == sample_events[:2]
 
     @pytest.mark.asyncio
-    @patch.object(WebhookSubscriberForTesting, '_post_events')
+    @patch.object(WebhookSubscriberForTesting, "_post_events")
     async def test_call_triggers_post_when_buffer_full(
         self, mock_post_events, mock_event_service, webhook_spec, sample_events
     ):
@@ -259,18 +257,18 @@ class TestWebhookSubscriberCallMethod:
 
         # Mock the _post_events method to track calls but not actually post
         post_events_calls = []
-        original_post_events = subscriber._post_events
-        
+
         async def mock_post_events():
             post_events_calls.append(len(subscriber.queue))
             subscriber.queue.clear()  # Simulate clearing the queue
-        
+
         subscriber._post_events = mock_post_events
 
-        # Add 6 events (buffer size is 3, so should trigger twice: at 3 events and at 6 events)
+        # Add 6 events (buffer size is 3, so should trigger twice:
+        # at 3 events and at 6 events)
         for event in sample_events:  # 5 events
             await subscriber(event)
-        
+
         # Add one more event to trigger the second post
         await subscriber(MockEvent("extra_event", "extra_data"))
 
@@ -300,7 +298,7 @@ class TestWebhookSubscriberPostEvents:
             service=mock_event_service,
             spec=webhook_spec,
         )
-        
+
         # Add events to queue
         subscriber.queue = sample_events[:3]
 
@@ -339,7 +337,7 @@ class TestWebhookSubscriberPostEvents:
             spec=webhook_spec,
             session_api_key="test_session_key",
         )
-        
+
         # Add events to queue
         subscriber.queue = sample_events[:2]
 
@@ -381,32 +379,34 @@ class TestWebhookSubscriberPostEvents:
             service=mock_event_service,
             spec=webhook_spec,
         )
-        
+
         # Add events to queue
         subscriber.queue = sample_events[:2]
-        
+
         # Track retry attempts
         retry_attempts = []
         sleep_calls = []
-        
+
         # Mock the HTTP client and sleep
         async def mock_request(*args, **kwargs):
             retry_attempts.append(len(retry_attempts) + 1)
             if len(retry_attempts) <= 2:  # Fail first two attempts
-                raise httpx.HTTPStatusError("Server Error", request=MagicMock(), response=MagicMock())
+                raise httpx.HTTPStatusError(
+                    "Server Error", request=MagicMock(), response=MagicMock()
+                )
             # Third attempt succeeds - return a mock response
             response = AsyncMock()
             response.raise_for_status.return_value = None
             return response
-        
+
         async def mock_sleep(delay):
             sleep_calls.append(delay)
-        
+
         with patch("httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.request = mock_request
             mock_client_class.return_value.__aenter__.return_value = mock_client
-            
+
             with patch("asyncio.sleep", side_effect=mock_sleep):
                 await subscriber._post_events()
 
@@ -427,28 +427,30 @@ class TestWebhookSubscriberPostEvents:
             service=mock_event_service,
             spec=webhook_spec,
         )
-        
+
         # Add events to queue
         original_events = sample_events[:2]
         subscriber.queue = original_events.copy()
-        
+
         # Track retry attempts
         retry_attempts = []
         sleep_calls = []
-        
+
         # Mock the HTTP client to always fail
         async def mock_request(*args, **kwargs):
             retry_attempts.append(len(retry_attempts) + 1)
-            raise httpx.HTTPStatusError("Server Error", request=MagicMock(), response=MagicMock())
-        
+            raise httpx.HTTPStatusError(
+                "Server Error", request=MagicMock(), response=MagicMock()
+            )
+
         async def mock_sleep(delay):
             sleep_calls.append(delay)
-        
+
         with patch("httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.request = mock_request
             mock_client_class.return_value.__aenter__.return_value = mock_client
-            
+
             with patch("asyncio.sleep", side_effect=mock_sleep):
                 await subscriber._post_events()
 
@@ -477,12 +479,12 @@ class TestWebhookSubscriberPostEvents:
             service=mock_event_service,
             spec=webhook_spec,
         )
-        
+
         # Create event without model_dump method
         event_without_model_dump = MagicMock()
         del event_without_model_dump.model_dump  # Remove model_dump method
         event_without_model_dump.__dict__ = {"type": "test", "data": "value"}
-        
+
         subscriber.queue = [event_without_model_dump]
 
         await subscriber._post_events()
@@ -504,7 +506,7 @@ class TestWebhookSubscriberCloseMethod:
     """Test cases for _WebhookSubscriber.close method."""
 
     @pytest.mark.asyncio
-    @patch.object(WebhookSubscriberForTesting, '_post_events')
+    @patch.object(WebhookSubscriberForTesting, "_post_events")
     async def test_close_posts_remaining_events(
         self, mock_post_events, mock_event_service, webhook_spec, sample_events
     ):
@@ -514,7 +516,7 @@ class TestWebhookSubscriberCloseMethod:
             service=mock_event_service,
             spec=webhook_spec,
         )
-        
+
         # Add events to queue
         subscriber.queue = sample_events[:2]
 
@@ -524,7 +526,7 @@ class TestWebhookSubscriberCloseMethod:
         mock_post_events.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch.object(WebhookSubscriberForTesting, '_post_events')
+    @patch.object(WebhookSubscriberForTesting, "_post_events")
     async def test_close_with_empty_queue(
         self, mock_post_events, mock_event_service, webhook_spec
     ):
@@ -638,7 +640,7 @@ class TestWebhookSubscriberErrorHandling:
             service=mock_event_service,
             spec=webhook_spec,
         )
-        
+
         subscriber.queue = sample_events[:2]
 
         with patch("asyncio.sleep") as mock_sleep:
@@ -666,7 +668,7 @@ class TestWebhookSubscriberErrorHandling:
             service=mock_event_service,
             spec=webhook_spec,
         )
-        
+
         subscriber.queue = sample_events[:1]
 
         with patch("asyncio.sleep") as mock_sleep:
