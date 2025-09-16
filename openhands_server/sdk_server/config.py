@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 # Environment variable constants
 CONFIG_FILE_PATH_ENV = "OPENHANDS_SERVER_CONFIG_PATH"
-SESSION_API_KEY_ENV = "OPENHANDS_SESSION_API_KEY"
+SESSION_API_KEY_ENV = "SESSION_API_KEY"
 
 # Default config file location
 DEFAULT_CONFIG_FILE_PATH = "workspace/openhands_server_sdk_config.json"
@@ -51,10 +51,10 @@ class Config(BaseModel):
     def from_json_file(cls, file_path: Path) -> "Config":
         """Load configuration from a JSON file with environment variable overrides."""
         config_data = {}
-        
+
         # Load from JSON file if it exists
         if file_path.exists():
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 config_data = json.load(f) or {}
         # Apply environment variable overrides for legacy compatibility
         if session_api_key := os.getenv(SESSION_API_KEY_ENV):
@@ -79,7 +79,7 @@ def get_default_config():
         # Get config file path from environment variable or use default
         config_file_path = os.getenv(CONFIG_FILE_PATH_ENV, DEFAULT_CONFIG_FILE_PATH)
         config_path = Path(config_file_path)
-        
+
         # Load configuration from JSON file with environment variable overrides
         _default_config = Config.from_json_file(config_path)
     return _default_config
