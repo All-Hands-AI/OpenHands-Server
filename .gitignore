@@ -195,3 +195,4 @@ $RECYCLE.BIN/
 .pytest_cache/
 
 workspace/
+.client

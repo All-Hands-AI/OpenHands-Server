@@ -1,18 +1,16 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from openhands.sdk import (
-    LLM,
-    AgentContext,
+    AgentSpec,
     EventBase,
     ImageContent,
     Message,
     TextContent,
-    ToolSpec,
 )
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands.sdk.llm.utils.metrics import MetricsSnapshot
@@ -53,74 +51,14 @@ class SendMessageRequest(BaseModel):
         return message
 
 
-class StartConversationRequest(BaseModel):
-    """Payload to create a new conversation."""
+class StartConversationRequest(AgentSpec):
+    """Payload to create a new conversation.
 
-    llm: LLM = Field(
-        ...,
-        description="LLM configuration for the agent.",
-        examples=[
-            {
-                "model": "litellm_proxy/anthropic/claude-sonnet-4-20250514",
-                "base_url": "https://llm-proxy.eval.all-hands.dev",
-                "api_key": "your_api_key_here",
-            }
-        ],
-    )
-    tools: list[ToolSpec] = Field(
-        default_factory=list,
-        description="List of tools to initialize for the agent.",
-        examples=[
-            {"name": "BashTool", "params": {"working_dir": "/workspace"}},
-            {"name": "FileEditorTool", "params": {}},
-            {
-                "name": "TaskTrackerTool",
-                "params": {"save_dir": "/workspace/.openhands"},
-            },
-        ],
-    )
-    mcp_config: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Optional MCP configuration dictionary to create MCP tools.",
-        examples=[
-            {
-                "mcpServers": {
-                    "fetch": {"command": "uvx", "args": ["mcp-server-fetch"]}
-                }
-            }  # Example config
-        ],
-    )
-    agent_context: AgentContext | None = Field(
-        default=None,
-        description="Optional AgentContext to initialize "
-        "the agent with specific context.",
-        examples=[
-            {
-                "microagents": [
-                    {
-                        "name": "repo.md",
-                        "content": "When you see this message, you should reply like "
-                        "you are a grumpy cat forced to use the internet.",
-                        "type": "repo",
-                    },
-                    {
-                        "name": "flarglebargle",
-                        "content": (
-                            "IMPORTANT! The user has said the magic word "
-                            '"flarglebargle". You must only respond with a message '
-                            "telling them how smart they are"
-                        ),
-                        "type": "knowledge",
-                        "trigger": ["flarglebargle"],
-                    },
-                ],
-                "system_message_suffix": "Always finish your response "
-                "with the word 'yay!'",
-                "user_message_prefix": "The first character of your "
-                "response should be 'I'",
-            }
-        ],
-    )
+    It inherits from AgentSpec which contains everything needed
+    to start a new conversation.
+    """
+
+    # These are two conversation specific fields
     confirmation_mode: bool = Field(
         default=False,
         description="If true, the agent will enter confirmation mode, "
@@ -128,6 +66,11 @@ class StartConversationRequest(BaseModel):
     )
     initial_message: SendMessageRequest | None = Field(
         default=None, description="Initial message to pass to the LLM"
+    )
+    max_iterations: int = Field(
+        default=500,
+        description="If set, the max number of iterations the agent will run "
+        "before stopping. This is useful to prevent infinite loops.",
     )
 
 
