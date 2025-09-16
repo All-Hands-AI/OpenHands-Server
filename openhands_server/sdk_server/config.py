@@ -28,15 +28,15 @@ class Config(BaseModel):
         ),
     )
     conversations_path: Path = Field(
-        default=Path("workspace/project"),
-        description=(
-            "The location of the workspace directory where the agent read / writes."
-        ),
-    )
-    workspace_path: Path = Field(
         default=Path("workspace/conversations"),
         description=(
             "The location of the directory where conversations and events are stored."
+        ),
+    )
+    workspace_path: Path = Field(
+        default=Path("workspace/project"),
+        description=(
+            "The location of the workspace directory where the agent reads/writes."
         ),
     )
     model_config = {"frozen": True}

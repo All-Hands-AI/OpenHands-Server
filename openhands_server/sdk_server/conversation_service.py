@@ -48,10 +48,17 @@ class ConversationService:
         items = []
         for id, event_service in self._event_services.items():
             # If we have reached the start of the page
-            if id == page_id:
-                page_id = None
+            if page_id is not None:
+                try:
+                    # Convert page_id to UUID for comparison
+                    page_uuid = UUID(page_id)
+                    if id == page_uuid:
+                        page_id = None
+                except (ValueError, TypeError):
+                    # Invalid page_id, skip comparison and start from beginning
+                    page_id = None
 
-            # Skip pass entries before the first item...
+            # Skip past entries before the first item...
             if page_id:
                 continue
 
@@ -72,10 +79,10 @@ class ConversationService:
         self, event_service_ids: list[UUID]
     ) -> list[ConversationInfo | None]:
         """Given a list of ids, get a batch of conversation info, returning
-        None for any where were not found."""
+        None for any that were not found."""
         results = []
         for id in event_service_ids:
-            result = await self.get_event_service(id)
+            result = await self.get_conversation(id)
             results.append(result)
         return results
 
@@ -169,7 +176,7 @@ class ConversationService:
         if event_services is None:
             return
         self._event_services = None
-        # This stops convesations and saves meta
+        # This stops conversations and saves meta
         await asyncio.gather(
             *[
                 event_service.__aexit__(exc_type, exc_value, traceback)
