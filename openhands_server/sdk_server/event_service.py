@@ -187,6 +187,7 @@ class EventService:
             loop.run_in_executor(None, self._conversation.pause)
 
     async def close(self):
+        await self._pub_sub.close()
         if self._conversation:
             loop = asyncio.get_running_loop()
             loop.run_in_executor(None, self._conversation.close)

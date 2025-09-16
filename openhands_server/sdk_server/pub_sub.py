@@ -75,4 +75,4 @@ class PubSub:
         await asyncio.gather(
             *[subscriber.close() for subscriber in self._subscribers.values()]
         )
-        await self.close()
+        self._subscribers.clear()
