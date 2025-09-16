@@ -4,7 +4,6 @@ to prevent circular dependencies.
 """
 
 import ast
-import sys
 from pathlib import Path
 from typing import Set
 
@@ -38,7 +37,12 @@ def test_config_no_circular_imports():
     to prevent circular dependencies.
     """
     # Get the path to the config.py file
-    config_file = Path(__file__).parent.parent / "openhands_server" / "sdk_server" / "config.py"
+    config_file = (
+        Path(__file__).parent.parent
+        / "openhands_server"
+        / "sdk_server"
+        / "config.py"
+    )
     
     # Ensure the config file exists
     assert config_file.exists(), f"Config file not found at {config_file}"
@@ -47,7 +51,9 @@ def test_config_no_circular_imports():
     imports = get_imports_from_file(config_file)
     
     # Check that no imports start with 'openhands_server'
-    openhands_server_imports = [imp for imp in imports if imp.startswith('openhands_server')]
+    openhands_server_imports = [
+        imp for imp in imports if imp.startswith('openhands_server')
+    ]
     
     assert not openhands_server_imports, (
         f"Config module should not import from openhands_server package to prevent "
@@ -62,7 +68,12 @@ def test_config_imports_are_external_only():
     any internal imports.
     """
     # Get the path to the config.py file
-    config_file = Path(__file__).parent.parent / "openhands_server" / "sdk_server" / "config.py"
+    config_file = (
+        Path(__file__).parent.parent
+        / "openhands_server"
+        / "sdk_server"
+        / "config.py"
+    )
     
     # Get all imports from the config file
     imports = get_imports_from_file(config_file)
@@ -99,7 +110,7 @@ def test_config_imports_are_external_only():
         is_allowed = any(
             imp.startswith(pattern) for pattern in allowed_patterns
         ) or (
-            # Allow top-level external packages (no dots in the name typically means external)
+            # Allow top-level external packages (no dots typically means external)
             '.' not in imp.split('.')[0] and not imp.startswith('openhands')
         )
         
