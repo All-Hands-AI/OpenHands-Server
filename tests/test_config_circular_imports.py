@@ -80,6 +80,7 @@ def test_config_imports_are_external_only():
         "os",
         "sys",
         "json",
+        "yaml",
         "logging",
         "dataclasses",
         "enum",
