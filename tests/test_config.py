@@ -364,7 +364,3 @@ class TestConfigConstants:
         assert isinstance(CONFIG_FILE_PATH_ENV, str)
         assert isinstance(SESSION_API_KEY_ENV, str)
         assert isinstance(DEFAULT_CONFIG_FILE_PATH, str)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])

@@ -8,108 +8,114 @@ all environment variable access is centralized in the config module.
 
 import ast
 from pathlib import Path
-from typing import Set, List, Tuple
+from typing import List, Set, Tuple
 
 
 def get_env_var_access_from_file(file_path: Path) -> List[Tuple[int, str]]:
     """
     Parse a Python file and extract all environment variable access patterns.
-    
+
     Returns a list of tuples containing (line_number, access_pattern).
     """
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
-    
+
     try:
         tree = ast.parse(content)
     except SyntaxError:
         # If we can't parse the file, skip it
         return []
-    
+
     env_accesses = []
-    
+
     class EnvVarVisitor(ast.NodeVisitor):
         def visit_Call(self, node):
             # Check for os.getenv() calls
-            if (isinstance(node.func, ast.Attribute) and 
-                isinstance(node.func.value, ast.Name) and
-                node.func.value.id == 'os' and 
-                node.func.attr == 'getenv'):
-                env_accesses.append((node.lineno, 'os.getenv()'))
-            
+            if (
+                isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "os"
+                and node.func.attr == "getenv"
+            ):
+                env_accesses.append((node.lineno, "os.getenv()"))
+
             # Check for getenv() calls (direct import)
-            elif (isinstance(node.func, ast.Name) and 
-                  node.func.id == 'getenv'):
-                env_accesses.append((node.lineno, 'getenv()'))
-            
+            elif isinstance(node.func, ast.Name) and node.func.id == "getenv":
+                env_accesses.append((node.lineno, "getenv()"))
+
             self.generic_visit(node)
-        
+
         def visit_Subscript(self, node):
             # Check for os.environ[] access
-            if (isinstance(node.value, ast.Attribute) and
-                isinstance(node.value.value, ast.Name) and
-                node.value.value.id == 'os' and
-                node.value.attr == 'environ'):
-                env_accesses.append((node.lineno, 'os.environ[]'))
-            
+            if (
+                isinstance(node.value, ast.Attribute)
+                and isinstance(node.value.value, ast.Name)
+                and node.value.value.id == "os"
+                and node.value.attr == "environ"
+            ):
+                env_accesses.append((node.lineno, "os.environ[]"))
+
             # Check for environ[] access (direct import)
-            elif (isinstance(node.value, ast.Name) and
-                  node.value.id == 'environ'):
-                env_accesses.append((node.lineno, 'environ[]'))
-            
+            elif isinstance(node.value, ast.Name) and node.value.id == "environ":
+                env_accesses.append((node.lineno, "environ[]"))
+
             self.generic_visit(node)
-        
+
         def visit_Attribute(self, node):
             # Check for os.environ.get() calls
-            if (isinstance(node.value, ast.Attribute) and
-                isinstance(node.value.value, ast.Name) and
-                node.value.value.id == 'os' and
-                node.value.attr == 'environ' and
-                node.attr == 'get'):
-                env_accesses.append((node.lineno, 'os.environ.get()'))
-            
+            if (
+                isinstance(node.value, ast.Attribute)
+                and isinstance(node.value.value, ast.Name)
+                and node.value.value.id == "os"
+                and node.value.attr == "environ"
+                and node.attr == "get"
+            ):
+                env_accesses.append((node.lineno, "os.environ.get()"))
+
             # Check for environ.get() calls (direct import)
-            elif (isinstance(node.value, ast.Name) and
-                  node.value.id == 'environ' and
-                  node.attr == 'get'):
-                env_accesses.append((node.lineno, 'environ.get()'))
-            
+            elif (
+                isinstance(node.value, ast.Name)
+                and node.value.id == "environ"
+                and node.attr == "get"
+            ):
+                env_accesses.append((node.lineno, "environ.get()"))
+
             self.generic_visit(node)
-    
+
     visitor = EnvVarVisitor()
     visitor.visit(tree)
-    
+
     return env_accesses
 
 
 def get_direct_env_imports_from_file(file_path: Path) -> Set[str]:
     """
     Parse a Python file and extract direct imports of environment-related functions.
-    
+
     Returns a set of imported names that could be used to access environment variables.
     """
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
-    
+
     try:
         tree = ast.parse(content)
     except SyntaxError:
         return set()
-    
+
     env_imports = set()
-    
+
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
-            if node.module == 'os':
+            if node.module == "os":
                 for alias in node.names:
-                    if alias.name in ['getenv', 'environ']:
+                    if alias.name in ["getenv", "environ"]:
                         env_imports.add(alias.asname or alias.name)
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == 'os':
+                if alias.name == "os":
                     # This is handled by the AST visitor above
                     pass
-    
+
     return env_imports
 
 
@@ -119,46 +125,46 @@ def test_no_env_var_access_outside_config():
     except for the config.py file.
     """
     # Get the path to the sdk_server directory
-    sdk_server_dir = (
-        Path(__file__).parent.parent / "openhands_server" / "sdk_server"
-    )
-    
+    sdk_server_dir = Path(__file__).parent.parent / "openhands_server" / "sdk_server"
+
     # Ensure the directory exists
-    assert sdk_server_dir.exists(), f"SDK server directory not found at {sdk_server_dir}"
-    
+    assert sdk_server_dir.exists(), (
+        f"SDK server directory not found at {sdk_server_dir}"
+    )
+
     # Get all Python files in the sdk_server directory
     python_files = list(sdk_server_dir.glob("*.py"))
-    
+
     # Remove config.py from the list since it's allowed to access env vars
     config_file = sdk_server_dir / "config.py"
     if config_file in python_files:
         python_files.remove(config_file)
-    
+
     # Check each file for environment variable access
     violations = []
-    
+
     for file_path in python_files:
         # Skip __init__.py files as they typically don't contain logic
         if file_path.name == "__init__.py":
             continue
-        
+
         # Check for environment variable access patterns
         env_accesses = get_env_var_access_from_file(file_path)
-        
+
         if env_accesses:
             for line_no, pattern in env_accesses:
                 violations.append(f"{file_path.name}:{line_no} - {pattern}")
-        
+
         # Also check for direct imports that could be used for env access
         env_imports = get_direct_env_imports_from_file(file_path)
         if env_imports:
             violations.append(f"{file_path.name} - Direct env imports: {env_imports}")
-    
+
     # Assert no violations were found
     assert not violations, (
-        f"Environment variable access found outside config.py. "
-        f"All environment variable access should be centralized in config.py. "
-        f"Violations found:\n" + "\n".join(violations)
+        "Environment variable access found outside config.py. "
+        "All environment variable access should be centralized in config.py. "
+        "Violations found:\n" + "\n".join(violations)
     )
 
 
@@ -171,22 +177,22 @@ def test_config_file_env_access_is_allowed():
     config_file = (
         Path(__file__).parent.parent / "openhands_server" / "sdk_server" / "config.py"
     )
-    
+
     # Ensure the config file exists
     assert config_file.exists(), f"Config file not found at {config_file}"
-    
+
     # Check that config.py does access environment variables
     env_accesses = get_env_var_access_from_file(config_file)
-    
+
     # We expect to find environment variable access in config.py
     assert env_accesses, (
         "Expected to find environment variable access in config.py, "
         "but none was detected. This might indicate an issue with the test logic."
     )
-    
+
     # Verify that the expected patterns are found
     access_patterns = [pattern for _, pattern in env_accesses]
-    assert 'os.getenv()' in access_patterns, (
+    assert "os.getenv()" in access_patterns, (
         "Expected to find os.getenv() calls in config.py"
     )
 
@@ -197,7 +203,7 @@ def test_comprehensive_env_var_patterns():
     variable access by testing against known patterns.
     """
     # Create a temporary test file content with various env var access patterns
-    test_content = '''
+    test_content = """
 import os
 from os import getenv, environ
 
@@ -208,48 +214,41 @@ value3 = os.environ.get("TEST_VAR")
 value4 = getenv("TEST_VAR")
 value5 = environ["TEST_VAR"]
 value6 = environ.get("TEST_VAR")
-'''
-    
+"""
+
     # Write to a temporary file
     temp_file = Path("/tmp/test_env_patterns.py")
     with open(temp_file, "w") as f:
         f.write(test_content)
-    
+
     try:
         # Test our detection logic
         env_accesses = get_env_var_access_from_file(temp_file)
         env_imports = get_direct_env_imports_from_file(temp_file)
-        
+
         # We should detect all the patterns
         access_patterns = [pattern for _, pattern in env_accesses]
-        
+
         expected_patterns = [
-            'os.getenv()',
-            'os.environ[]',
-            'os.environ.get()',
-            'getenv()',
-            'environ[]',
-            'environ.get()'
+            "os.getenv()",
+            "os.environ[]",
+            "os.environ.get()",
+            "getenv()",
+            "environ[]",
+            "environ.get()",
         ]
-        
+
         for expected in expected_patterns:
             assert expected in access_patterns, (
                 f"Failed to detect pattern: {expected}. "
                 f"Detected patterns: {access_patterns}"
             )
-        
+
         # We should also detect the direct imports
-        assert 'getenv' in env_imports, "Failed to detect direct getenv import"
-        assert 'environ' in env_imports, "Failed to detect direct environ import"
-        
+        assert "getenv" in env_imports, "Failed to detect direct getenv import"
+        assert "environ" in env_imports, "Failed to detect direct environ import"
+
     finally:
         # Clean up the temporary file
         if temp_file.exists():
             temp_file.unlink()
-
-
-if __name__ == "__main__":
-    test_no_env_var_access_outside_config()
-    test_config_file_env_access_is_allowed()
-    test_comprehensive_env_var_patterns()
-    print("All tests passed! Environment variable access is properly isolated to config.py")
