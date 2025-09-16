@@ -30,7 +30,7 @@ from openhands_server.sdk_server.utils import utc_now
 @dataclass
 class EventService:
     """
-    Event service for a conversation running locally, analagous to a conversation
+    Event service for a conversation running locally, analogous to a conversation
     in the SDK. Async mostly for forward compatibility
     """
 
@@ -88,14 +88,14 @@ class EventService:
         # Handle pagination
         items = []
         start_index = 0
-        
+
         # Find the starting point if page_id is provided
         if page_id:
             for i, event in enumerate(all_events):
                 if event.id == page_id:
                     start_index = i
                     break
-        
+
         # Collect items for this page
         next_page_id = None
         for i in range(start_index, len(all_events)):

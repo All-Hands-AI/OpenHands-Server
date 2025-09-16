@@ -35,7 +35,7 @@ class LocalhostCORSMiddleware(CORSMiddleware):
 
 
 class ValidateSessionAPIKeyMiddleware(BaseHTTPMiddleware):
-    """Middleware to validate session API key for all requests.
+    """Middleware to validate session API key for all requests
 
     Inside a sandbox, conversations are run locally, and there is a Session API key
     for the sandbox that needs provided.
@@ -50,8 +50,8 @@ class ValidateSessionAPIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        session_api_key = request.headers["X-Session-API-Key"]
-        if session_api_key != session_api_key:
+        session_api_key = request.headers.get("X-Session-API-Key")
+        if session_api_key != self.session_api_key:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED)
         response = await call_next(request)
         return response

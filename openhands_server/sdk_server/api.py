@@ -37,6 +37,8 @@ api.include_router(conversation_event_router)
 api.include_router(conversation_router)
 
 # Add middleware
-api.add_middleware(LocalhostCORSMiddleware, config.allow_cors_origins)
+api.add_middleware(LocalhostCORSMiddleware, allow_origins=config.allow_cors_origins)
 if config.session_api_key:
-    api.add_middleware(ValidateSessionAPIKeyMiddleware, config.session_api_key)
+    api.add_middleware(
+        ValidateSessionAPIKeyMiddleware, session_api_key=config.session_api_key
+    )

@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from openhands.sdk import Event, Message
+from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands_server.sdk_server.config import Config
 from openhands_server.sdk_server.event_service import EventService
 from openhands_server.sdk_server.models import (
@@ -15,7 +16,6 @@ from openhands_server.sdk_server.models import (
     StartConversationRequest,
     StoredConversation,
 )
-from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands_server.sdk_server.utils import utc_now
 
 
@@ -51,7 +51,7 @@ class ConversationService:
     ) -> ConversationPage:
         if self._event_services is None:
             raise ValueError("inactive_service")
-        
+
         # Collect all conversations with their info
         all_conversations = []
         for id, event_service in self._event_services.items():
@@ -59,13 +59,13 @@ class ConversationService:
                 **event_service.stored.model_dump(),
                 status=await event_service.get_status(),
             )
-            
+
             # Apply status filter if provided
             if status is not None and conversation_info.status != status:
                 continue
-                
+
             all_conversations.append((id, conversation_info))
-        
+
         # Sort conversations based on sort_order
         if sort_order == ConversationSortOrder.CREATED_AT:
             all_conversations.sort(key=lambda x: x[1].created_at)
@@ -75,18 +75,18 @@ class ConversationService:
             all_conversations.sort(key=lambda x: x[1].updated_at)
         elif sort_order == ConversationSortOrder.UPDATED_AT_DESC:
             all_conversations.sort(key=lambda x: x[1].updated_at, reverse=True)
-        
+
         # Handle pagination
         items = []
         start_index = 0
-        
+
         # Find the starting point if page_id is provided
         if page_id:
             for i, (id, _) in enumerate(all_conversations):
                 if id.hex == page_id:
                     start_index = i
                     break
-        
+
         # Collect items for this page
         next_page_id = None
         for i in range(start_index, len(all_conversations)):
@@ -96,17 +96,17 @@ class ConversationService:
                     next_page_id = all_conversations[i][0].hex
                 break
             items.append(all_conversations[i][1])
-        
+
         return ConversationPage(items=items, next_page_id=next_page_id)
 
     async def batch_get_conversations(
         self, event_service_ids: list[UUID]
     ) -> list[ConversationInfo | None]:
         """Given a list of ids, get a batch of conversation info, returning
-        None for any where were not found."""
+        None for any that were not found."""
         results = []
         for id in event_service_ids:
-            result = await self.get_event_service(id)
+            result = await self.get_conversation(id)
             results.append(result)
         return results
 
@@ -200,7 +200,7 @@ class ConversationService:
         if event_services is None:
             return
         self._event_services = None
-        # This stops convesations and saves meta
+        # This stops conversations and saves meta
         await asyncio.gather(
             *[
                 event_service.__aexit__(exc_type, exc_value, traceback)
