@@ -76,12 +76,12 @@ class ConversationService:
         return ConversationPage(items=items)
 
     async def batch_get_conversations(
-        self, event_service_ids: list[UUID]
+        self, conversation_ids: list[UUID]
     ) -> list[ConversationInfo | None]:
         """Given a list of ids, get a batch of conversation info, returning
         None for any that were not found."""
         results = []
-        for id in event_service_ids:
+        for id in conversation_ids:
             result = await self.get_conversation(id)
             results.append(result)
         return results
@@ -94,10 +94,10 @@ class ConversationService:
         """Start a local event_service and return its id."""
         if self._event_services is None:
             raise ValueError("inactive_service")
-        event_service_id = uuid4()
-        stored = StoredConversation(id=event_service_id, **request.model_dump())
+        conversation_id = uuid4()
+        stored = StoredConversation(id=conversation_id, **request.model_dump())
         file_store_path = (
-            self.event_services_path / event_service_id.hex / "event_service"
+            self.event_services_path / conversation_id.hex / "event_service"
         )
         file_store_path.mkdir(parents=True)
         event_service = EventService(
@@ -106,7 +106,7 @@ class ConversationService:
             working_dir=self.workspace_path,
         )
         await event_service.subscribe_to_events(_EventListener(service=event_service))
-        self._event_services[event_service_id] = event_service
+        self._event_services[conversation_id] = event_service
         await event_service.start()
         initial_message = request.initial_message
         if initial_message:
