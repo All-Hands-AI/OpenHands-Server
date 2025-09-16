@@ -24,6 +24,7 @@ from openhands_server.sdk_server.conversation_service import (
 from openhands_server.sdk_server.models import (
     ConfirmationResponseRequest,
     EventPage,
+    EventSortOrder,
     SendMessageRequest,
     Success,
 )
@@ -47,6 +48,14 @@ async def search_conversation_events(
         int,
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
+    kind: Annotated[
+        str | None,
+        Query(title="Optional filter by event kind/type (e.g., ActionEvent, MessageEvent)"),
+    ] = None,
+    sort_order: Annotated[
+        EventSortOrder,
+        Query(title="Sort order for events"),
+    ] = EventSortOrder.TIMESTAMP,
 ) -> EventPage:
     """Search / List local events"""
     assert limit > 0
@@ -54,7 +63,7 @@ async def search_conversation_events(
     event_service = await conversation_service.get_event_service(conversation_id)
     if event_service is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    return await event_service.search_events(page_id, limit)
+    return await event_service.search_events(page_id, limit, kind, sort_order)
 
 
 @router.get("/{event_id}", responses={404: {"description": "Item not found"}})

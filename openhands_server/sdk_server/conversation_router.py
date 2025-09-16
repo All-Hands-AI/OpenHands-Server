@@ -11,9 +11,11 @@ from openhands_server.sdk_server.conversation_service import (
 from openhands_server.sdk_server.models import (
     ConversationInfo,
     ConversationPage,
+    ConversationSortOrder,
     StartConversationRequest,
     Success,
 )
+from openhands.sdk.conversation.state import AgentExecutionStatus
 
 
 router = APIRouter(prefix="/conversations")
@@ -33,11 +35,21 @@ async def search_conversations(
         int,
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
+    status: Annotated[
+        AgentExecutionStatus | None,
+        Query(title="Optional filter by agent execution status"),
+    ] = None,
+    sort_order: Annotated[
+        ConversationSortOrder,
+        Query(title="Sort order for conversations"),
+    ] = ConversationSortOrder.CREATED_AT_DESC,
 ) -> ConversationPage:
     """Search / List local conversations"""
     assert limit > 0
     assert limit <= 100
-    return await conversation_service.search_conversations(page_id, limit)
+    return await conversation_service.search_conversations(
+        page_id, limit, status, sort_order
+    )
 
 
 @router.get("/{conversation_id}", responses={404: {"description": "Item not found"}})
