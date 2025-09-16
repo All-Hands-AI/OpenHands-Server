@@ -3,8 +3,8 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 
-# TODO: Add a unit test to make sure this class does not import anything from
-#       openhands_server to prevent circular imports
+# Unit test exists in tests/test_config_circular_imports.py to ensure this class
+# does not import anything from openhands_server to prevent circular imports
 
 
 class Config(BaseModel):
