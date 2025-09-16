@@ -21,6 +21,7 @@ dependencies = [
   "alembic>=1.13",
   "docker>=7.1,<8",
   "fastapi>=0.104",
+  "httpx>=0.25",
   "openhands-sdk @ git+https://github.com/All-Hands-AI/agent-sdk.git@b7c8132e3d5dd398ba7543c1cda814af63939ca4#subdirectory=openhands/sdk",
   "openhands-tools @ git+https://github.com/All-Hands-AI/agent-sdk.git@b7c8132e3d5dd398ba7543c1cda814af63939ca4#subdirectory=openhands/tools",
   "pydantic>=2",

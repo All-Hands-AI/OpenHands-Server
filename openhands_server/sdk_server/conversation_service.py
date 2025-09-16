@@ -29,6 +29,7 @@ class ConversationService:
 
     event_services_path: Path = field(default=Path("workspace/event_services"))
     workspace_path: Path = field(default=Path("workspace/project"))
+    session_api_key: str | None = field(default=None)
     _event_services: dict[UUID, EventService] | None = field(default=None, init=False)
 
     async def get_conversation(self, conversation_id: UUID) -> ConversationInfo | None:
@@ -97,6 +98,7 @@ class ConversationService:
             stored=stored,
             file_store_path=file_store_path,
             working_dir=self.workspace_path,
+            session_api_key=self.session_api_key,
         )
         await event_service.subscribe_to_events(_EventListener(service=event_service))
         self._event_services[event_service_id] = event_service
@@ -152,6 +154,7 @@ class ConversationService:
                     stored=StoredConversation.model_validate_json(json_str),
                     file_store_path=self.event_services_path / id.hex,
                     working_dir=self.workspace_path / id.hex,
+                    session_api_key=self.session_api_key,
                 )
             except Exception:
                 logger.exception(
@@ -179,6 +182,7 @@ class ConversationService:
         return ConversationService(
             event_services_path=config.conversations_path,
             workspace_path=config.workspace_path,
+            session_api_key=config.session_api_key,
         )
 
 

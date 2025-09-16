@@ -23,6 +23,10 @@ from openhands_server.sdk_server.models import (
     StoredConversation,
 )
 from openhands_server.sdk_server.pub_sub import PubSub
+from openhands_server.sdk_server.subscribers import (
+    SubscriberManager,
+    SubscriberUnion,
+)
 from openhands_server.sdk_server.utils import utc_now
 
 
@@ -36,8 +40,10 @@ class EventService:
     stored: StoredConversation
     file_store_path: Path
     working_dir: Path
+    session_api_key: str | None = field(default=None)
     _conversation: Conversation | None = field(default=None, init=False)
     _pub_sub: PubSub = field(default_factory=PubSub, init=False)
+    _subscriber_manager: SubscriberManager = field(default_factory=SubscriberManager, init=False)
 
     async def load_meta(self):
         meta_file = self.file_store_path / "meta.json"
@@ -109,6 +115,23 @@ class EventService:
     async def unsubscribe_from_events(self, callback_id: UUID) -> bool:
         return self._pub_sub.unsubscribe(callback_id)
 
+    # Subscriber management methods
+    async def add_subscriber(self, subscriber: SubscriberUnion) -> UUID:
+        """Add a subscriber to receive event notifications."""
+        return self._subscriber_manager.add_subscriber(subscriber)
+
+    async def remove_subscriber(self, subscriber_id: UUID) -> bool:
+        """Remove a subscriber by ID."""
+        return self._subscriber_manager.remove_subscriber(subscriber_id)
+
+    async def get_subscriber(self, subscriber_id: UUID) -> SubscriberUnion | None:
+        """Get a subscriber by ID."""
+        return self._subscriber_manager.get_subscriber(subscriber_id)
+
+    async def list_subscribers(self) -> list[SubscriberUnion]:
+        """List all subscribers."""
+        return self._subscriber_manager.list_subscribers()
+
     async def start(self):
         llm = self.stored.llm
         tools = []
@@ -126,10 +149,18 @@ class EventService:
             tools.extend(mcp_tools)
 
         agent = Agent(llm=llm, tools=tools, agent_context=self.stored.agent_context)
+        
+        # Create a combined callback that handles both pub/sub and subscribers
+        async def combined_callback(event):
+            # Call the original pub/sub callback
+            await self._pub_sub(event)
+            # Notify all subscribers
+            await self._subscriber_manager.notify_all(event, self.session_api_key)
+        
         conversation = Conversation(
             agent=agent,
             callbacks=[
-                AsyncCallbackWrapper(self._pub_sub, loop=asyncio.get_running_loop())
+                AsyncCallbackWrapper(combined_callback, loop=asyncio.get_running_loop())
             ],
             persist_filestore=LocalFileStore(str(self.file_store_path / "events")),
         )

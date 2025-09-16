@@ -91,8 +91,7 @@ async def send_message(conversation_id: UUID, request: SendMessageRequest) -> Su
     event_service = await conversation_service.get_event_service(conversation_id)
     if event_service is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    message = Message(role=request.role, content=request.content)
-    await event_service.send_message(message)
+    await event_service.send_message(request)
     return Success()
 
 

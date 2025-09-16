@@ -19,6 +19,9 @@ from openhands_server.sdk_server.middleware import (
     LocalhostCORSMiddleware,
     ValidateSessionAPIKeyMiddleware,
 )
+from openhands_server.sdk_server.subscriber_router import (
+    router as subscriber_router,
+)
 
 
 @asynccontextmanager
@@ -35,6 +38,7 @@ config = get_default_config()
 # Add routers
 api.include_router(conversation_event_router)
 api.include_router(conversation_router)
+api.include_router(subscriber_router)
 
 # Add middleware
 api.add_middleware(LocalhostCORSMiddleware, config.allow_cors_origins)
