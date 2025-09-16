@@ -12,10 +12,11 @@ def main():
         "--port", type=int, default=8000, help="Port to bind to (default: 8000)"
     )
     parser.add_argument(
-        "--reload",
+        "--no-reload",
+        dest="reload",
         default=True,
-        action="store_true",
-        help="Enable auto-reload for development",
+        action="store_false",
+        help="Disable auto-reload (enabled by default for development)",
     )
 
     args = parser.parse_args()

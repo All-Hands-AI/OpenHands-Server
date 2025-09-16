@@ -86,8 +86,8 @@ async def pause_conversation(conversation_id: UUID) -> Success:
     "/{conversation_id}/resume", responses={404: {"description": "Item not found"}}
 )
 async def resume_conversation(conversation_id: UUID) -> Success:
-    paused = await conversation_service.resume_conversation(conversation_id)
-    if not paused:
+    resumed = await conversation_service.resume_conversation(conversation_id)
+    if not resumed:
         raise HTTPException(status.HTTP_400_BAD_REQUEST)
     return Success()
 

@@ -35,7 +35,13 @@ class LocalhostCORSMiddleware(CORSMiddleware):
 
 
 class ValidateSessionAPIKeyMiddleware(BaseHTTPMiddleware):
-    """Middleware to disable caching for all routes by adding appropriate headers"""
+    """Middleware to validate session API key for all requests
+
+    Inside a sandbox, conversations are run locally, and there is a Session API key
+    for the sandbox that needs provided.
+
+    Note: the Session API key is occasionally sent to the client.
+    """
 
     def __init__(self, app: ASGIApp, session_api_key: str) -> None:
         super().__init__(app)
@@ -44,8 +50,8 @@ class ValidateSessionAPIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        session_api_key = request.headers["X-Session-API-Key"]
-        if session_api_key != session_api_key:
+        session_api_key = request.headers.get("X-Session-API-Key")
+        if session_api_key != self.session_api_key:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED)
         response = await call_next(request)
         return response

@@ -59,7 +59,7 @@ async def search_conversation_events(
 
 @router.get("/{event_id}", responses={404: {"description": "Item not found"}})
 async def get_conversation_event(conversation_id: UUID, event_id: str) -> EventBase:
-    """Get a local conversation given an id"""
+    """Get a local event given an id"""
     event_service = await conversation_service.get_event_service(conversation_id)
     if event_service is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
@@ -73,7 +73,7 @@ async def get_conversation_event(conversation_id: UUID, event_id: str) -> EventB
 async def batch_get_conversation_events(
     conversation_id: UUID, event_ids: list[str]
 ) -> list[EventBase | None]:
-    """Get a batch of local conversations given their ids, returning null for any
+    """Get a batch of local events given their ids, returning null for any
     missing item."""
     event_service = await conversation_service.get_event_service(conversation_id)
     if event_service is None:
@@ -106,9 +106,7 @@ async def respond_to_confirmation(
     event_service = await conversation_service.get_event_service(conversation_id)
     if event_service is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    responded = await event_service.respond_to_confirmation(request)
-    if not responded:
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    await event_service.respond_to_confirmation(request)
     return Success()
 
 

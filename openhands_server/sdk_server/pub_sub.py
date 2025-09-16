@@ -24,7 +24,7 @@ class PubSub:
         Args:
             callback: The callback function to register
         Returns:
-            str: UUID that can be used to unsubscribe this callback
+            UUID: UUID that can be used to unsubscribe this callback
         """
         callback_id = uuid4()
         self._callbacks[callback_id] = callback

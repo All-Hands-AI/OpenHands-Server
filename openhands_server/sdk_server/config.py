@@ -3,10 +3,6 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 
-# TODO: Add a unit test to make sure this class does not import anything from
-#       openhands_server to prevent circular imports
-
-
 class Config(BaseModel):
     """
     Immutable configuration for a server running in local mode.
@@ -28,15 +24,15 @@ class Config(BaseModel):
         ),
     )
     conversations_path: Path = Field(
-        default=Path("workspace/project"),
-        description=(
-            "The location of the workspace directory where the agent read / writes."
-        ),
-    )
-    workspace_path: Path = Field(
         default=Path("workspace/conversations"),
         description=(
             "The location of the directory where conversations and events are stored."
+        ),
+    )
+    workspace_path: Path = Field(
+        default=Path("workspace/project"),
+        description=(
+            "The location of the workspace directory where the agent reads/writes."
         ),
     )
     model_config = {"frozen": True}

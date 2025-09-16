@@ -115,7 +115,7 @@ class StartConversationRequest(BaseModel):
 
 
 class StoredConversation(StartConversationRequest):
-    """Stored details regarding a conversation"""
+    """Stored details about a conversation"""
 
     id: UUID
     metrics: MetricsSnapshot | None = None
@@ -157,5 +157,6 @@ class EventPage(BaseModel):
 
 class SubscriberPage(BaseModel):
     """Page of subscribers with optional pagination."""
+
     items: list[Any]  # Will be SerializableSubscriber instances
     next_page_id: str | None = None
