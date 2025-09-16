@@ -1,14 +1,13 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict
 
 from pydantic import BaseModel, Field
 
 
 # Environment variable constants
 CONFIG_FILE_PATH_ENV = "OPENHANDS_SERVER_CONFIG_PATH"
-SESSION_API_KEY_ENV = "OPENHANDS_SESSION_API_KEY"
+SESSION_API_KEY_ENV = "SESSION_API_KEY"
 
 # Default config file location
 DEFAULT_CONFIG_FILE_PATH = "workspace/openhands_server_sdk_config.json"
@@ -57,17 +56,16 @@ class Config(BaseModel):
         if file_path.exists():
             with open(file_path, 'r') as f:
                 config_data = json.load(f) or {}
-        
         # Apply environment variable overrides for legacy compatibility
         if session_api_key := os.getenv(SESSION_API_KEY_ENV):
             config_data["session_api_key"] = session_api_key
-        
+
         # Convert string paths to Path objects
         if "conversations_path" in config_data:
             config_data["conversations_path"] = Path(config_data["conversations_path"])
         if "workspace_path" in config_data:
             config_data["workspace_path"] = Path(config_data["workspace_path"])
-        
+
         return cls(**config_data)
 
 
