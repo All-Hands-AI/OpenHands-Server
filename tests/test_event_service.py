@@ -357,7 +357,9 @@ class TestEventServiceCountEvents:
         assert result == 0
 
     @pytest.mark.asyncio
-    async def test_count_events_basic(self, event_service, mock_conversation_with_events):
+    async def test_count_events_basic(
+        self, event_service, mock_conversation_with_events
+    ):
         """Test basic count_events functionality."""
         event_service._conversation = mock_conversation_with_events
 
@@ -365,7 +367,9 @@ class TestEventServiceCountEvents:
         assert result == 5  # Total events in mock_conversation_with_events
 
     @pytest.mark.asyncio
-    async def test_count_events_kind_filter(self, event_service, mock_conversation_with_events):
+    async def test_count_events_kind_filter(
+        self, event_service, mock_conversation_with_events
+    ):
         """Test counting events with kind filter."""
         event_service._conversation = mock_conversation_with_events
 
