@@ -328,3 +328,67 @@ class TestEventServiceSearchEvents:
 
         assert len(result.items) == 3
         assert result.next_page_id is None  # No more events available
+
+
+class TestEventServiceCountEvents:
+    """Test cases for EventService.count_events method."""
+
+    @pytest.mark.asyncio
+    async def test_count_events_inactive_service(self, event_service):
+        """Test that count_events raises ValueError when service is inactive."""
+        event_service._conversation = None
+
+        with pytest.raises(ValueError, match="inactive_service"):
+            await event_service.count_events()
+
+    @pytest.mark.asyncio
+    async def test_count_events_empty_result(self, event_service):
+        """Test count_events with no events."""
+        conversation = MagicMock(spec=Conversation)
+        state = MagicMock(spec=ConversationState)
+        state.events = []
+        state.__enter__ = MagicMock(return_value=state)
+        state.__exit__ = MagicMock(return_value=None)
+        conversation.state = state
+
+        event_service._conversation = conversation
+
+        result = await event_service.count_events()
+        assert result == 0
+
+    @pytest.mark.asyncio
+    async def test_count_events_basic(
+        self, event_service, mock_conversation_with_events
+    ):
+        """Test basic count_events functionality."""
+        event_service._conversation = mock_conversation_with_events
+
+        result = await event_service.count_events()
+        assert result == 5  # Total events in mock_conversation_with_events
+
+    @pytest.mark.asyncio
+    async def test_count_events_kind_filter(
+        self, event_service, mock_conversation_with_events
+    ):
+        """Test counting events with kind filter."""
+        event_service._conversation = mock_conversation_with_events
+
+        # Count all events
+        result = await event_service.count_events()
+        assert result == 5
+
+        # Count ActionEvent events (should be 2)
+        result = await event_service.count_events(kind="ActionEvent")
+        assert result == 2
+
+        # Count MessageEvent events (should be 2)
+        result = await event_service.count_events(kind="MessageEvent")
+        assert result == 2
+
+        # Count SystemPromptEvent events (should be 1)
+        result = await event_service.count_events(kind="SystemPromptEvent")
+        assert result == 1
+
+        # Count non-existent event type (should be 0)
+        result = await event_service.count_events(kind="NonExistentEvent")
+        assert result == 0

@@ -52,6 +52,18 @@ async def search_conversations(
     )
 
 
+@router.get("/count")
+async def count_conversations(
+    status: Annotated[
+        AgentExecutionStatus | None,
+        Query(title="Optional filter by agent execution status"),
+    ] = None,
+) -> int:
+    """Count local conversations matching the given filters"""
+    count = await conversation_service.count_conversations(status)
+    return count
+
+
 @router.get("/{conversation_id}", responses={404: {"description": "Item not found"}})
 async def get_conversation(conversation_id: UUID) -> ConversationInfo:
     """Get a local conversation given an id"""

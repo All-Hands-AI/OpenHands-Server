@@ -68,6 +68,24 @@ async def search_conversation_events(
     return await event_service.search_events(page_id, limit, kind, sort_order)
 
 
+@router.get("/count", responses={404: {"description": "Conversation not found"}})
+async def count_conversation_events(
+    conversation_id: UUID,
+    kind: Annotated[
+        str | None,
+        Query(
+            title="Optional filter by event kind/type (e.g., ActionEvent, MessageEvent)"
+        ),
+    ] = None,
+) -> int:
+    """Count local events matching the given filters"""
+    event_service = await conversation_service.get_event_service(conversation_id)
+    if event_service is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    count = await event_service.count_events(kind)
+    return count
+
+
 @router.get("/{event_id}", responses={404: {"description": "Item not found"}})
 async def get_conversation_event(conversation_id: UUID, event_id: str) -> EventBase:
     """Get a local event given an id"""
