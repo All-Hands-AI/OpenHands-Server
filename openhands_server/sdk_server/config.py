@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -23,7 +24,7 @@ class WebhookSpec(BaseModel):
             "The number of events to buffer locally before posting to the webhook"
         ),
     )
-    method: str = "POST"
+    method: Literal["POST", "PUT", "PATCH"] = "POST"
     webhook_url: str = Field(
         description="The URL of the webhook to which to post lists of events"
     )
