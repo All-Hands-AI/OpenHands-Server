@@ -1,17 +1,16 @@
 import asyncio
 import logging
 import shutil
-from abc import abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import httpx
+
 from openhands.sdk import Event, Message
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands_server.sdk_server.config import Config, WebhookSpec
 from openhands_server.sdk_server.event_service import EventService
-from openhands_server.sdk_server.pub_sub import Subscriber
 from openhands_server.sdk_server.models import (
     ConversationInfo,
     ConversationPage,
@@ -19,6 +18,7 @@ from openhands_server.sdk_server.models import (
     StartConversationRequest,
     StoredConversation,
 )
+from openhands_server.sdk_server.pub_sub import Subscriber
 from openhands_server.sdk_server.utils import utc_now
 
 
@@ -34,7 +34,7 @@ class ConversationService:
 
     event_services_path: Path = field(default=Path("workspace/event_services"))
     workspace_path: Path = field(default=Path("workspace/project"))
-    webhook_specs: list[WebhookSpec] = field(default=[])
+    webhook_specs: list[WebhookSpec] = field(default_factory=list)
     session_api_key: str | None = field(default=None)
     _event_services: dict[UUID, EventService] | None = field(default=None, init=False)
 
@@ -161,9 +161,9 @@ class ConversationService:
             *[
                 event_service.subscribe_to_events(
                     _WebhookSubscriber(
-                        service=event_service, 
+                        service=event_service,
                         spec=webhook_spec,
-                        session_api_key=self.session_api_key
+                        session_api_key=self.session_api_key,
                     )
                 )
                 for webhook_spec in self.webhook_specs
@@ -276,7 +276,7 @@ class _WebhookSubscriber(Subscriber):
     async def __call__(self, event: Event):
         """Add event to queue and post to webhook when buffer size is reached."""
         self.queue.append(event)
-        
+
         if len(self.queue) >= self.spec.event_buffer_size:
             await self._post_events()
 
@@ -299,7 +299,10 @@ class _WebhookSubscriber(Subscriber):
             headers["X-Session-API-Key"] = self.session_api_key
 
         # Convert events to serializable format
-        event_data = [event.model_dump() if hasattr(event, 'model_dump') else event.__dict__ for event in events_to_post]
+        event_data = [
+            event.model_dump() if hasattr(event, "model_dump") else event.__dict__
+            for event in events_to_post
+        ]
 
         # Retry logic
         for attempt in range(self.spec.num_retries + 1):
@@ -310,17 +313,23 @@ class _WebhookSubscriber(Subscriber):
                         url=self.spec.webhook_url,
                         json=event_data,
                         headers=headers,
-                        timeout=30.0
+                        timeout=30.0,
                     )
                     response.raise_for_status()
-                    logger.debug(f"Successfully posted {len(event_data)} events to webhook {self.spec.webhook_url}")
+                    logger.debug(
+                        f"Successfully posted {len(event_data)} events "
+                        f"to webhook {self.spec.webhook_url}"
+                    )
                     return
             except Exception as e:
                 logger.warning(f"Webhook post attempt {attempt + 1} failed: {e}")
                 if attempt < self.spec.num_retries:
                     await asyncio.sleep(self.spec.retry_delay)
                 else:
-                    logger.error(f"Failed to post events to webhook {self.spec.webhook_url} after {self.spec.num_retries + 1} attempts")
+                    logger.error(
+                        f"Failed to post events to webhook {self.spec.webhook_url} "
+                        f"after {self.spec.num_retries + 1} attempts"
+                    )
                     # Re-queue events for potential retry later
                     self.queue.extend(events_to_post)
 
