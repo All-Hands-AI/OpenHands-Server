@@ -29,7 +29,7 @@ from openhands_server.sdk_server.utils import utc_now
 @dataclass
 class EventService:
     """
-    Event service for a conversation running locally, analagous to a conversation
+    Event service for a conversation running locally, analogous to a conversation
     in the SDK. Async mostly for forward compatibility
     """
 

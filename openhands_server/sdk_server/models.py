@@ -115,7 +115,7 @@ class StartConversationRequest(BaseModel):
 
 
 class StoredConversation(StartConversationRequest):
-    """Stored details regarding a conversation"""
+    """Stored details about a conversation"""
 
     id: UUID
     metrics: MetricsSnapshot | None = None

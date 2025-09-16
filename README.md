@@ -1,6 +1,6 @@
 # OpenHands Server
 
-As of 2025-08-15 this is a work in progress and subject to rapid change.
+As of 2025-09-16 this is a work in progress and subject to rapid change.
 
 A REST/WebSocket interface for OpenHands AI Agent. This server provides HTTP and WebSocket endpoints to interact with the OpenHands agent programmatically.
 
@@ -52,13 +52,24 @@ For advanced development (adding deps, updating the spec file, debugging builds)
 
 ## API Endpoints
 
-### REST API
-- `GET /health` - Health check endpoint
-- `POST /chat` - Send a message to the agent
-- `GET /status` - Get agent status
+### Conversation Management
+- `GET /conversations/search` - List/search conversations
+- `GET /conversations/{id}` - Get conversation by ID
+- `GET /conversations/` - Batch get conversations
+- `POST /conversations/` - Start a new conversation
+- `POST /conversations/{id}/pause` - Pause a conversation
+- `POST /conversations/{id}/resume` - Resume a conversation
+- `DELETE /conversations/{id}` - Delete a conversation
+
+### Event Management
+- `GET /conversations/{id}/events/search` - List/search events in a conversation
+- `GET /conversations/{id}/events/{event_id}` - Get specific event
+- `GET /conversations/{id}/events/` - Batch get events
+- `POST /conversations/{id}/events/` - Send a message to the conversation
+- `POST /conversations/{id}/events/respond_to_confirmation` - Respond to confirmation requests
 
 ### WebSocket API
-- `WS /ws` - Real-time communication with the agent
+- `WS /conversations/{id}/events/socket` - Real-time event streaming for a conversation
 
 ## About
 
