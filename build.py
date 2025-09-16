@@ -93,9 +93,14 @@ exe = EXE(
 
 def test_executable() -> None:
     """Test the built executable."""
-    executable_path = Path("dist/openhands-server")
+    # Handle platform-specific executable extensions
+    executable_name = "openhands-server"
+    if sys.platform == "win32":
+        executable_name += ".exe"
+
+    executable_path = Path("dist") / executable_name
     if not executable_path.exists():
-        print("Executable not found at dist/openhands-server")
+        print(f"Executable not found at {executable_path}")
         sys.exit(1)
 
     print("Testing executable...")
