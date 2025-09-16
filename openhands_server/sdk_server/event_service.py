@@ -162,6 +162,7 @@ class EventService:
                 AsyncCallbackWrapper(self._pub_sub, loop=asyncio.get_running_loop())
             ],
             max_iteration_per_run=self.stored.max_iterations,
+            visualize=False,
         )
 
         # Set confirmation mode if enabled

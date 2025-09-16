@@ -31,6 +31,7 @@ def main():
         host=args.host,
         port=args.port,
         reload=args.reload,
+        reload_excludes=["workspace"],
     )
 
 
