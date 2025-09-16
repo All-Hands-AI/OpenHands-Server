@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import unittest  # noqa: E402
 from unittest.mock import Mock, patch  # noqa: E402
 
-import build  # noqa: E402
+import openhands_server.sdk_server.build as build  # noqa: E402
 
 
 class TestBuild(unittest.TestCase):

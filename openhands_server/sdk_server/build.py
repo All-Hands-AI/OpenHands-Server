@@ -7,6 +7,9 @@ import sys
 from pathlib import Path
 
 
+EXECUTABLE_NAME = "openhands-agent-server"
+
+
 def main() -> None:
     """Main build function."""
     script_dir = Path(__file__).parent
@@ -22,7 +25,7 @@ def main() -> None:
         sys.exit(1)
 
     # Build the executable
-    spec_file = "openhands-server.spec"
+    spec_file = f"{EXECUTABLE_NAME}.spec"
     if not Path(spec_file).exists():
         print(f"Creating {spec_file}...")
         create_spec_file(spec_file)
@@ -42,10 +45,11 @@ def main() -> None:
 
 def create_spec_file(spec_file: str) -> None:
     """Create a basic PyInstaller spec file."""
-    spec_content = """# -*- mode: python ; coding: utf-8 -*-
+    spec_content = (
+        """# -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['openhands_server/sdk_server/__main__.py'],
+    ['__main__.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -64,14 +68,15 @@ a = Analysis(
     optimize=0,
 )
 pyz = PYZ(a.pure)
-
+"""
+        + f"""
 exe = EXE(
     pyz,
     a.scripts,
     a.binaries,
     a.datas,
     [],
-    name='openhands-server',
+    name='{EXECUTABLE_NAME}',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -86,6 +91,7 @@ exe = EXE(
     entitlements_file=None,
 )
 """
+    )
 
     with open(spec_file, "w") as f:
         f.write(spec_content)
@@ -94,7 +100,7 @@ exe = EXE(
 def test_executable() -> None:
     """Test the built executable."""
     # Handle platform-specific executable extensions
-    executable_name = "openhands-server"
+    executable_name = EXECUTABLE_NAME
     if sys.platform == "win32":
         executable_name += ".exe"
 
@@ -128,3 +134,4 @@ def test_executable() -> None:
 
 if __name__ == "__main__":
     main()
+    test_executable()
