@@ -23,7 +23,6 @@ from openhands_server.sdk_server.conversation_service import (
 )
 from openhands_server.sdk_server.models import (
     ConfirmationResponseRequest,
-    CountResponse,
     EventPage,
     EventSortOrder,
     SendMessageRequest,
@@ -78,13 +77,13 @@ async def count_conversation_events(
             title="Optional filter by event kind/type (e.g., ActionEvent, MessageEvent)"
         ),
     ] = None,
-) -> CountResponse:
+) -> int:
     """Count local events matching the given filters"""
     event_service = await conversation_service.get_event_service(conversation_id)
     if event_service is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     count = await event_service.count_events(kind)
-    return CountResponse(count=count)
+    return count
 
 
 @router.get("/{event_id}", responses={404: {"description": "Item not found"}})
