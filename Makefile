@@ -75,5 +75,5 @@ test-schema:
 	--fail-on-warning
 	
 	# Clean up temp schema
-	rm -f "openapi.json"
-	rm -f ".client"
+	rm -f openapi.json
+	rm -rf .client
