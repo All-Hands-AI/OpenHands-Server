@@ -1,118 +1,47 @@
 """
-Standalone unit tests for _WebhookSubscriber class functionality.
+Standalone unit tests for WebhookSubscriber class functionality.
 
-This test file recreates the _WebhookSubscriber class logic to test it
+This test file recreates the WebhookSubscriber class logic to test it
 without dependencies on the openhands.sdk module.
 """
 
 import asyncio
-from dataclasses import dataclass, field
+import tempfile
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import httpx
 import pytest
+from pydantic import SecretStr
 
+from openhands.sdk import LLM
+from openhands.sdk.event.llm_convertible import MessageEvent
+from openhands.sdk.llm.message import Message, TextContent
 from openhands_server.sdk_server.config import WebhookSpec
-
-
-# Mock Event class
-class MockEvent:
-    """Mock Event class for testing purposes."""
-
-    def __init__(self, event_type="test_event", data="test_data"):
-        self.type = event_type
-        self.data = data
-
-    def model_dump(self):
-        return {"type": self.type, "data": self.data}
-
-
-# Mock EventService
-class MockEventService:
-    """Mock EventService for testing purposes."""
-
-    pass
-
-
-# Mock Subscriber base class
-class MockSubscriber:
-    """Mock Subscriber base class."""
-
-    async def __call__(self, event):
-        """Invoke this subscriber"""
-        pass
-
-    async def close(self):
-        """Clean up this subscriber"""
-        pass
-
-
-# Recreate _WebhookSubscriber for testing
-@dataclass
-class WebhookSubscriberForTesting(MockSubscriber):
-    """Testable version of _WebhookSubscriber without external dependencies."""
-
-    service: MockEventService
-    spec: WebhookSpec
-    session_api_key: str | None = None
-    queue: list[MockEvent] = field(default_factory=list)
-
-    async def __call__(self, event: MockEvent):
-        """Add event to queue and post to webhook when buffer size is reached."""
-        self.queue.append(event)
-
-        if len(self.queue) >= self.spec.event_buffer_size:
-            await self._post_events()
-
-    async def close(self):
-        """Post any remaining items in the queue to the webhook."""
-        if self.queue:
-            await self._post_events()
-
-    async def _post_events(self):
-        """Post queued events to the webhook with retry logic."""
-        if not self.queue:
-            return
-
-        events_to_post = self.queue.copy()
-        self.queue.clear()
-
-        # Prepare headers
-        headers = self.spec.headers.copy()
-        if self.session_api_key:
-            headers["X-Session-API-Key"] = self.session_api_key
-
-        # Convert events to serializable format
-        event_data = [
-            event.model_dump() if hasattr(event, "model_dump") else event.__dict__
-            for event in events_to_post
-        ]
-
-        # Retry logic
-        for attempt in range(self.spec.num_retries + 1):
-            try:
-                async with httpx.AsyncClient() as client:
-                    response = await client.request(
-                        method=self.spec.method,
-                        url=self.spec.webhook_url,
-                        json=event_data,
-                        headers=headers,
-                        timeout=30.0,
-                    )
-                    response.raise_for_status()
-                    return
-            except Exception:
-                if attempt < self.spec.num_retries:
-                    await asyncio.sleep(self.spec.retry_delay)
-                else:
-                    # Re-queue events for potential retry later
-                    self.queue.extend(events_to_post)
+from openhands_server.sdk_server.conversation_service import WebhookSubscriber
+from openhands_server.sdk_server.event_service import EventService
+from openhands_server.sdk_server.models import StoredConversation
 
 
 @pytest.fixture
 def mock_event_service():
     """Create a mock EventService for testing."""
-    return MockEventService()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        service = EventService(
+            stored=StoredConversation(
+                id=uuid4(),
+                llm=LLM(
+                    model="litellm_proxy/anthropic/claude-sonnet-4-20250514",
+                    base_url="https://llm-proxy.staging.all-hands.dev",
+                    api_key=SecretStr("fake-secret"),
+                ),
+            ),
+            file_store_path=temp_path / "file_store",
+            working_dir=temp_path / "working_dir",
+        )
+        yield service
 
 
 @pytest.fixture
@@ -137,7 +66,10 @@ def minimal_webhook_spec():
 @pytest.fixture
 def sample_event():
     """Create a sample Event for testing."""
-    return MockEvent("test_event", "test_data")
+    text_content = TextContent(text="Hello, world!")
+    message = Message(role="user", content=[text_content])
+    message_event = MessageEvent(source="user", llm_message=message)
+    return message_event
 
 
 @pytest.fixture
@@ -145,17 +77,20 @@ def sample_events():
     """Create multiple sample Events for testing."""
     events = []
     for i in range(5):
-        events.append(MockEvent(f"test_event_{i}", f"test_data_{i}"))
+        text_content = TextContent(text="Hello, world!")
+        message = Message(role="user", content=[text_content])
+        message_event = MessageEvent(source="user", llm_message=message)
+        events.append(message_event)
     return events
 
 
 class TestWebhookSubscriberInitialization:
-    """Test cases for _WebhookSubscriber initialization."""
+    """Test cases for WebhookSubscriber initialization."""
 
     def test_init_with_all_parameters(self, mock_event_service, webhook_spec):
         """Test initialization with all parameters."""
         session_api_key = "test_api_key"
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
             session_api_key=session_api_key,
@@ -168,7 +103,7 @@ class TestWebhookSubscriberInitialization:
 
     def test_init_without_session_api_key(self, mock_event_service, webhook_spec):
         """Test initialization without session API key."""
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -180,7 +115,7 @@ class TestWebhookSubscriberInitialization:
 
     def test_init_with_minimal_spec(self, mock_event_service, minimal_webhook_spec):
         """Test initialization with minimal webhook spec."""
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=minimal_webhook_spec,
         )
@@ -192,14 +127,14 @@ class TestWebhookSubscriberInitialization:
 
 
 class TestWebhookSubscriberCallMethod:
-    """Test cases for _WebhookSubscriber.__call__ method."""
+    """Test cases for WebhookSubscriber.__call__ method."""
 
     @pytest.mark.asyncio
     async def test_call_adds_event_to_queue(
         self, mock_event_service, webhook_spec, sample_event
     ):
         """Test that calling the subscriber adds event to queue."""
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -214,7 +149,7 @@ class TestWebhookSubscriberCallMethod:
         self, mock_event_service, webhook_spec, sample_events
     ):
         """Test adding multiple events below buffer size."""
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -227,13 +162,13 @@ class TestWebhookSubscriberCallMethod:
         assert subscriber.queue == sample_events[:2]
 
     @pytest.mark.asyncio
-    @patch.object(WebhookSubscriberForTesting, "_post_events")
+    @patch.object(WebhookSubscriber, "_post_events")
     async def test_call_triggers_post_when_buffer_full(
         self, mock_post_events, mock_event_service, webhook_spec, sample_events
     ):
         """Test that reaching buffer size triggers _post_events."""
         mock_post_events.return_value = None
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -247,10 +182,10 @@ class TestWebhookSubscriberCallMethod:
 
     @pytest.mark.asyncio
     async def test_call_triggers_post_multiple_times(
-        self, mock_event_service, webhook_spec, sample_events
+        self, mock_event_service, webhook_spec, sample_events, sample_event
     ):
         """Test that _post_events is called multiple times as buffer fills."""
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -270,7 +205,7 @@ class TestWebhookSubscriberCallMethod:
             await subscriber(event)
 
         # Add one more event to trigger the second post
-        await subscriber(MockEvent("extra_event", "extra_data"))
+        await subscriber(sample_event)
 
         # _post_events should be called twice (at 3 events and at 6 events)
         assert len(post_events_calls) == 2
@@ -279,7 +214,7 @@ class TestWebhookSubscriberCallMethod:
 
 
 class TestWebhookSubscriberPostEvents:
-    """Test cases for _WebhookSubscriber._post_events method."""
+    """Test cases for WebhookSubscriber._post_events method."""
 
     @pytest.mark.asyncio
     @patch("httpx.AsyncClient")
@@ -294,7 +229,7 @@ class TestWebhookSubscriberPostEvents:
         mock_client.request.return_value = mock_response
         mock_client_class.return_value.__aenter__.return_value = mock_client
 
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -332,7 +267,7 @@ class TestWebhookSubscriberPostEvents:
         mock_client.request.return_value = mock_response
         mock_client_class.return_value.__aenter__.return_value = mock_client
 
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
             session_api_key="test_session_key",
@@ -360,7 +295,7 @@ class TestWebhookSubscriberPostEvents:
     @pytest.mark.asyncio
     async def test_post_events_empty_queue(self, mock_event_service, webhook_spec):
         """Test posting events with empty queue."""
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -375,7 +310,7 @@ class TestWebhookSubscriberPostEvents:
         self, mock_event_service, webhook_spec, sample_events
     ):
         """Test HTTP error handling with retry logic."""
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -423,7 +358,7 @@ class TestWebhookSubscriberPostEvents:
         self, mock_event_service, webhook_spec, sample_events
     ):
         """Test behavior when max retries are exceeded."""
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -475,7 +410,7 @@ class TestWebhookSubscriberPostEvents:
         mock_client.request.return_value = mock_response
         mock_client_class.return_value.__aenter__.return_value = mock_client
 
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -503,16 +438,16 @@ class TestWebhookSubscriberPostEvents:
 
 
 class TestWebhookSubscriberCloseMethod:
-    """Test cases for _WebhookSubscriber.close method."""
+    """Test cases for WebhookSubscriber.close method."""
 
     @pytest.mark.asyncio
-    @patch.object(WebhookSubscriberForTesting, "_post_events")
+    @patch.object(WebhookSubscriber, "_post_events")
     async def test_close_posts_remaining_events(
         self, mock_post_events, mock_event_service, webhook_spec, sample_events
     ):
         """Test that close method posts remaining events in queue."""
         mock_post_events.return_value = None
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -526,13 +461,13 @@ class TestWebhookSubscriberCloseMethod:
         mock_post_events.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch.object(WebhookSubscriberForTesting, "_post_events")
+    @patch.object(WebhookSubscriber, "_post_events")
     async def test_close_with_empty_queue(
         self, mock_post_events, mock_event_service, webhook_spec
     ):
         """Test close method with empty queue."""
         mock_post_events.return_value = None
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -544,7 +479,7 @@ class TestWebhookSubscriberCloseMethod:
 
 
 class TestWebhookSubscriberIntegration:
-    """Integration test cases for _WebhookSubscriber."""
+    """Integration test cases for WebhookSubscriber."""
 
     @pytest.mark.asyncio
     @patch("httpx.AsyncClient")
@@ -559,7 +494,7 @@ class TestWebhookSubscriberIntegration:
         mock_client.request.return_value = mock_response
         mock_client_class.return_value.__aenter__.return_value = mock_client
 
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
             session_api_key="integration_test_key",
@@ -603,7 +538,7 @@ class TestWebhookSubscriberIntegration:
         mock_client.request.return_value = mock_response
         mock_client_class.return_value.__aenter__.return_value = mock_client
 
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -623,7 +558,7 @@ class TestWebhookSubscriberIntegration:
 
 
 class TestWebhookSubscriberErrorHandling:
-    """Test cases for error handling in _WebhookSubscriber."""
+    """Test cases for error handling in WebhookSubscriber."""
 
     @pytest.mark.asyncio
     @patch("httpx.AsyncClient")
@@ -636,7 +571,7 @@ class TestWebhookSubscriberErrorHandling:
         mock_client.request.side_effect = httpx.NetworkError("Connection failed")
         mock_client_class.return_value.__aenter__.return_value = mock_client
 
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )
@@ -664,7 +599,7 @@ class TestWebhookSubscriberErrorHandling:
         mock_client.request.side_effect = httpx.TimeoutException("Request timed out")
         mock_client_class.return_value.__aenter__.return_value = mock_client
 
-        subscriber = WebhookSubscriberForTesting(
+        subscriber = WebhookSubscriber(
             service=mock_event_service,
             spec=webhook_spec,
         )

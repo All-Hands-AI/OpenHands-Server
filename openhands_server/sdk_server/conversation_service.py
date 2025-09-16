@@ -160,7 +160,7 @@ class ConversationService:
         asyncio.gather(
             *[
                 event_service.subscribe_to_events(
-                    _WebhookSubscriber(
+                    WebhookSubscriber(
                         service=event_service,
                         spec=webhook_spec,
                         session_api_key=self.session_api_key,
@@ -267,7 +267,7 @@ class _EventSubscriber(Subscriber):
 
 
 @dataclass
-class _WebhookSubscriber(Subscriber):
+class WebhookSubscriber(Subscriber):
     service: EventService
     spec: WebhookSpec
     session_api_key: str | None = None
