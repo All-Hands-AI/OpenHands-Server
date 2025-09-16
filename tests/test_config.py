@@ -1,15 +1,15 @@
 """
 Unit tests for the configuration system, focusing on get_default_config function
-and YAML configuration loading with environment variable overrides.
+and JSON configuration loading with environment variable overrides.
 """
 
+import json
 import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-import yaml
 
 from openhands_server.sdk_server.config import (
     CONFIG_FILE_PATH_ENV,
@@ -53,24 +53,24 @@ class TestConfig:
         with pytest.raises(Exception):  # pydantic ValidationError or similar
             config.session_api_key = "new-key"
 
-    def test_from_yaml_file_nonexistent_file(self):
-        """Test loading from a non-existent YAML file returns defaults."""
-        non_existent_path = Path("/tmp/nonexistent_config.yaml")
-        config = Config.from_yaml_file(non_existent_path)
+    def test_from_json_file_nonexistent_file(self):
+        """Test loading from a non-existent JSON file returns defaults."""
+        non_existent_path = Path("/tmp/nonexistent_config.json")
+        config = Config.from_json_file(non_existent_path)
         
         assert config.session_api_key is None
         assert config.allow_cors_origins == []
         assert config.conversations_path == Path("workspace/conversations")
         assert config.workspace_path == Path("workspace/project")
 
-    def test_from_yaml_file_empty_file(self):
-        """Test loading from an empty YAML file returns defaults."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            f.write("")
+    def test_from_json_file_empty_file(self):
+        """Test loading from an empty JSON file returns defaults."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            f.write("{}")
             temp_path = Path(f.name)
         
         try:
-            config = Config.from_yaml_file(temp_path)
+            config = Config.from_json_file(temp_path)
             
             assert config.session_api_key is None
             assert config.allow_cors_origins == []
@@ -79,81 +79,81 @@ class TestConfig:
         finally:
             temp_path.unlink()
 
-    def test_from_yaml_file_with_values(self):
-        """Test loading from a YAML file with custom values."""
-        yaml_content = {
-            "session_api_key": "yaml-key",
-            "allow_cors_origins": ["https://yaml.com", "https://test.com"],
-            "conversations_path": "yaml/conversations",
-            "workspace_path": "yaml/workspace"
+    def test_from_json_file_with_values(self):
+        """Test loading from a JSON file with custom values."""
+        json_content = {
+            "session_api_key": "json-key",
+            "allow_cors_origins": ["https://json.com", "https://test.com"],
+            "conversations_path": "json/conversations",
+            "workspace_path": "json/workspace"
         }
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            yaml.dump(yaml_content, f)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(json_content, f)
             temp_path = Path(f.name)
         
         try:
-            config = Config.from_yaml_file(temp_path)
+            config = Config.from_json_file(temp_path)
             
-            assert config.session_api_key == "yaml-key"
-            assert config.allow_cors_origins == ["https://yaml.com", "https://test.com"]
-            assert config.conversations_path == Path("yaml/conversations")
-            assert config.workspace_path == Path("yaml/workspace")
+            assert config.session_api_key == "json-key"
+            assert config.allow_cors_origins == ["https://json.com", "https://test.com"]
+            assert config.conversations_path == Path("json/conversations")
+            assert config.workspace_path == Path("json/workspace")
         finally:
             temp_path.unlink()
 
-    def test_from_yaml_file_with_env_override(self):
-        """Test that environment variables override YAML file values."""
-        yaml_content = {
-            "session_api_key": "yaml-key",
-            "allow_cors_origins": ["https://yaml.com"],
-            "conversations_path": "yaml/conversations",
-            "workspace_path": "yaml/workspace"
+    def test_from_json_file_with_env_override(self):
+        """Test that environment variables override JSON file values."""
+        json_content = {
+            "session_api_key": "json-key",
+            "allow_cors_origins": ["https://json.com"],
+            "conversations_path": "json/conversations",
+            "workspace_path": "json/workspace"
         }
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            yaml.dump(yaml_content, f)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(json_content, f)
             temp_path = Path(f.name)
         
         try:
             with patch.dict(os.environ, {SESSION_API_KEY_ENV: "env-override-key"}):
-                config = Config.from_yaml_file(temp_path)
+                config = Config.from_json_file(temp_path)
                 
-                # Environment variable should override YAML value
+                # Environment variable should override JSON value
                 assert config.session_api_key == "env-override-key"
-                # Other values should come from YAML
-                assert config.allow_cors_origins == ["https://yaml.com"]
-                assert config.conversations_path == Path("yaml/conversations")
-                assert config.workspace_path == Path("yaml/workspace")
+                # Other values should come from JSON
+                assert config.allow_cors_origins == ["https://json.com"]
+                assert config.conversations_path == Path("json/conversations")
+                assert config.workspace_path == Path("json/workspace")
         finally:
             temp_path.unlink()
 
-    def test_from_yaml_file_env_override_only(self):
-        """Test environment variable override with no YAML file."""
-        non_existent_path = Path("/tmp/nonexistent_config.yaml")
+    def test_from_json_file_env_override_only(self):
+        """Test environment variable override with no JSON file."""
+        non_existent_path = Path("/tmp/nonexistent_config.json")
         
         with patch.dict(os.environ, {SESSION_API_KEY_ENV: "env-only-key"}):
-            config = Config.from_yaml_file(non_existent_path)
+            config = Config.from_json_file(non_existent_path)
             
             assert config.session_api_key == "env-only-key"
             assert config.allow_cors_origins == []
             assert config.conversations_path == Path("workspace/conversations")
             assert config.workspace_path == Path("workspace/project")
 
-    def test_from_yaml_file_partial_yaml(self):
-        """Test loading from YAML file with only some values specified."""
-        yaml_content = {
+    def test_from_json_file_partial_yaml(self):
+        """Test loading from JSON file with only some values specified."""
+        json_content = {
             "session_api_key": "partial-key",
             "allow_cors_origins": ["https://partial.com"]
             # conversations_path and workspace_path not specified
         }
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            yaml.dump(yaml_content, f)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(json_content, f)
             temp_path = Path(f.name)
         
         try:
-            config = Config.from_yaml_file(temp_path)
+            config = Config.from_json_file(temp_path)
             
             assert config.session_api_key == "partial-key"
             assert config.allow_cors_origins == ["https://partial.com"]
@@ -186,15 +186,15 @@ class TestGetDefaultConfig:
 
     def test_get_default_config_with_default_file(self):
         """Test get_default_config using the default config file."""
-        yaml_content = {
+        json_content = {
             "session_api_key": "default-file-key",
             "allow_cors_origins": ["https://default.com"],
             "conversations_path": "default/conversations",
             "workspace_path": "default/workspace"
         }
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            yaml.dump(yaml_content, f)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(json_content, f)
             temp_path = Path(f.name)
         
         try:
@@ -211,15 +211,15 @@ class TestGetDefaultConfig:
 
     def test_get_default_config_with_custom_file_path(self):
         """Test get_default_config with custom config file path from environment."""
-        yaml_content = {
+        json_content = {
             "session_api_key": "custom-file-key",
             "allow_cors_origins": ["https://custom.com"],
             "conversations_path": "custom/conversations",
             "workspace_path": "custom/workspace"
         }
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            yaml.dump(yaml_content, f)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(json_content, f)
             temp_path = Path(f.name)
         
         try:
@@ -235,15 +235,15 @@ class TestGetDefaultConfig:
 
     def test_get_default_config_with_env_override(self):
         """Test get_default_config with environment variable override."""
-        yaml_content = {
+        json_content = {
             "session_api_key": "file-key",
             "allow_cors_origins": ["https://file.com"],
             "conversations_path": "file/conversations",
             "workspace_path": "file/workspace"
         }
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            yaml.dump(yaml_content, f)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(json_content, f)
             temp_path = Path(f.name)
         
         try:
@@ -264,13 +264,13 @@ class TestGetDefaultConfig:
 
     def test_get_default_config_caching(self):
         """Test that get_default_config caches the result."""
-        yaml_content = {
+        json_content = {
             "session_api_key": "cached-key",
             "allow_cors_origins": ["https://cached.com"]
         }
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            yaml.dump(yaml_content, f)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(json_content, f)
             temp_path = Path(f.name)
         
         try:
@@ -289,7 +289,7 @@ class TestGetDefaultConfig:
 
     def test_get_default_config_nonexistent_custom_file(self):
         """Test get_default_config with non-existent custom config file."""
-        with patch.dict(os.environ, {CONFIG_FILE_PATH_ENV: "/tmp/nonexistent_config.yaml"}):
+        with patch.dict(os.environ, {CONFIG_FILE_PATH_ENV: "/tmp/nonexistent_config.json"}):
             config = get_default_config()
             
             # Should fall back to defaults
@@ -310,8 +310,8 @@ class TestGetDefaultConfig:
                 assert config.workspace_path == Path("workspace/project")
 
     def test_get_default_config_complex_yaml(self):
-        """Test get_default_config with complex YAML structure."""
-        yaml_content = {
+        """Test get_default_config with complex JSON structure."""
+        json_content = {
             "session_api_key": "complex-key",
             "allow_cors_origins": [
                 "https://app.example.com",
@@ -322,8 +322,8 @@ class TestGetDefaultConfig:
             "workspace_path": "data/workspace"
         }
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            yaml.dump(yaml_content, f)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(json_content, f)
             temp_path = Path(f.name)
         
         try:
@@ -348,7 +348,7 @@ class TestConfigConstants:
         """Test that all required constants are defined."""
         assert CONFIG_FILE_PATH_ENV == "OPENHANDS_SERVER_CONFIG_PATH"
         assert SESSION_API_KEY_ENV == "OPENHANDS_SESSION_API_KEY"
-        assert DEFAULT_CONFIG_FILE_PATH == "workspace/openhands_server_sdk_config.yaml"
+        assert DEFAULT_CONFIG_FILE_PATH == "workspace/openhands_server_sdk_config.json"
 
     def test_constants_are_strings(self):
         """Test that constants are strings."""
