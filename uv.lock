@@ -1310,7 +1310,7 @@ wheels = [
 [[package]]
 name = "openhands-sdk"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=0f2a602a7642b8af23ade78a60aa03c83da4ab74#0f2a602a7642b8af23ade78a60aa03c83da4ab74" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=65b1bba71ec966cfbe58b618cf9ea435d3faf141#65b1bba71ec966cfbe58b618cf9ea435d3faf141" }
 dependencies = [
     { name = "fastmcp" },
     { name = "litellm" },
@@ -1374,8 +1374,8 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.25" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1" },
-    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=0f2a602a7642b8af23ade78a60aa03c83da4ab74" },
-    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=0f2a602a7642b8af23ade78a60aa03c83da4ab74" },
+    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=65b1bba71ec966cfbe58b618cf9ea435d3faf141" },
+    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=65b1bba71ec966cfbe58b618cf9ea435d3faf141" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
@@ -1403,7 +1403,7 @@ dev = [
 [[package]]
 name = "openhands-tools"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=0f2a602a7642b8af23ade78a60aa03c83da4ab74#0f2a602a7642b8af23ade78a60aa03c83da4ab74" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=65b1bba71ec966cfbe58b618cf9ea435d3faf141#65b1bba71ec966cfbe58b618cf9ea435d3faf141" }
 dependencies = [
     { name = "bashlex" },
     { name = "binaryornot" },

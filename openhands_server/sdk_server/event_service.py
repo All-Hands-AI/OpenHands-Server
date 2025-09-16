@@ -3,13 +3,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID
 
-import openhands.tools
 from openhands.sdk import (
     Agent,
     Conversation,
     EventBase,
     LocalFileStore,
-    create_mcp_tools,
 )
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands.sdk.utils.async_utils import (
@@ -109,29 +107,21 @@ class EventService:
     async def unsubscribe_from_events(self, callback_id: UUID) -> bool:
         return self._pub_sub.unsubscribe(callback_id)
 
-    async def start(self):
-        llm = self.stored.llm
-        tools = []
-
-        # Create tools from tool specs
-        for tool_spec in self.stored.tools:
-            if tool_spec.name not in openhands.tools.__dict__:
-                continue
-            tool_class = openhands.tools.__dict__[tool_spec.name]
-            tools.append(tool_class.create(**tool_spec.params))
-
-        # Add MCP tools if configured
-        if self.stored.mcp_config:
-            mcp_tools = create_mcp_tools(self.stored.mcp_config, timeout=30)
-            tools.extend(mcp_tools)
-
-        agent = Agent(llm=llm, tools=tools, agent_context=self.stored.agent_context)
+    async def start(self, conversation_id: UUID):
+        # self.stored is a subclass of AgentSpec so we can create an agent from it
+        agent = Agent.from_spec(self.stored)
         conversation = Conversation(
             agent=agent,
+            persist_filestore=LocalFileStore(
+                str(self.file_store_path)
+                # inside Conversation, events will be saved to
+                # "file_store_path/{convo_id}/events"
+            ),
+            conversation_id=str(conversation_id),
             callbacks=[
                 AsyncCallbackWrapper(self._pub_sub, loop=asyncio.get_running_loop())
             ],
-            persist_filestore=LocalFileStore(str(self.file_store_path / "events")),
+            max_iteration_per_run=self.stored.max_iterations,
         )
 
         # Set confirmation mode if enabled
@@ -166,8 +156,8 @@ class EventService:
             return AgentExecutionStatus.ERROR
         return self._conversation.state.agent_status
 
-    async def __aenter__(self):
-        await self.start()
+    async def __aenter__(self, conversation_id: UUID):
+        await self.start(conversation_id=conversation_id)
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
