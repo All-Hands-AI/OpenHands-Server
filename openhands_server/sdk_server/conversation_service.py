@@ -14,6 +14,7 @@ from openhands_server.sdk_server.models import (
     StartConversationRequest,
     StoredConversation,
 )
+from openhands_server.sdk_server.subscriber_service import SubscriberService
 from openhands_server.sdk_server.utils import utc_now
 
 
@@ -30,6 +31,7 @@ class ConversationService:
     event_services_path: Path = field(default=Path("workspace/event_services"))
     workspace_path: Path = field(default=Path("workspace/project"))
     _event_services: dict[UUID, EventService] | None = field(default=None, init=False)
+    _subscriber_services: dict[UUID, SubscriberService] | None = field(default=None, init=False)
 
     async def get_conversation(self, conversation_id: UUID) -> ConversationInfo | None:
         if self._event_services is None:
@@ -85,7 +87,7 @@ class ConversationService:
         self, request: StartConversationRequest
     ) -> ConversationInfo:
         """Start a local event_service and return its id."""
-        if self._event_services is None:
+        if self._event_services is None or self._subscriber_services is None:
             raise ValueError("inactive_service")
         event_service_id = uuid4()
         stored = StoredConversation(id=event_service_id, **request.model_dump())
@@ -99,8 +101,20 @@ class ConversationService:
             working_dir=self.workspace_path,
         )
         await event_service.subscribe_to_events(_EventListener(service=event_service))
+        
+        # Create subscriber service
+        subscriber_service = SubscriberService(
+            conversation_id=event_service_id,
+            file_store_path=file_store_path,
+            pub_sub=event_service._pub_sub,
+        )
+        
         self._event_services[event_service_id] = event_service
+        self._subscriber_services[event_service_id] = subscriber_service
+        
         await event_service.start()
+        await subscriber_service.start()
+        
         initial_message = request.initial_message
         if initial_message:
             message = Message(
@@ -128,11 +142,15 @@ class ConversationService:
         return bool(event_service)
 
     async def delete_conversation(self, conversation_id: UUID) -> bool:
-        if self._event_services is None:
+        if self._event_services is None or self._subscriber_services is None:
             raise ValueError("inactive_service")
         event_service = self._event_services.pop(conversation_id, None)
+        subscriber_service = self._subscriber_services.pop(conversation_id, None)
+        
         if event_service:
             await event_service.close()
+            if subscriber_service:
+                await subscriber_service.close()
             shutil.rmtree(self.event_services_path / conversation_id.hex)
             shutil.rmtree(self.workspace_path / conversation_id.hex)
             return True
@@ -143,39 +161,71 @@ class ConversationService:
             raise ValueError("inactive_service")
         return self._event_services.get(conversation_id)
 
+    async def get_subscriber_service(self, conversation_id: UUID) -> SubscriberService | None:
+        if self._subscriber_services is None:
+            raise ValueError("inactive_service")
+        return self._subscriber_services.get(conversation_id)
+
     async def __aenter__(self):
         self.event_services_path.mkdir(parents=True, exist_ok=True)
         event_services = {}
+        subscriber_services = {}
+        
         for event_service_dir in self.event_services_path.iterdir():
             try:
-                meta_file = event_service_dir / "meta.json"
+                meta_file = event_service_dir / "event_service" / "meta.json"
                 json_str = meta_file.read_text()
                 id = UUID(event_service_dir.name)
-                event_services[id] = EventService(
+                
+                event_service = EventService(
                     stored=StoredConversation.model_validate_json(json_str),
-                    file_store_path=self.event_services_path / id.hex,
+                    file_store_path=self.event_services_path / id.hex / "event_service",
                     working_dir=self.workspace_path / id.hex,
                 )
+                
+                # Create subscriber service for existing conversations
+                subscriber_service = SubscriberService(
+                    conversation_id=id,
+                    file_store_path=self.event_services_path / id.hex / "event_service",
+                    pub_sub=event_service._pub_sub,
+                )
+                
+                event_services[id] = event_service
+                subscriber_services[id] = subscriber_service
+                
             except Exception:
                 logger.exception(
                     f"error_loading_event_service:{event_service_dir}", stack_info=True
                 )
                 shutil.rmtree(event_service_dir)
+                
         self._event_services = event_services
+        self._subscriber_services = subscriber_services
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
         event_services = self._event_services
+        subscriber_services = self._subscriber_services
+        
         if event_services is None:
             return
+            
         self._event_services = None
-        # This stops convesations and saves meta
-        await asyncio.gather(
-            *[
-                event_service.__aexit__(exc_type, exc_value, traceback)
-                for event_service in event_services.values()
-            ]
-        )
+        self._subscriber_services = None
+        
+        # Close all services
+        tasks = []
+        
+        # Close event services
+        for event_service in event_services.values():
+            tasks.append(event_service.__aexit__(exc_type, exc_value, traceback))
+        
+        # Close subscriber services
+        if subscriber_services:
+            for subscriber_service in subscriber_services.values():
+                tasks.append(subscriber_service.__aexit__(exc_type, exc_value, traceback))
+        
+        await asyncio.gather(*tasks)
 
     @classmethod
     def get_instance(cls, config: Config) -> "ConversationService":

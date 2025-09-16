@@ -153,3 +153,9 @@ class Success(BaseModel):
 class EventPage(BaseModel):
     items: list[EventBase]
     next_page_id: str | None = None
+
+
+class SubscriberPage(BaseModel):
+    """Page of subscribers with optional pagination."""
+    items: list[Any]  # Will be SerializableSubscriber instances
+    next_page_id: str | None = None
