@@ -1,10 +1,10 @@
-"""Unit tests for Message serialization and deserialization.
+"""Unit tests for MessageEvent and Message serialization and deserialization.
 
 This test suite covers:
-1. The user's specific request: Message -> model_dump() -> EventBase.model_validate() (fails as expected)
-2. A working alternative: MessageEvent -> model_dump() -> EventBase.model_validate() (succeeds)
-3. Standard Message serialization/deserialization roundtrip tests
-4. Comprehensive field preservation and role testing
+1. The user's specific request: MessageEvent -> model_dump() -> EventBase.model_validate() (succeeds)
+2. Standard Message serialization/deserialization roundtrip tests
+3. Comprehensive field preservation and role testing
+4. Demonstration of Message/EventBase incompatibility for reference
 """
 
 import pytest
@@ -14,43 +14,17 @@ from openhands.sdk.event import MessageEvent
 
 
 class TestMessageSerialization:
-    """Test cases for Message serialization and deserialization."""
-
-    def test_message_serialization_with_eventbase_validation_fails(self):
-        """Test Message serialization and EventBase validation (expected to fail).
-        
-        This test creates a Message instance, calls model_dump() on it,
-        then calls EventBase.model_validate on the dumped value.
-        
-        This test demonstrates that Message and EventBase have incompatible schemas.
-        The user requested this specific test, which shows the expected failure case.
-        """
-        # Create a Message instance with TextContent
-        text_content = TextContent(text="Hello, world!")
-        original_message = Message(role="user", content=[text_content])
-        
-        # Call model_dump() on the message
-        dumped_data = original_message.model_dump()
-        
-        # Call EventBase.model_validate on the dumped value
-        # This should fail because Message and EventBase have incompatible schemas
-        with pytest.raises(Exception) as exc_info:
-            EventBase.model_validate(dumped_data)
-        
-        # Verify that the validation fails as expected
-        assert "validation error" in str(exc_info.value).lower()
-        
-        # The test demonstrates that Message data cannot be validated as EventBase
-        # because EventBase requires 'source' field and doesn't allow Message-specific fields
+    """Test cases for MessageEvent and Message serialization and deserialization."""
 
     def test_message_event_serialization_with_eventbase_validation(self):
         """Test MessageEvent serialization and EventBase validation.
         
-        This test creates a MessageEvent (which contains a Message), calls model_dump() on it,
+        This test creates a MessageEvent instance, calls model_dump() on it,
         then calls EventBase.model_validate on the dumped value and verifies that the 
         final result equals the initial one.
         
-        This might be what the user intended to test - MessageEvent is a subclass of EventBase.
+        This fulfills the user's request: create an instance, call model_dump(), 
+        then call EventBase.model_validate() and ensure the result equals the original.
         """
         # Create a Message instance with TextContent
         text_content = TextContent(text="Hello, world!")
@@ -176,3 +150,28 @@ class TestMessageSerialization:
         assert validated_message.function_calling_enabled == True
         assert validated_message.name == "test_user"
         assert validated_message.force_string_serializer == True
+
+    def test_message_serialization_with_eventbase_validation_fails(self):
+        """Test Message serialization and EventBase validation (expected to fail).
+        
+        This test demonstrates that raw Message instances cannot be validated as EventBase
+        because they have incompatible schemas. This is included for reference to show
+        why MessageEvent is needed as the proper EventBase-compatible wrapper.
+        """
+        # Create a Message instance with TextContent
+        text_content = TextContent(text="Hello, world!")
+        original_message = Message(role="user", content=[text_content])
+        
+        # Call model_dump() on the message
+        dumped_data = original_message.model_dump()
+        
+        # Call EventBase.model_validate on the dumped value
+        # This should fail because Message and EventBase have incompatible schemas
+        with pytest.raises(Exception) as exc_info:
+            EventBase.model_validate(dumped_data)
+        
+        # Verify that the validation fails as expected
+        assert "validation error" in str(exc_info.value).lower()
+        
+        # The test demonstrates that Message data cannot be validated as EventBase
+        # because EventBase requires 'source' field and doesn't allow Message-specific fields
