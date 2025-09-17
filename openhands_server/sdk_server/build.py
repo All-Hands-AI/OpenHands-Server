@@ -26,9 +26,11 @@ def main() -> None:
 
     # Build the executable
     spec_file = f"{EXECUTABLE_NAME}.spec"
-    if not Path(spec_file).exists():
-        print(f"Creating {spec_file}...")
-        create_spec_file(spec_file)
+    if Path(spec_file).exists():
+        # remove spec file to ensure fresh build
+        os.remove(spec_file)
+    print(f"Creating {spec_file}...")
+    create_spec_file(spec_file)
 
     print("Building executable with PyInstaller...")
     try:
