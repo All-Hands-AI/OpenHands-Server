@@ -8,8 +8,8 @@ import pytest
 from openhands.sdk import LLM, Conversation, Message
 from openhands.sdk.conversation.state import ConversationState
 from openhands.sdk.event.llm_convertible import MessageEvent
-from openhands_server.sdk_server.event_service import EventService
-from openhands_server.sdk_server.models import (
+from openhands_server.agent_server.event_service import EventService
+from openhands_server.agent_server.models import (
     EventPage,
     EventSortOrder,
     StoredConversation,

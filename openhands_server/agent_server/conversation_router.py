@@ -6,10 +6,10 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 
 from openhands.sdk.conversation.state import AgentExecutionStatus
-from openhands_server.sdk_server.conversation_service import (
+from openhands_server.agent_server.conversation_service import (
     get_default_conversation_service,
 )
-from openhands_server.sdk_server.models import (
+from openhands_server.agent_server.models import (
     ConversationInfo,
     ConversationPage,
     ConversationSortOrder,

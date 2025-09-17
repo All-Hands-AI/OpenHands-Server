@@ -3,19 +3,19 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI
 
-from openhands_server.sdk_server.config import (
+from openhands_server.agent_server.config import (
     get_default_config,
 )
-from openhands_server.sdk_server.conversation_router import (
+from openhands_server.agent_server.conversation_router import (
     router as conversation_router,
 )
-from openhands_server.sdk_server.conversation_service import (
+from openhands_server.agent_server.conversation_service import (
     get_default_conversation_service,
 )
-from openhands_server.sdk_server.event_router import (
+from openhands_server.agent_server.event_router import (
     router as conversation_event_router,
 )
-from openhands_server.sdk_server.middleware import (
+from openhands_server.agent_server.middleware import (
     LocalhostCORSMiddleware,
     ValidateSessionAPIKeyMiddleware,
 )

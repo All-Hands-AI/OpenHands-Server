@@ -14,7 +14,10 @@ from openhands.sdk import (
 )
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands.sdk.llm.utils.metrics import MetricsSnapshot
-from openhands_server.sdk_server.utils import get_serializable_polymorphic_type, utc_now
+from openhands_server.agent_server.utils import (
+    get_serializable_polymorphic_type,
+    utc_now,
+)
 
 
 # Give pydantic / fastapi some help when serializing

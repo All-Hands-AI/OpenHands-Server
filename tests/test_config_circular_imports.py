@@ -38,7 +38,7 @@ def test_config_no_circular_imports():
     """
     # Get the path to the config.py file
     config_file = (
-        Path(__file__).parent.parent / "openhands_server" / "sdk_server" / "config.py"
+        Path(__file__).parent.parent / "openhands_server" / "agent_server" / "config.py"
     )
 
     # Ensure the config file exists
@@ -66,7 +66,7 @@ def test_config_imports_are_external_only():
     """
     # Get the path to the config.py file
     config_file = (
-        Path(__file__).parent.parent / "openhands_server" / "sdk_server" / "config.py"
+        Path(__file__).parent.parent / "openhands_server" / "agent_server" / "config.py"
     )
 
     # Get all imports from the config file

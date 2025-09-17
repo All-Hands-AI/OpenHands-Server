@@ -18,10 +18,10 @@ from pydantic import SecretStr
 from openhands.sdk import LLM
 from openhands.sdk.event.llm_convertible import MessageEvent
 from openhands.sdk.llm.message import Message, TextContent
-from openhands_server.sdk_server.config import WebhookSpec
-from openhands_server.sdk_server.conversation_service import WebhookSubscriber
-from openhands_server.sdk_server.event_service import EventService
-from openhands_server.sdk_server.models import StoredConversation
+from openhands_server.agent_server.config import WebhookSpec
+from openhands_server.agent_server.conversation_service import WebhookSubscriber
+from openhands_server.agent_server.event_service import EventService
+from openhands_server.agent_server.models import StoredConversation
 
 
 @pytest.fixture

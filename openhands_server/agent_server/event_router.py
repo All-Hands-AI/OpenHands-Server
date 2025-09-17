@@ -18,10 +18,10 @@ from fastapi import (
 from fastapi.websockets import WebSocketState
 
 from openhands.sdk import Message
-from openhands_server.sdk_server.conversation_service import (
+from openhands_server.agent_server.conversation_service import (
     get_default_conversation_service,
 )
-from openhands_server.sdk_server.models import (
+from openhands_server.agent_server.models import (
     ConfirmationResponseRequest,
     EventPage,
     EventSortOrder,
@@ -29,7 +29,7 @@ from openhands_server.sdk_server.models import (
     SendMessageRequest,
     Success,
 )
-from openhands_server.sdk_server.pub_sub import Subscriber
+from openhands_server.agent_server.pub_sub import Subscriber
 
 
 router = APIRouter(prefix="/conversations/{conversation_id}/events")

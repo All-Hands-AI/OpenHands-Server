@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
-from openhands_server.sdk_server.config import (
+from openhands_server.agent_server.config import (
     CONFIG_FILE_PATH_ENV,
     DEFAULT_CONFIG_FILE_PATH,
     SESSION_API_KEY_ENV,
@@ -170,7 +170,7 @@ class TestGetDefaultConfig:
     def setup_method(self):
         """Reset the global config before each test."""
         # Reset the global _default_config variable
-        import openhands_server.sdk_server.config as config_module
+        import openhands_server.agent_server.config as config_module
 
         config_module._default_config = None
 
@@ -201,7 +201,7 @@ class TestGetDefaultConfig:
         try:
             with patch.dict(os.environ, {}, clear=True):
                 with patch(
-                    "openhands_server.sdk_server.config.DEFAULT_CONFIG_FILE_PATH",
+                    "openhands_server.agent_server.config.DEFAULT_CONFIG_FILE_PATH",
                     str(temp_path),
                 ):
                     config = get_default_config()

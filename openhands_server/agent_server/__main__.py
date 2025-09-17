@@ -27,7 +27,7 @@ def main():
     print()
 
     uvicorn.run(
-        "openhands_server.sdk_server.api:api",
+        "openhands_server.agent_server.api:api",
         host=args.host,
         port=args.port,
         reload=args.reload,

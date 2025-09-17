@@ -9,17 +9,17 @@ import httpx
 
 from openhands.sdk import Event, Message
 from openhands.sdk.conversation.state import AgentExecutionStatus
-from openhands_server.sdk_server.config import Config, WebhookSpec
-from openhands_server.sdk_server.event_service import EventService
-from openhands_server.sdk_server.models import (
+from openhands_server.agent_server.config import Config, WebhookSpec
+from openhands_server.agent_server.event_service import EventService
+from openhands_server.agent_server.models import (
     ConversationInfo,
     ConversationPage,
     ConversationSortOrder,
     StartConversationRequest,
     StoredConversation,
 )
-from openhands_server.sdk_server.pub_sub import Subscriber
-from openhands_server.sdk_server.utils import utc_now
+from openhands_server.agent_server.pub_sub import Subscriber
+from openhands_server.agent_server.utils import utc_now
 
 
 logger = logging.getLogger(__name__)
@@ -342,7 +342,7 @@ def get_default_conversation_service() -> ConversationService:
     if _conversation_service:
         return _conversation_service
 
-    from openhands_server.sdk_server.config import (
+    from openhands_server.agent_server.config import (
         get_default_config,
     )
 

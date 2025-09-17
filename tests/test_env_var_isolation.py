@@ -1,6 +1,6 @@
 """
 Unit test to ensure that OS environment variables are not accessed anywhere
-in the sdk_server package outside of the config module.
+in the agent_server package outside of the config module.
 
 This test helps maintain proper separation of concerns by ensuring that
 all environment variable access is centralized in the config module.
@@ -121,22 +121,24 @@ def get_direct_env_imports_from_file(file_path: Path) -> Set[str]:
 
 def test_no_env_var_access_outside_config():
     """
-    Test that no files in the sdk_server package access environment variables
+    Test that no files in the agent_server package access environment variables
     except for the config.py file.
     """
-    # Get the path to the sdk_server directory
-    sdk_server_dir = Path(__file__).parent.parent / "openhands_server" / "sdk_server"
-
-    # Ensure the directory exists
-    assert sdk_server_dir.exists(), (
-        f"SDK server directory not found at {sdk_server_dir}"
+    # Get the path to the agent_server directory
+    agent_server_dir = (
+        Path(__file__).parent.parent / "openhands_server" / "agent_server"
     )
 
-    # Get all Python files in the sdk_server directory
-    python_files = list(sdk_server_dir.glob("*.py"))
+    # Ensure the directory exists
+    assert agent_server_dir.exists(), (
+        f"SDK server directory not found at {agent_server_dir}"
+    )
+
+    # Get all Python files in the agent_server directory
+    python_files = list(agent_server_dir.glob("*.py"))
 
     # Remove config.py from the list since it's allowed to access env vars
-    config_file = sdk_server_dir / "config.py"
+    config_file = agent_server_dir / "config.py"
     if config_file in python_files:
         python_files.remove(config_file)
 
@@ -175,7 +177,7 @@ def test_config_file_env_access_is_allowed():
     """
     # Get the path to the config.py file
     config_file = (
-        Path(__file__).parent.parent / "openhands_server" / "sdk_server" / "config.py"
+        Path(__file__).parent.parent / "openhands_server" / "agent_server" / "config.py"
     )
 
     # Ensure the config file exists

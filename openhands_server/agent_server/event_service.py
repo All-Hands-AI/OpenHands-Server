@@ -11,15 +11,15 @@ from openhands.sdk import (
 )
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands.sdk.utils.async_utils import AsyncCallbackWrapper
-from openhands_server.sdk_server.models import (
+from openhands_server.agent_server.models import (
     ConfirmationResponseRequest,
     EventPage,
     EventSortOrder,
     EventType,
     StoredConversation,
 )
-from openhands_server.sdk_server.pub_sub import PubSub, Subscriber
-from openhands_server.sdk_server.utils import utc_now
+from openhands_server.agent_server.pub_sub import PubSub, Subscriber
+from openhands_server.agent_server.utils import utc_now
 
 
 @dataclass

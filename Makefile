@@ -64,7 +64,7 @@ run:
 test-schema:
 	set -e
 	# Generate OpenAPI JSON inline (no file left in repo)
-	uv run python -c 'import os,json; from openhands_server.sdk_server.api import api; open("openapi.json","w").write(json.dumps(api.openapi(), indent=2))'
+	uv run python -c 'import os,json; from openhands_server.agent_server.api import api; open("openapi.json","w").write(json.dumps(api.openapi(), indent=2))'
 
 	# Generate client from the temp schema and **fail on any warnings** to check
 	uv run openapi-python-client generate \
