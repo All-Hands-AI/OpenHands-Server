@@ -5,9 +5,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID, uuid4
 
+import httpx
+
 from openhands.sdk import Event, Message
 from openhands.sdk.conversation.state import AgentExecutionStatus
-from openhands_server.sdk_server.config import Config
+from openhands_server.sdk_server.config import Config, WebhookSpec
 from openhands_server.sdk_server.event_service import EventService
 from openhands_server.sdk_server.models import (
     ConversationInfo,
@@ -16,6 +18,7 @@ from openhands_server.sdk_server.models import (
     StartConversationRequest,
     StoredConversation,
 )
+from openhands_server.sdk_server.pub_sub import Subscriber
 from openhands_server.sdk_server.utils import utc_now
 
 
@@ -31,6 +34,8 @@ class ConversationService:
 
     event_services_path: Path = field(default=Path("workspace/event_services"))
     workspace_path: Path = field(default=Path("workspace/project"))
+    webhook_specs: list[WebhookSpec] = field(default_factory=list)
+    session_api_key: str | None = field(default=None)
     _event_services: dict[UUID, EventService] | None = field(default=None, init=False)
 
     async def get_conversation(self, conversation_id: UUID) -> ConversationInfo | None:
@@ -149,7 +154,22 @@ class ConversationService:
             file_store_path=file_store_path,
             working_dir=self.workspace_path,
         )
-        await event_service.subscribe_to_events(_EventListener(service=event_service))
+
+        # Create subscribers...
+        await event_service.subscribe_to_events(_EventSubscriber(service=event_service))
+        asyncio.gather(
+            *[
+                event_service.subscribe_to_events(
+                    WebhookSubscriber(
+                        service=event_service,
+                        spec=webhook_spec,
+                        session_api_key=self.session_api_key,
+                    )
+                )
+                for webhook_spec in self.webhook_specs
+            ]
+        )
+
         self._event_services[conversation_id] = event_service
         await event_service.start(conversation_id=conversation_id)
         initial_message = request.initial_message
@@ -233,15 +253,85 @@ class ConversationService:
         return ConversationService(
             event_services_path=config.conversations_path,
             workspace_path=config.workspace_path,
+            webhook_specs=config.webhooks,
+            session_api_key=config.session_api_key,
         )
 
 
 @dataclass
-class _EventListener:
+class _EventSubscriber(Subscriber):
     service: EventService
 
     async def __call__(self, event: Event):
         self.service.stored.updated_at = utc_now()
+
+
+@dataclass
+class WebhookSubscriber(Subscriber):
+    service: EventService
+    spec: WebhookSpec
+    session_api_key: str | None = None
+    queue: list[Event] = field(default_factory=list)
+
+    async def __call__(self, event: Event):
+        """Add event to queue and post to webhook when buffer size is reached."""
+        self.queue.append(event)
+
+        if len(self.queue) >= self.spec.event_buffer_size:
+            await self._post_events()
+
+    async def close(self):
+        """Post any remaining items in the queue to the webhook."""
+        if self.queue:
+            await self._post_events()
+
+    async def _post_events(self):
+        """Post queued events to the webhook with retry logic."""
+        if not self.queue:
+            return
+
+        events_to_post = self.queue.copy()
+        self.queue.clear()
+
+        # Prepare headers
+        headers = self.spec.headers.copy()
+        if self.session_api_key:
+            headers["X-Session-API-Key"] = self.session_api_key
+
+        # Convert events to serializable format
+        event_data = [
+            event.model_dump() if hasattr(event, "model_dump") else event.__dict__
+            for event in events_to_post
+        ]
+
+        # Retry logic
+        for attempt in range(self.spec.num_retries + 1):
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.request(
+                        method=self.spec.method,
+                        url=self.spec.webhook_url,
+                        json=event_data,
+                        headers=headers,
+                        timeout=30.0,
+                    )
+                    response.raise_for_status()
+                    logger.debug(
+                        f"Successfully posted {len(event_data)} events "
+                        f"to webhook {self.spec.webhook_url}"
+                    )
+                    return
+            except Exception as e:
+                logger.warning(f"Webhook post attempt {attempt + 1} failed: {e}")
+                if attempt < self.spec.num_retries:
+                    await asyncio.sleep(self.spec.retry_delay)
+                else:
+                    logger.error(
+                        f"Failed to post events to webhook {self.spec.webhook_url} "
+                        f"after {self.spec.num_retries + 1} attempts"
+                    )
+                    # Re-queue events for potential retry later
+                    self.queue.extend(events_to_post)
 
 
 _conversation_service: ConversationService | None = None

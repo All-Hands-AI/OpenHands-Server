@@ -1,12 +1,22 @@
+import asyncio
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from uuid import UUID, uuid4
 
 from openhands.sdk.event import Event
 from openhands.sdk.logger import get_logger
-from openhands.sdk.utils.async_utils import AsyncConversationCallback
 
 
 logger = get_logger(__name__)
+
+
+class Subscriber(ABC):
+    @abstractmethod
+    async def __call__(self, event: Event):
+        """Invoke this subscriber"""
+
+    async def close(self):
+        """Clean up this subscriber"""
 
 
 @dataclass
@@ -17,34 +27,34 @@ class PubSub:
     all registered callbacks with proper error handling.
     """
 
-    _callbacks: dict[UUID, AsyncConversationCallback] = field(default_factory=dict)
+    _subscribers: dict[UUID, Subscriber] = field(default_factory=dict)
 
-    def subscribe(self, callback: AsyncConversationCallback) -> UUID:
-        """Subscribe a callback and return its UUID for later unsubscription.
+    def subscribe(self, subscriber: Subscriber) -> UUID:
+        """Subscribe a subscriber and return its UUID for later unsubscription.
         Args:
-            callback: The callback function to register
+            subscriber: The callback function to register
         Returns:
             UUID: UUID that can be used to unsubscribe this callback
         """
-        callback_id = uuid4()
-        self._callbacks[callback_id] = callback
-        logger.debug(f"Subscribed callback with ID: {callback_id}")
-        return callback_id
+        subscriber_id = uuid4()
+        self._subscribers[subscriber_id] = subscriber
+        logger.debug(f"Subscribed subscriber with ID: {subscriber_id}")
+        return subscriber_id
 
-    def unsubscribe(self, callback_id: UUID) -> bool:
-        """Unsubscribe a callback by its UUID.
+    def unsubscribe(self, subscriber_id: UUID) -> bool:
+        """Unsubscribe a subscriber by its UUID.
         Args:
-            callback_id: The UUID returned by subscribe()
+            subscriber_id: The UUID returned by subscribe()
         Returns:
-            bool: True if callback was found and removed, False otherwise
+            bool: True if subscriber was found and removed, False otherwise
         """
-        if callback_id in self._callbacks:
-            del self._callbacks[callback_id]
-            logger.debug(f"Unsubscribed callback with ID: {callback_id}")
+        if subscriber_id in self._subscribers:
+            del self._subscribers[subscriber_id]
+            logger.debug(f"Unsubscribed subscriber with ID: {subscriber_id}")
             return True
         else:
             logger.warning(
-                f"Attempted to unsubscribe unknown callback ID: {callback_id}"
+                f"Attempted to unsubscribe unknown subscriber ID: {subscriber_id}"
             )
             return False
 
@@ -55,26 +65,14 @@ class PubSub:
         Args:
             event: The event to pass to all callbacks
         """
-        for callback_id, callback in self._callbacks.items():
+        for subscriber_id, subscriber in list(self._subscribers.items()):
             try:
-                await callback(event)
+                await subscriber(event)
             except Exception as e:
-                logger.error(f"Error in callback {callback_id}: {e}", exc_info=True)
+                logger.error(f"Error in subscriber {subscriber_id}: {e}", exc_info=True)
 
-    async def on_event(self, event: Event) -> None:
-        """Alias for __call__ method.
-        Args:
-            event: The event to pass to all callbacks
-        """
-        await self(event)
-
-    @property
-    def callback_count(self) -> int:
-        """Return the number of registered callbacks."""
-        return len(self._callbacks)
-
-    def clear(self) -> None:
-        """Remove all registered callbacks."""
-        count = len(self._callbacks)
-        self._callbacks.clear()
-        logger.debug(f"Cleared {count} callbacks")
+    async def close(self):
+        await asyncio.gather(
+            *[subscriber.close() for subscriber in self._subscribers.values()]
+        )
+        self._subscribers.clear()

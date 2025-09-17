@@ -11,17 +11,14 @@ from openhands.sdk import (
     Message,
 )
 from openhands.sdk.conversation.state import AgentExecutionStatus
-from openhands.sdk.utils.async_utils import (
-    AsyncCallbackWrapper,
-    AsyncConversationCallback,
-)
+from openhands.sdk.utils.async_utils import AsyncCallbackWrapper
 from openhands_server.sdk_server.models import (
     ConfirmationResponseRequest,
     EventPage,
     EventSortOrder,
     StoredConversation,
 )
-from openhands_server.sdk_server.pub_sub import PubSub
+from openhands_server.sdk_server.pub_sub import PubSub, Subscriber
 from openhands_server.sdk_server.utils import utc_now
 
 
@@ -141,15 +138,18 @@ class EventService:
             await future
             loop.run_in_executor(None, self._conversation.run)
 
-    async def subscribe_to_events(self, callback: AsyncConversationCallback) -> UUID:
-        return self._pub_sub.subscribe(callback)
+    async def subscribe_to_events(self, subscriber: Subscriber) -> UUID:
+        return self._pub_sub.subscribe(subscriber)
 
-    async def unsubscribe_from_events(self, callback_id: UUID) -> bool:
-        return self._pub_sub.unsubscribe(callback_id)
+    async def unsubscribe_from_events(self, subscriber_id: UUID) -> bool:
+        return self._pub_sub.unsubscribe(subscriber_id)
 
     async def start(self, conversation_id: UUID):
         # self.stored is a subclass of AgentSpec so we can create an agent from it
-        agent = Agent.from_spec(self.stored)
+        self.file_store_path.mkdir(parents=True, exist_ok=True)
+        self.working_dir.mkdir(parents=True, exist_ok=True)
+        loop = asyncio.get_running_loop()
+        agent = await loop.run_in_executor(None, Agent.from_spec, self.stored)
         conversation = Conversation(
             agent=agent,
             persist_filestore=LocalFileStore(
@@ -162,6 +162,7 @@ class EventService:
                 AsyncCallbackWrapper(self._pub_sub, loop=asyncio.get_running_loop())
             ],
             max_iteration_per_run=self.stored.max_iterations,
+            visualize=False,
         )
 
         # Set confirmation mode if enabled
@@ -187,6 +188,7 @@ class EventService:
             loop.run_in_executor(None, self._conversation.pause)
 
     async def close(self):
+        await self._pub_sub.close()
         if self._conversation:
             loop = asyncio.get_running_loop()
             loop.run_in_executor(None, self._conversation.close)
