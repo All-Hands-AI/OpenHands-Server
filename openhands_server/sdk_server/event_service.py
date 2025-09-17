@@ -73,7 +73,11 @@ class EventService:
         with self._conversation.state as state:
             for event in state.events:
                 # Apply kind filter if provided
-                if kind is not None and event.__class__.__name__ != kind:
+                if (
+                    kind is not None
+                    and f"{event.__class__.__module__}.{event.__class__.__name__}"
+                    != kind
+                ):
                     continue
                 all_events.append(event)
 
@@ -104,6 +108,11 @@ class EventService:
                 break
             items.append(all_events[i])
 
+        if items:
+            from pydantic import TypeAdapter
+
+            ta = TypeAdapter(EventType)
+            ta.dump_json(items[0])
         return EventPage(items=items, next_page_id=next_page_id)
 
     async def count_events(
@@ -118,7 +127,11 @@ class EventService:
         with self._conversation.state as state:
             for event in state.events:
                 # Apply kind filter if provided
-                if kind is not None and event.__class__.__name__ != kind:
+                if (
+                    kind is not None
+                    and f"{event.__class__.__module__}.{event.__class__.__name__}"
+                    != kind
+                ):
                     continue
                 count += 1
 
