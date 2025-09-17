@@ -1,113 +1,92 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-#------------------------------------------------------------------------------
-# Config: only BASE_IMAGE is required. Everything else is auto.
-#------------------------------------------------------------------------------
-: "${BASE_IMAGE:?Set BASE_IMAGE, e.g. nikolaik/python-nodejs:python3.12-nodejs22}"
+# ------------------------------------------------------------
+# Config (overridables)
+# ------------------------------------------------------------
+IMAGE="${IMAGE:-ghcr.io/all-hands-ai/agent-server}"
+BASE_IMAGE="${BASE_IMAGE:-nikolaik/python-nodejs:python3.12-nodejs22}"
+TARGET="${TARGET:-binary}"          # "binary" (prod) or "source" (dev)
+PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64}"
 
-IMAGE="ghcr.io/all-hands-ai/agent-server"
-PLATFORMS_CI="linux/amd64,linux/arm64"
-
-# Resolve script dir so we can call sibling files no matter the CWD
+# Path to Dockerfile (in script dir, not cwd)
 SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd -P)"
-BUILD_CTX_PY="${SCRIPT_DIR}/build_context.py"
+DOCKERFILE="${SCRIPT_DIR}/Dockerfile"
 
-if [[ ! -f "${BUILD_CTX_PY}" ]]; then
-  echo "[build] ERROR: build_context.py not found at ${BUILD_CTX_PY}"
-  exit 1
-fi
+[[ -f "${DOCKERFILE}" ]] || { echo "[build] ERROR: Dockerfile not found at ${DOCKERFILE}"; exit 1; }
 
-#------------------------------------------------------------------------------
-# Git info
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------
+# Git info (don’t break userspace tagging)
+# ------------------------------------------------------------
 GIT_SHA="${GITHUB_SHA:-$(git rev-parse --verify HEAD 2>/dev/null || echo unknown)}"
 SHORT_SHA="${GIT_SHA:0:7}"
 GIT_REF="${GITHUB_REF:-$(git symbolic-ref -q --short HEAD 2>/dev/null || echo unknown)}"
 
-#------------------------------------------------------------------------------
-# Determine version from openhands.sdk and append short sha
-# (make module importable by adding SCRIPT_DIR to PYTHONPATH)
-#------------------------------------------------------------------------------
-SDK_VERSION="$(
-  uv run python - <<'PY'
-import os, sys
-# allow imports from script dir AND repo root
-sys.path.insert(0, os.getcwd())
-sys.path.insert(0, os.path.dirname(__file__))
-import openhands.sdk as sdk
-print(getattr(sdk, "__version__", "0.0.0"))
+# ------------------------------------------------------------
+# Version tag from package (best-effort; fall back to 0.0.0)
+# ------------------------------------------------------------
+SDK_VERSION="$(python - <<'PY' 2>/dev/null || echo 0.0.0
+try:
+    import openhands.sdk as sdk
+    print(getattr(sdk, "__version__", "0.0.0"))
+except Exception:
+    print("0.0.0")
 PY
 )"
-VERSION_WITH_SHA="${SDK_VERSION}-${SHORT_SHA}"
-echo "[build] Detected sdk version: ${SDK_VERSION}  (tag will use ${VERSION_WITH_SHA})"
 
-#------------------------------------------------------------------------------
-# Render build context (local: build-from-source; CI: use artifact)
-#------------------------------------------------------------------------------
-ARGS=( 
-    --base-image "${BASE_IMAGE}"
-    --sdk-version "${VERSION_WITH_SHA}"
+# Base slug (keep legacy format so downstream tags don’t change)
+BASE_SLUG="$(echo -n "${BASE_IMAGE}" | sed -e 's|/|_s_|g' -e 's|:|_tag_|g')"
+VERSIONED_TAG="v${SDK_VERSION}_${BASE_SLUG}"
+
+# ------------------------------------------------------------
+# Tagging: prod vs dev
+# ------------------------------------------------------------
+if [[ "${TARGET}" == "source" ]]; then
+  # Dev tags: add -dev suffix
+  TAGS=( "${IMAGE}:${SHORT_SHA}-dev" "${IMAGE}:${VERSIONED_TAG}-dev" )
+  if [[ "${GIT_REF}" == "main" || "${GIT_REF}" == "refs/heads/main" ]]; then
+    TAGS+=( "${IMAGE}:latest-dev" )
+  fi
+else
+  # Prod tags
+  TAGS=( "${IMAGE}:${SHORT_SHA}" "${IMAGE}:${VERSIONED_TAG}" )
+  if [[ "${GIT_REF}" == "main" || "${GIT_REF}" == "refs/heads/main" ]]; then
+    TAGS+=( "${IMAGE}:latest" )
+  fi
+fi
+
+# ------------------------------------------------------------
+# Build flags
+# ------------------------------------------------------------
+COMMON_ARGS=(
+  --build-arg "BASE_IMAGE=${BASE_IMAGE}"
+  --target "${TARGET}"
+  --file "${DOCKERFILE}"
+  .
 )
-if [[ -n "${ARTIFACT_DIR:-}" ]]; then
-  echo "[build] CI mode: using artifact at '${ARTIFACT_DIR}'"
-  ARGS+=( --artifact-dir "${ARTIFACT_DIR}" )
-else
-  echo "[build] Local mode: building from source in Docker"
-fi
 
-python3 "${BUILD_CTX_PY}" "${ARGS[@]}"
+echo "[build] Building target='${TARGET}' image='${IMAGE}' from base='${BASE_IMAGE}' for platforms='${PLATFORMS}'"
+echo "[build] Git ref='${GIT_REF}' sha='${GIT_SHA}' version='${SDK_VERSION}'"
+echo "[build] Tags:"
+printf ' - %s\n' "${TAGS[@]}" 1>&2
 
-#------------------------------------------------------------------------------
-# Locate context & tags (use slug from the same build_context module)
-#------------------------------------------------------------------------------
-BASE_SLUG="$(
-  PYTHONPATH="${SCRIPT_DIR}:${PYTHONPATH:-}" python3 - <<'PY'
-import os
-from build_context import slugify_base_for_tag
-print(slugify_base_for_tag(os.environ["BASE_IMAGE"]))
-PY
-)"
-CTX_DIR="${SCRIPT_DIR}/.docker/build_ctx/${BASE_SLUG}"
-DOCKERFILE="${CTX_DIR}/Dockerfile"
-
-# Fallback if build_context writes under repo-root/.docker (older layout)
-if [[ ! -f "${DOCKERFILE}" ]]; then
-  CTX_DIR=".docker/build_ctx/${BASE_SLUG}"
-  DOCKERFILE="${CTX_DIR}/Dockerfile"
-fi
-
-[[ -f "${DOCKERFILE}" ]] || { echo "[build] Dockerfile missing at ${DOCKERFILE}"; exit 1; }
-
-# Tags: short sha, latest (on main), and canonical VERSIONED_TAG
-TAGS=( "${IMAGE}:${SHORT_SHA}" )
-if [[ "${GIT_REF}" == "refs/heads/main" || "${GIT_REF}" == "main" ]]; then
-  TAGS+=( "${IMAGE}:latest" )
-fi
-if [[ -f "${CTX_DIR}/VERSIONED_TAG" ]]; then
-  VTAG="$(cat "${CTX_DIR}/VERSIONED_TAG")"
-  TAGS+=( "${IMAGE}:${VTAG}" )
-fi
-
-#------------------------------------------------------------------------------
-# Build: CI → multi-arch + push; Local → single-arch + load
-#------------------------------------------------------------------------------
-if [[ -n "${GITHUB_ACTIONS:-}" || -n "${CI:-}" || -n "${ARTIFACT_DIR:-}" ]]; then
-  echo "[build] CI: buildx multi-arch → push"
-  docker buildx create --use --name agentserver-builder >/dev/null 2>&1 || docker buildx use agentserver-builder
+# ------------------------------------------------------------
+# Buildx: push in CI, load locally
+# ------------------------------------------------------------
+if [[ -n "${GITHUB_ACTIONS:-}" || -n "${CI:-}" ]]; then
+  # CI: multi-arch, push
+  docker buildx create --use --name agentserver-builder >/dev/null 2>&1 || true
   docker buildx build \
-    --platform "${PLATFORMS_CI}" \
-    $(printf -- ' --tag %q' "${TAGS[@]}") \
-    --push \
-    --file "${DOCKERFILE}" \
-    "${CTX_DIR}"
+    --platform "${PLATFORMS}" \
+    "${COMMON_ARGS[@]}" \
+    $(printf ' --tag %q' "${TAGS[@]}") \
+    --push
 else
-  echo "[build] Local: buildx single-arch → load"
+  # Local: single-arch, load to docker
   docker buildx build \
-    $(printf -- ' --tag %q' "${TAGS[@]}") \
-    --load \
-    --file "${DOCKERFILE}" \
-    "${CTX_DIR}"
+    "${COMMON_ARGS[@]}" \
+    $(printf ' --tag %q' "${TAGS[@]}") \
+    --load
 fi
 
 echo "[build] Done. Tags:"
