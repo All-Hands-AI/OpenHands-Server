@@ -17,7 +17,7 @@ from fastapi import (
 )
 from fastapi.websockets import WebSocketState
 
-from openhands.sdk import EventBase, Message
+from openhands.sdk import Message
 from openhands_server.sdk_server.conversation_service import (
     get_default_conversation_service,
 )
@@ -25,6 +25,7 @@ from openhands_server.sdk_server.models import (
     ConfirmationResponseRequest,
     EventPage,
     EventSortOrder,
+    EventType,
     SendMessageRequest,
     Success,
 )
@@ -88,7 +89,7 @@ async def count_conversation_events(
 
 
 @router.get("/{event_id}", responses={404: {"description": "Item not found"}})
-async def get_conversation_event(conversation_id: UUID, event_id: str) -> EventBase:
+async def get_conversation_event(conversation_id: UUID, event_id: str) -> EventType:
     """Get a local event given an id"""
     event_service = await conversation_service.get_event_service(conversation_id)
     if event_service is None:
@@ -102,7 +103,7 @@ async def get_conversation_event(conversation_id: UUID, event_id: str) -> EventB
 @router.get("/")
 async def batch_get_conversation_events(
     conversation_id: UUID, event_ids: list[str]
-) -> list[EventBase | None]:
+) -> list[EventType | None]:
     """Get a batch of local events given their ids, returning null for any
     missing item."""
     event_service = await conversation_service.get_event_service(conversation_id)
@@ -173,7 +174,7 @@ async def socket(
 class _WebSocketSubscriber(Subscriber):
     websocket: WebSocket
 
-    async def __call__(self, event: EventBase):
+    async def __call__(self, event: EventType):
         try:
             dumped = event.model_dump()
             await self.websocket.send_json(dumped)

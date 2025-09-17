@@ -6,7 +6,6 @@ from uuid import UUID
 from openhands.sdk import (
     Agent,
     Conversation,
-    EventBase,
     LocalFileStore,
     Message,
 )
@@ -16,6 +15,7 @@ from openhands_server.sdk_server.models import (
     ConfirmationResponseRequest,
     EventPage,
     EventSortOrder,
+    EventType,
     StoredConversation,
 )
 from openhands_server.sdk_server.pub_sub import PubSub, Subscriber
@@ -44,7 +44,7 @@ class EventService:
         meta_file = self.file_store_path / "meta.json"
         meta_file.write_text(self.stored.model_dump_json())
 
-    async def get_event(self, event_id: str) -> EventBase | None:
+    async def get_event(self, event_id: str) -> EventType | None:
         if not self._conversation:
             raise ValueError("inactive_service")
         with self._conversation.state as state:
@@ -70,7 +70,11 @@ class EventService:
         with self._conversation.state as state:
             for event in state.events:
                 # Apply kind filter if provided
-                if kind is not None and event.__class__.__name__ != kind:
+                if (
+                    kind is not None
+                    and f"{event.__class__.__module__}.{event.__class__.__name__}"
+                    != kind
+                ):
                     continue
                 all_events.append(event)
 
@@ -101,6 +105,11 @@ class EventService:
                 break
             items.append(all_events[i])
 
+        if items:
+            from pydantic import TypeAdapter
+
+            ta = TypeAdapter(EventType)
+            ta.dump_json(items[0])
         return EventPage(items=items, next_page_id=next_page_id)
 
     async def count_events(
@@ -115,13 +124,17 @@ class EventService:
         with self._conversation.state as state:
             for event in state.events:
                 # Apply kind filter if provided
-                if kind is not None and event.__class__.__name__ != kind:
+                if (
+                    kind is not None
+                    and f"{event.__class__.__module__}.{event.__class__.__name__}"
+                    != kind
+                ):
                     continue
                 count += 1
 
         return count
 
-    async def batch_get_events(self, event_ids: list[str]) -> list[EventBase | None]:
+    async def batch_get_events(self, event_ids: list[str]) -> list[EventType | None]:
         """Given a list of ids, get events (Or none for any which were not found)"""
         results = []
         for event_id in event_ids:

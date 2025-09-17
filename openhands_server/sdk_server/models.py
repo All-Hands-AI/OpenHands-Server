@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -14,7 +14,14 @@ from openhands.sdk import (
 )
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands.sdk.llm.utils.metrics import MetricsSnapshot
-from openhands_server.sdk_server.utils import utc_now
+from openhands_server.sdk_server.utils import get_serializable_polymorphic_type, utc_now
+
+
+# Give pydantic / fastapi some help when serializing
+if TYPE_CHECKING:
+    EventType = EventBase
+else:
+    EventType = get_serializable_polymorphic_type(EventBase)
 
 
 class ConversationSortOrder(str, Enum):
@@ -111,5 +118,5 @@ class Success(BaseModel):
 
 
 class EventPage(BaseModel):
-    items: list[EventBase]
+    items: list[EventType]
     next_page_id: str | None = None

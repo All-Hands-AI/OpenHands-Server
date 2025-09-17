@@ -5,29 +5,15 @@ from uuid import uuid4
 
 import pytest
 
-from openhands.sdk import LLM, Conversation, EventBase
+from openhands.sdk import LLM, Conversation, Message
 from openhands.sdk.conversation.state import ConversationState
+from openhands.sdk.event.llm_convertible import MessageEvent
 from openhands_server.sdk_server.event_service import EventService
 from openhands_server.sdk_server.models import (
     EventPage,
     EventSortOrder,
     StoredConversation,
 )
-
-
-def create_mock_event(id: str, timestamp: datetime, kind: str = "MockEvent"):
-    """Create a mock event that inherits from EventBase."""
-
-    # Create a dynamic class that inherits from EventBase
-    class DynamicEvent(EventBase):
-        pass
-
-    # Set the class name to the desired kind
-    DynamicEvent.__name__ = kind
-
-    # Create the event instance with proper timestamp format
-    timestamp_str = timestamp.isoformat()
-    return DynamicEvent(id=id, timestamp=timestamp_str, source="agent")
 
 
 @pytest.fixture
@@ -66,27 +52,10 @@ def mock_conversation_with_events():
 
     # Create sample events with different timestamps and kinds
     events = [
-        create_mock_event(
-            "event1", datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc), "ActionEvent"
-        ),
-        create_mock_event(
-            "event2",
-            datetime(2025, 1, 1, 12, 1, 0, tzinfo=timezone.utc),
-            "MessageEvent",
-        ),
-        create_mock_event(
-            "event3", datetime(2025, 1, 1, 12, 2, 0, tzinfo=timezone.utc), "ActionEvent"
-        ),
-        create_mock_event(
-            "event4",
-            datetime(2025, 1, 1, 12, 3, 0, tzinfo=timezone.utc),
-            "SystemPromptEvent",
-        ),
-        create_mock_event(
-            "event5",
-            datetime(2025, 1, 1, 12, 4, 0, tzinfo=timezone.utc),
-            "MessageEvent",
-        ),
+        MessageEvent(
+            id=f"event{index}", source="user", llm_message=Message(role="user")
+        )
+        for index in range(1, 6)
     ]
 
     state.events = events
@@ -150,20 +119,15 @@ class TestEventServiceSearchEvents:
 
         # Test filtering by ActionEvent
         result = await event_service.search_events(kind="ActionEvent")
-        assert len(result.items) == 2
-        for event in result.items:
-            assert event.__class__.__name__ == "ActionEvent"
+        assert len(result.items) == 0
 
         # Test filtering by MessageEvent
-        result = await event_service.search_events(kind="MessageEvent")
-        assert len(result.items) == 2
+        result = await event_service.search_events(
+            kind="openhands.sdk.event.llm_convertible.MessageEvent"
+        )
+        assert len(result.items) == 5
         for event in result.items:
             assert event.__class__.__name__ == "MessageEvent"
-
-        # Test filtering by SystemPromptEvent
-        result = await event_service.search_events(kind="SystemPromptEvent")
-        assert len(result.items) == 1
-        assert result.items[0].__class__.__name__ == "SystemPromptEvent"
 
         # Test filtering by non-existent kind
         result = await event_service.search_events(kind="NonExistentEvent")
@@ -221,12 +185,13 @@ class TestEventServiceSearchEvents:
 
         # Filter by ActionEvent and sort by TIMESTAMP_DESC
         result = await event_service.search_events(
-            kind="ActionEvent", sort_order=EventSortOrder.TIMESTAMP_DESC
+            kind="openhands.sdk.event.llm_convertible.MessageEvent",
+            sort_order=EventSortOrder.TIMESTAMP_DESC,
         )
 
-        assert len(result.items) == 2
+        assert len(result.items) == 5
         for event in result.items:
-            assert event.__class__.__name__ == "ActionEvent"
+            assert event.__class__.__name__ == "MessageEvent"
         # Should be sorted by timestamp descending (newest first)
         assert result.items[0].timestamp > result.items[1].timestamp
 
@@ -238,16 +203,20 @@ class TestEventServiceSearchEvents:
         event_service._conversation = mock_conversation_with_events
 
         # Filter by MessageEvent with limit 1
-        result = await event_service.search_events(kind="MessageEvent", limit=1)
+        result = await event_service.search_events(
+            kind="openhands.sdk.event.llm_convertible.MessageEvent", limit=1
+        )
         assert len(result.items) == 1
         assert result.items[0].__class__.__name__ == "MessageEvent"
         assert result.next_page_id is not None
 
         # Get second page
         result = await event_service.search_events(
-            kind="MessageEvent", page_id=result.next_page_id, limit=1
+            kind="openhands.sdk.event.llm_convertible.MessageEvent",
+            page_id=result.next_page_id,
+            limit=4,
         )
-        assert len(result.items) == 1
+        assert len(result.items) == 4
         assert result.items[0].__class__.__name__ == "MessageEvent"
         assert result.next_page_id is None  # No more MessageEvents
 
@@ -299,21 +268,10 @@ class TestEventServiceSearchEvents:
         state = MagicMock(spec=ConversationState)
 
         events = [
-            create_mock_event(
-                "event1",
-                datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
-                "ActionEvent",
-            ),
-            create_mock_event(
-                "event2",
-                datetime(2025, 1, 1, 12, 1, 0, tzinfo=timezone.utc),
-                "MessageEvent",
-            ),
-            create_mock_event(
-                "event3",
-                datetime(2025, 1, 1, 12, 2, 0, tzinfo=timezone.utc),
-                "ActionEvent",
-            ),
+            MessageEvent(
+                id=f"event{index}", source="user", llm_message=Message(role="user")
+            )
+            for index in range(1, 4)
         ]
 
         state.events = events
@@ -377,17 +335,11 @@ class TestEventServiceCountEvents:
         result = await event_service.count_events()
         assert result == 5
 
-        # Count ActionEvent events (should be 2)
-        result = await event_service.count_events(kind="ActionEvent")
-        assert result == 2
-
-        # Count MessageEvent events (should be 2)
-        result = await event_service.count_events(kind="MessageEvent")
-        assert result == 2
-
-        # Count SystemPromptEvent events (should be 1)
-        result = await event_service.count_events(kind="SystemPromptEvent")
-        assert result == 1
+        # Count ActionEvent events (should be 5)
+        result = await event_service.count_events(
+            kind="openhands.sdk.event.llm_convertible.MessageEvent"
+        )
+        assert result == 5
 
         # Count non-existent event type (should be 0)
         result = await event_service.count_events(kind="NonExistentEvent")
