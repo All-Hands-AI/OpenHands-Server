@@ -1,9 +1,9 @@
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import TYPE_CHECKING, Annotated, Literal, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Discriminator, Field
 
 from openhands.sdk import (
     AgentSpec,
@@ -14,7 +14,15 @@ from openhands.sdk import (
 )
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands.sdk.llm.utils.metrics import MetricsSnapshot
-from openhands_server.sdk_server.utils import utc_now
+from openhands_server.sdk_server.utils import get_all_subclasses, utc_now
+
+
+if TYPE_CHECKING:
+    EventType = EventBase
+else:
+    EventType = Annotated(
+        Union[tuple(get_all_subclasses(EventBase))], Discriminator("kind")
+    )
 
 
 class ConversationSortOrder(str, Enum):
@@ -111,5 +119,5 @@ class Success(BaseModel):
 
 
 class EventPage(BaseModel):
-    items: list[EventBase]
+    items: list[EventType]
     next_page_id: str | None = None

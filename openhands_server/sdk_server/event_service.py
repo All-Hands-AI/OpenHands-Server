@@ -6,7 +6,6 @@ from uuid import UUID
 from openhands.sdk import (
     Agent,
     Conversation,
-    EventBase,
     LocalFileStore,
     Message,
 )
@@ -19,6 +18,7 @@ from openhands_server.sdk_server.models import (
     ConfirmationResponseRequest,
     EventPage,
     EventSortOrder,
+    EventType,
     StoredConversation,
 )
 from openhands_server.sdk_server.pub_sub import PubSub
@@ -47,7 +47,7 @@ class EventService:
         meta_file = self.file_store_path / "meta.json"
         meta_file.write_text(self.stored.model_dump_json())
 
-    async def get_event(self, event_id: str) -> EventBase | None:
+    async def get_event(self, event_id: str) -> EventType | None:
         if not self._conversation:
             raise ValueError("inactive_service")
         with self._conversation.state as state:
@@ -124,7 +124,7 @@ class EventService:
 
         return count
 
-    async def batch_get_events(self, event_ids: list[str]) -> list[EventBase | None]:
+    async def batch_get_events(self, event_ids: list[str]) -> list[EventType | None]:
         """Given a list of ids, get events (Or none for any which were not found)"""
         results = []
         for event_id in event_ids:
