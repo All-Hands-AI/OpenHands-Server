@@ -1,3 +1,4 @@
+from typing import Sequence
 from urllib.parse import urlparse
 
 from fastapi import HTTPException, Request, Response, status
@@ -11,7 +12,7 @@ class LocalhostCORSMiddleware(CORSMiddleware):
     while using standard CORS rules for other origins.
     """
 
-    def __init__(self, app: ASGIApp, allow_origins: list[str]) -> None:
+    def __init__(self, app: ASGIApp, allow_origins: Sequence[str]) -> None:
         super().__init__(
             app,
             allow_origins=allow_origins,
@@ -34,14 +35,27 @@ class LocalhostCORSMiddleware(CORSMiddleware):
         return result
 
 
+class CacheControlMiddleware(BaseHTTPMiddleware):
+    """Middleware to disable caching for all routes by adding appropriate headers"""
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        response = await call_next(request)
+        if request.url.path.startswith("/assets"):
+            # The content of the assets directory has fingerprinted file names so we cache aggressively
+            response.headers["Cache-Control"] = "public, max-age=2592000, immutable"
+        else:
+            response.headers["Cache-Control"] = (
+                "no-cache, no-store, must-revalidate, max-age=0"
+            )
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
+
 class ValidateSessionAPIKeyMiddleware(BaseHTTPMiddleware):
-    """Middleware to validate session API key for all requests
-
-    Inside a sandbox, conversations are run locally, and there is a Session API key
-    for the sandbox that needs provided.
-
-    Note: the Session API key is occasionally sent to the client.
-    """
+    """Middleware to disable caching for all routes by adding appropriate headers"""
 
     def __init__(self, app: ASGIApp, session_api_key: str) -> None:
         super().__init__(app)
@@ -50,8 +64,8 @@ class ValidateSessionAPIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        session_api_key = request.headers.get("X-Session-API-Key")
-        if session_api_key != self.session_api_key:
+        session_api_key = request.headers["X-Session-API-Key"]
+        if session_api_key != session_api_key:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED)
         response = await call_next(request)
         return response
