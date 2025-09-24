@@ -25,6 +25,14 @@ class OpenHandsServerConfig(BaseModel):
         default="openhands_server.auth.dummy.DummyAuthContext",
         description="The class to use for SandboxContext dependencies",
     )
+    conversation_callback_context_type: str = Field(
+        default="openhands_server.auth.dummy.DummyAuthContext",
+        description="The class to use for ConversationCallbackContext dependencies",
+    )
+    sandboxed_conversation_context_type: str = Field(
+        default="openhands_server.auth.dummy.DummyAuthContext",
+        description="The class to use for SandboxedConversationContext dependencies",
+    )
 
 
 _default_config: OpenHandsServerConfig | None = None
