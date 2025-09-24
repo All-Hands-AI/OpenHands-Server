@@ -59,9 +59,9 @@ class SandboxContext(ABC):
     @classmethod
     @abstractmethod
     def get_instance(cls, *args, **kwargs) -> "SandboxContext":
-        """Get an instance of sandbox context. Parameters are not specified 
+        """Get an instance of sandbox context. Parameters are not specified
         so that they can be defined in the implementation classes and overridden using
-        FastAPI's dependency injection. This allows merging global config with 
+        FastAPI's dependency injection. This allows merging global config with
         user / request specific variables."""
 
 

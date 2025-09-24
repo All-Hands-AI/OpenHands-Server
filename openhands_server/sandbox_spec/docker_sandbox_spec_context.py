@@ -127,8 +127,8 @@ class DockerSandboxSpecContext(SandboxSpecContext):
 
     @classmethod
     async def get_instance(cls, *args, **kwargs) -> "DockerSandboxSpecContext":
-        """Get an instance of sandbox spec context. Parameters are not specified 
+        """Get an instance of sandbox spec context. Parameters are not specified
         so that they can be defined in the implementation classes and overridden using
-        FastAPI's dependency injection. This allows merging global config with 
+        FastAPI's dependency injection. This allows merging global config with
         user / request specific variables."""
         return cls(*args, **kwargs)

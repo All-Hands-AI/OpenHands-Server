@@ -20,6 +20,7 @@ router = APIRouter(prefix="/conversation-callbacks")
 
 # Read methods
 
+
 @router.get("/search")
 async def search_conversation_callbacks(
     conversation_id: Annotated[
@@ -32,9 +33,7 @@ async def search_conversation_callbacks(
     ] = None,
     limit: Annotated[
         int,
-        Query(
-            title="The max number of results in the page", gt=0, lte=100
-        ),
+        Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
     conversation_callback_context: ConversationCallbackContext = Depends(
         conversation_callback_context_dependency
@@ -78,6 +77,7 @@ async def batch_get_conversation_callbacks(
 
 
 # Write methods
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_conversation_callback(

@@ -1,6 +1,7 @@
 """SQLAlchemy database models for conversation callbacks."""
 
 from __future__ import annotations
+
 import uuid
 
 from sqlalchemy import JSON, UUID, Column, DateTime, String
@@ -43,13 +44,13 @@ class StoredConversationCallback(Base):
     def processor(self) -> ConversationCallbackProcessor:
         """
         Get the processor by deserializing from JSON.
-        
+
         Returns:
             ConversationCallbackProcessor: The deserialized processor instance
         """
         if self.processor_data is None:
             raise ValueError("Processor data is None")
-        
+
         # Use the DiscriminatedUnionMixin to deserialize the processor
         return ConversationCallbackProcessor.model_validate(self.processor_data)
 
@@ -57,7 +58,7 @@ class StoredConversationCallback(Base):
     def processor(self, value: ConversationCallbackProcessor) -> None:
         """
         Set the processor by serializing to JSON.
-        
+
         Args:
             value: The processor instance to serialize and store
         """
@@ -71,7 +72,7 @@ class StoredConversationCallback(Base):
     def status_enum(self) -> ConversationCallbackStatus:
         """
         Get the status as an enum.
-        
+
         Returns:
             ConversationCallbackStatus: The status enum value
         """
@@ -81,7 +82,7 @@ class StoredConversationCallback(Base):
     def status_enum(self, value: ConversationCallbackStatus) -> None:
         """
         Set the status from an enum.
-        
+
         Args:
             value: The status enum value to set
         """
@@ -90,7 +91,7 @@ class StoredConversationCallback(Base):
     def to_pydantic(self) -> ConversationCallback:
         """
         Convert the SQLAlchemy model to a Pydantic model.
-        
+
         Returns:
             ConversationCallback: The Pydantic model representation
         """
@@ -105,13 +106,15 @@ class StoredConversationCallback(Base):
         )
 
     @classmethod
-    def from_pydantic(cls, callback: ConversationCallback) -> StoredConversationCallback:
+    def from_pydantic(
+        cls, callback: ConversationCallback
+    ) -> StoredConversationCallback:
         """
         Create a SQLAlchemy model from a Pydantic model.
-        
+
         Args:
             callback: The Pydantic ConversationCallback model
-            
+
         Returns:
             StoredConversationCallback: The SQLAlchemy model instance
         """

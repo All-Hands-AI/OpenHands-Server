@@ -9,9 +9,7 @@ from openhands_server.api import api
 
 def main() -> None:
     """Main entry point for the OpenHands Server."""
-    parser = argparse.ArgumentParser(
-        description="OpenHands Enterprise Server APP"
-    )
+    parser = argparse.ArgumentParser(description="OpenHands Enterprise Server APP")
     parser.add_argument(
         "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"
     )

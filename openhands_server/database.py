@@ -23,8 +23,8 @@ async def async_creator():
     loop = asyncio.get_running_loop()
     async with Connector(loop=loop) as connector:
         conn = await connector.connect_async(
-            f'{config.gcp.project}:{config.gcp.region}:{config.database.gcp_db_instance}',  # Cloud SQL instance connection name"
-            'asyncpg',
+            f"{config.gcp.project}:{config.gcp.region}:{config.database.gcp_db_instance}",  # Cloud SQL instance connection name"
+            "asyncpg",
             user=config.database.user,
             password=config.database.password,
             db=config.database.name,
@@ -50,7 +50,7 @@ def _create_async_db_engine():
 
         # create async connection pool with wrapped creator
         return create_async_engine(
-            'postgresql+asyncpg://',
+            "postgresql+asyncpg://",
             creator=adapted_creator,
             pool_size=config.database.pool_size,
             max_overflow=config.database.max_overflow,
@@ -63,6 +63,7 @@ def _create_async_db_engine():
             max_overflow=config.database.max_overflow,
             pool_pre_ping=True,
         )
+
 
 # Create async engine
 engine = _create_async_db_engine()
@@ -93,18 +94,20 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def async_session_dependency(request: Request) -> AsyncGenerator[AsyncSession, None]:
+async def async_session_dependency(
+    request: Request,
+) -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency function that manages database sessions through request state.
-    
+
     This function stores the database session in the request state to enable
     session reuse across multiple dependencies within the same request.
     If a session already exists in the request state, it returns that session.
     Otherwise, it creates a new session and stores it in the request state.
-    
+
     Args:
         request: The FastAPI request object
-        
+
     Yields:
         AsyncSession: An async SQLAlchemy session stored in request state
     """
@@ -125,7 +128,8 @@ async def async_session_dependency(request: Request) -> AsyncGenerator[AsyncSess
                 await session.close()
 
 
-#TODO: We should delete the two methods below once we have alembic migrations set up
+# TODO: We should delete the two methods below once we have alembic migrations set up
+
 
 async def create_tables() -> None:
     """Create all database tables."""

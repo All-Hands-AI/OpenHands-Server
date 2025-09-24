@@ -37,9 +37,7 @@ async def search_sandbox_specs(
     """Search / List sandbox specs."""
     assert limit > 0
     assert limit <= 100
-    return await sandbox_spec_context.search_sandbox_specs(
-        page_id=page_id, limit=limit
-    )
+    return await sandbox_spec_context.search_sandbox_specs(page_id=page_id, limit=limit)
 
 
 @sandbox_spec_router.get("/{id}", responses={404: {"description": "Item not found"}})

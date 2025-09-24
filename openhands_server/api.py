@@ -2,20 +2,21 @@
 
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
+
 from fastapi import FastAPI
 
 from openhands.agent_server.middleware import LocalhostCORSMiddleware
-
 from openhands_server.config import get_default_config
-from openhands_server.database import create_tables, drop_tables
 from openhands_server.conversation_callback import conversation_callback_router
+from openhands_server.database import create_tables, drop_tables
+
 
 _config = get_default_config()
 
 
 @asynccontextmanager
 async def _api_lifespan(api: FastAPI) -> AsyncIterator[None]:
-    #TODO: Replace this with an invocation of the alembic migrations
+    # TODO: Replace this with an invocation of the alembic migrations
     await create_tables()
     yield
     await drop_tables()
@@ -25,7 +26,7 @@ api = FastAPI(
     title="OpenHands Enterprise Server",
     description="REST/WebSocket interface for OpenHands AI Agent",
     version="0.1.0",
-    lifespan=_api_lifespan
+    lifespan=_api_lifespan,
 )
 
 # Add CORS middleware
