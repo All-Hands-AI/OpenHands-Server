@@ -10,14 +10,14 @@ from openhands.sdk import EventBase
 from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands.sdk.llm.utils.metrics import MetricsSnapshot
 from openhands_server.database import AsyncSessionLocal
+from openhands_server.event.event_context import ReadOnlyEventContext
 from openhands_server.event.event_models import EventPage
-from openhands_server.event.read_only_event_context import ReadOnlyEventContext
 from openhands_server.local_conversation.agent_info import AgentInfo
-from openhands_server.sandbox.sandbox_models import SandboxStatus
-from openhands_server.sandbox.sandbox_service import (
+from openhands_server.sandbox.sandbox_context import (
     SandboxService,
     get_default_sandbox_service,
 )
+from openhands_server.sandbox.sandbox_models import SandboxStatus
 from openhands_server.sandboxed_conversation.sandboxed_conversation_models import (
     SandboxedConversationInfo,
     SandboxedConversationPage,

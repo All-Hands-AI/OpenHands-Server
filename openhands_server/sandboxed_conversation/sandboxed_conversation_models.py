@@ -1,18 +1,20 @@
-from uuid import UUID
+from pydantic import BaseModel, Field
 
-from pydantic import BaseModel
-
-from openhands_server.local_conversation.local_conversation_models import (
-    LocalConversationInfo,
-)
+from openhands.agent_server.models import ConversationInfo, StartConversationRequest
+from openhands_server.sandbox.sandbox_models import SandboxInfo
 
 
-class SandboxedConversationInfo(LocalConversationInfo):
-    """Information about a conversation running remotely in a Runtime sandbox"""
-
-    sandbox_id: UUID | None
+class SandboxedConversationInfo(BaseModel):
+    conversation_info: ConversationInfo
+    sandbox_info: SandboxInfo
 
 
 class SandboxedConversationPage(BaseModel):
     items: list[SandboxedConversationInfo]
     next_page_id: str | None = None
+
+
+class StartSandboxedConversationRequest(BaseModel):
+    sandbox_id: str | None = Field(default=None)
+    request: StartConversationRequest
+    callbacks: list[ConversationCallback]

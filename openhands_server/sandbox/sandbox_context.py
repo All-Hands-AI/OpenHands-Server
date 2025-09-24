@@ -1,19 +1,20 @@
 from abc import ABC, abstractmethod
+from typing import Type
 from uuid import UUID
 
+from openhands_server.config import get_default_config
 from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
-from openhands_server.user.user_context import UserContext
 from openhands_server.utils.import_utils import get_impl
 
 
-class SandboxService(ABC):
+class SandboxContext(ABC):
     """
-    Service for accessing sandboxes in which conversations may be run.
+    Context for accessing sandboxes available to the current user in which conversations may be run.
     """
 
     @abstractmethod
     async def search_sandboxes(
-        self, user_id: UUID | None = None, page_id: str | None = None, limit: int = 100
+        self, page_id: str | None = None, limit: int = 100
     ) -> SandboxPage:
         """Search for sandboxes"""
 
@@ -31,9 +32,7 @@ class SandboxService(ABC):
         return results
 
     @abstractmethod
-    async def start_sandbox(
-        self, user_context: UserContext, sandbox_spec_id: str
-    ) -> SandboxInfo:
+    async def start_sandbox(self, sandbox_spec_id: str) -> SandboxInfo:
         """Begin the process of starting a sandbox. Return the info on the new sandbox"""
 
     @abstractmethod
@@ -51,27 +50,30 @@ class SandboxService(ABC):
     # Lifecycle methods
 
     async def __aenter__(self):
-        """Start using this sandbox service"""
+        """Start using this sandbox context"""
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
-        """Stop using this sandbox service"""
+        """Stop using this sandbox context"""
 
     @classmethod
     @abstractmethod
-    def get_instance(cls) -> "SandboxService":
-        """Get an instance of sandbox service"""
+    def get_instance(cls, *args, **kwargs) -> "SandboxContext":
+        """Get an instance of sandbox context"""
 
 
-_sandbox_service = None
+_sandbox_context_type: Type[SandboxContext] = None
 
 
-def get_default_sandbox_service():
-    global _sandbox_service
-    if _sandbox_service:
-        return _sandbox_service
-    _sandbox_service = get_impl(
-        SandboxService,
-        "openhands_server.sandbox.docker_sandbox_service.DockerSandboxService",
-    )()
-    return _sandbox_service
+async def get_sandbox_context_type() -> Type[SandboxContext]:
+    global _sandbox_context_type
+    if _sandbox_context_type is None:
+        config = get_default_config()
+        _sandbox_context_type = get_impl(SandboxContext, config.sandbox_context_type)
+    return await _sandbox_context_type
+
+
+async def sandbox_context_dependency(*args, **kwargs):
+    context = get_sandbox_context_type().get_instance(args, kwargs)
+    async with context:
+        yield context

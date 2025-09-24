@@ -4,11 +4,11 @@ from datetime import datetime
 import docker
 from docker.errors import APIError, NotFound
 
+from openhands_server.sandbox_spec.sandbox_spec_context import SandboxSpecService
 from openhands_server.sandbox_spec.sandbox_spec_models import (
     SandboxSpecInfo,
     SandboxSpecInfoPage,
 )
-from openhands_server.sandbox_spec.sandbox_spec_service import SandboxSpecService
 from openhands_server.utils.date_utils import utc_now
 
 

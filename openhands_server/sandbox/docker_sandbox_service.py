@@ -8,19 +8,19 @@ import docker
 from docker.errors import APIError, NotFound
 from pydantic import SecretStr
 
+from openhands_server.sandbox.sandbox_context import (
+    SandboxService,
+)
 from openhands_server.sandbox.sandbox_errors import SandboxError
 from openhands_server.sandbox.sandbox_models import (
     SandboxInfo,
     SandboxPage,
     SandboxStatus,
 )
-from openhands_server.sandbox.sandbox_service import (
-    SandboxService,
-)
 from openhands_server.sandbox_spec.docker_sandbox_spec_service import (
     DockerSandboxSpecService,
 )
-from openhands_server.sandbox_spec.sandbox_spec_service import (
+from openhands_server.sandbox_spec.sandbox_spec_context import (
     get_default_sandbox_spec_service,
 )
 from openhands_server.utils.date_utils import utc_now

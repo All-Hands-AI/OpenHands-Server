@@ -1599,9 +1599,24 @@ wheels = [
 ]
 
 [[package]]
+name = "openhands-agent-server"
+version = "1.0.0"
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=f10d98e0c17dfc381055844e07be9d44fba8f166#f10d98e0c17dfc381055844e07be9d44fba8f166" }
+dependencies = [
+    { name = "aiosqlite" },
+    { name = "alembic" },
+    { name = "docker" },
+    { name = "fastapi" },
+    { name = "pydantic" },
+    { name = "sqlalchemy" },
+    { name = "uvicorn" },
+    { name = "websockets" },
+]
+
+[[package]]
 name = "openhands-sdk"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=752ac3658f95a17c7bcde5f7e197b734c23005b5#752ac3658f95a17c7bcde5f7e197b734c23005b5" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=f10d98e0c17dfc381055844e07be9d44fba8f166#f10d98e0c17dfc381055844e07be9d44fba8f166" }
 dependencies = [
     { name = "fastmcp" },
     { name = "litellm" },
@@ -1609,6 +1624,7 @@ dependencies = [
     { name = "python-frontmatter" },
     { name = "python-json-logger" },
     { name = "tenacity" },
+    { name = "websockets" },
 ]
 
 [[package]]
@@ -1620,6 +1636,7 @@ dependencies = [
     { name = "alembic" },
     { name = "docker" },
     { name = "fastapi" },
+    { name = "openhands-agent-server" },
     { name = "openhands-sdk" },
     { name = "openhands-tools" },
     { name = "pydantic" },
@@ -1665,8 +1682,9 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.25" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1" },
-    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=752ac3658f95a17c7bcde5f7e197b734c23005b5" },
-    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=752ac3658f95a17c7bcde5f7e197b734c23005b5" },
+    { name = "openhands-agent-server", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=f10d98e0c17dfc381055844e07be9d44fba8f166" },
+    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=f10d98e0c17dfc381055844e07be9d44fba8f166" },
+    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=f10d98e0c17dfc381055844e07be9d44fba8f166" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
@@ -1694,7 +1712,7 @@ dev = [
 [[package]]
 name = "openhands-tools"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=752ac3658f95a17c7bcde5f7e197b734c23005b5#752ac3658f95a17c7bcde5f7e197b734c23005b5" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=f10d98e0c17dfc381055844e07be9d44fba8f166#f10d98e0c17dfc381055844e07be9d44fba8f166" }
 dependencies = [
     { name = "bashlex" },
     { name = "binaryornot" },
