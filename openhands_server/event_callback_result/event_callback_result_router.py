@@ -25,15 +25,15 @@ context_dependency = get_event_callback_result_context_type().with_instance
 
 @router.get("/search")
 async def search_event_callback_results(
-    event_callback_id: Annotated[
+    event_callback_id__eq: Annotated[
         UUID | None,
         Query(title="Optional filter by event callback ID"),
     ] = None,
-    event_id: Annotated[
+    event_id__eq: Annotated[
         EventID | None,
         Query(title="Optional filter by event ID"),
     ] = None,
-    conversation_id: Annotated[
+    conversation_id__eq: Annotated[
         UUID | None,
         Query(title="Optional filter by conversation ID"),
     ] = None,
@@ -57,9 +57,9 @@ async def search_event_callback_results(
     assert limit > 0
     assert limit <= 100
     return await event_callback_result_context.search_event_callback_results(
-        event_callback_id__eq=event_callback_id,
-        event_id__eq=event_id,
-        conversation_id__eq=conversation_id,
+        event_callback_id__eq=event_callback_id__eq,
+        event_id__eq=event_id__eq,
+        conversation_id__eq=conversation_id__eq,
         sort_order=sort_order,
         page_id=page_id,
         limit=limit,
