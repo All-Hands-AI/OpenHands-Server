@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Type
+from typing import AsyncGenerator, Type
 from uuid import UUID
 
 from openhands_server.config import get_default_config
@@ -75,7 +75,9 @@ class ConversationCallbackContext(ABC):
 
     @classmethod
     @abstractmethod
-    def get_instance(cls, *args, **kwargs) -> "ConversationCallbackContext":
+    async def with_instance(
+        cls, *args, **kwargs
+    ) -> AsyncGenerator["ConversationCallbackContext", None]:
         """
         Get an instance of conversation callback context. Parameters are not specified
         so that they can be defined in the implementation classes and overridden using
@@ -85,9 +87,10 @@ class ConversationCallbackContext(ABC):
 
 
 _conversation_callback_context_type: Type[ConversationCallbackContext] = None
+_dependency = None
 
 
-async def get_conversation_callback_context_type() -> Type[ConversationCallbackContext]:
+def get_conversation_callback_context_type() -> Type[ConversationCallbackContext]:
     global _conversation_callback_context_type
     if _conversation_callback_context_type is None:
         config = get_default_config()
@@ -95,10 +98,3 @@ async def get_conversation_callback_context_type() -> Type[ConversationCallbackC
             ConversationCallbackContext, config.conversation_callback_context_type
         )
     return _conversation_callback_context_type
-
-
-async def conversation_callback_context_dependency(*args, **kwargs):
-    context_type = await get_conversation_callback_context_type()
-    context = context_type.get_instance(*args, **kwargs)
-    async with context:
-        yield context

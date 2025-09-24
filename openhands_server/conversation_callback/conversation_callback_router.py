@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands_server.conversation_callback.conversation_callback_context import (
     ConversationCallbackContext,
-    conversation_callback_context_dependency,
+    get_conversation_callback_context_type,
 )
 from openhands_server.conversation_callback.conversation_callback_models import (
     ConversationCallback,
@@ -16,7 +16,7 @@ from openhands_server.conversation_callback.conversation_callback_models import 
 
 
 router = APIRouter(prefix="/conversation-callbacks")
-
+context_dependency = get_conversation_callback_context_type().with_instance
 
 # Read methods
 
@@ -36,7 +36,7 @@ async def search_conversation_callbacks(
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
     conversation_callback_context: ConversationCallbackContext = Depends(
-        conversation_callback_context_dependency
+        context_dependency
     ),
 ) -> ConversationCallbackPage:
     """Search / List conversation callbacks."""
@@ -51,7 +51,7 @@ async def search_conversation_callbacks(
 async def get_conversation_callback(
     id: UUID,
     conversation_callback_context: ConversationCallbackContext = Depends(
-        conversation_callback_context_dependency
+        context_dependency
     ),
 ) -> ConversationCallback:
     """Get a single conversation callback given its id."""
@@ -65,7 +65,7 @@ async def get_conversation_callback(
 async def batch_get_conversation_callbacks(
     ids: Annotated[list[UUID], Query()],
     conversation_callback_context: ConversationCallbackContext = Depends(
-        conversation_callback_context_dependency
+        context_dependency
     ),
 ) -> list[ConversationCallback | None]:
     """Get a batch of conversation callbacks given their ids, returning null for any missing callback."""  # noqa: E501
@@ -83,7 +83,7 @@ async def batch_get_conversation_callbacks(
 async def create_conversation_callback(
     callback: ConversationCallback,
     conversation_callback_context: ConversationCallbackContext = Depends(
-        conversation_callback_context_dependency
+        context_dependency
     ),
 ) -> ConversationCallback:
     """Create a new conversation callback."""
@@ -95,7 +95,7 @@ async def update_conversation_callback(
     id: UUID,
     callback: ConversationCallback,
     conversation_callback_context: ConversationCallbackContext = Depends(
-        conversation_callback_context_dependency
+        context_dependency
     ),
 ) -> ConversationCallback:
     """Update an existing conversation callback."""
@@ -113,7 +113,7 @@ async def update_conversation_callback(
 async def delete_conversation_callback(
     id: UUID,
     conversation_callback_context: ConversationCallbackContext = Depends(
-        conversation_callback_context_dependency
+        context_dependency
     ),
 ) -> dict[str, str]:
     """Delete a conversation callback."""

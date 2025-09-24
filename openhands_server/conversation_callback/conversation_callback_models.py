@@ -51,8 +51,7 @@ class LoggingCallbackProcessor(ConversationCallbackProcessor):
         _logger.info(f"Callback {callback.id} Invoked for event {event}")
 
 
-class ConversationCallback(OpenHandsModel):
-    id: UUID = Field(default_factory=uuid4)
+class CreateConversationCallbackRequest(OpenHandsModel):
     status: ConversationCallbackStatus
     conversation_id: UUID
     processor: ConversationCallbackProcessor
@@ -60,6 +59,10 @@ class ConversationCallback(OpenHandsModel):
         default=None,
         description="Optional filter on the type of events for this callback",
     )
+
+
+class ConversationCallback(CreateConversationCallbackRequest):
+    id: UUID = Field(default_factory=uuid4)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 

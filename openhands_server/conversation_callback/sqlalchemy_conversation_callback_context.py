@@ -1,6 +1,6 @@
 """SQLAlchemy implementation of ConversationCallbackContext."""
 
-from typing import Any
+from typing import Any, AsyncGenerator
 from uuid import UUID
 
 from fastapi import Depends
@@ -34,16 +34,13 @@ class SQLAlchemyConversationCallbackContext(ConversationCallbackContext):
         self.session = session
 
     @classmethod
-    async def get_instance(
+    async def with_instance(
         cls, session: AsyncSession = Depends(async_session_dependency)
-    ) -> "SQLAlchemyConversationCallbackContext":
+    ) -> AsyncGenerator["SQLAlchemyConversationCallbackContext", None]:
         """
-        Get an instance of the SQLAlchemy conversation callback context.
-
-        Returns:
-            SQLAlchemyConversationCallbackContext: The context instance
+        Yield an instance of the SQLAlchemy conversation callback context.
         """
-        return cls(session)
+        yield cls(session)
 
     async def search_conversation_callbacks(
         self,
