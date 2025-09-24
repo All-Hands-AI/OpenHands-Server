@@ -17,22 +17,8 @@ from openhands_server.conversation_callback.conversation_callback_models import 
 
 router = APIRouter(prefix="/conversation-callbacks")
 
-# Create methods
-
-
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_conversation_callback(
-    callback: ConversationCallback,
-    conversation_callback_context: ConversationCallbackContext = Depends(
-        conversation_callback_context_dependency
-    ),
-) -> ConversationCallback:
-    """Create a new conversation callback."""
-    return await conversation_callback_context.create_conversation_callback(callback)
-
 
 # Read methods
-
 
 @router.get("/search")
 async def search_conversation_callbacks(
@@ -47,7 +33,7 @@ async def search_conversation_callbacks(
     limit: Annotated[
         int,
         Query(
-            title="The max number of results in the page", gt=0, lte=100, default=100
+            title="The max number of results in the page", gt=0, lte=100
         ),
     ] = 100,
     conversation_callback_context: ConversationCallbackContext = Depends(
@@ -91,32 +77,17 @@ async def batch_get_conversation_callbacks(
     return callbacks
 
 
-@router.get("/conversation/{conversation_id}")
-async def get_callbacks_for_conversation(
-    conversation_id: UUID,
-    page_id: Annotated[
-        str | None,
-        Query(title="Optional next_page_id from the previously returned page"),
-    ] = None,
-    limit: Annotated[
-        int,
-        Query(
-            title="The max number of results in the page", gt=0, lte=100, default=100
-        ),
-    ] = 100,
+# Write methods
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_conversation_callback(
+    callback: ConversationCallback,
     conversation_callback_context: ConversationCallbackContext = Depends(
         conversation_callback_context_dependency
     ),
-) -> ConversationCallbackPage:
-    """Get all callbacks for a specific conversation."""
-    assert limit > 0
-    assert limit <= 100
-    return await conversation_callback_context.get_callbacks_for_conversation(
-        conversation_id=conversation_id, page_id=page_id, limit=limit
-    )
-
-
-# Update methods
+) -> ConversationCallback:
+    """Create a new conversation callback."""
+    return await conversation_callback_context.create_conversation_callback(callback)
 
 
 @router.put("/{id}", responses={404: {"description": "Item not found"}})
@@ -136,9 +107,6 @@ async def update_conversation_callback(
     if updated_callback is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return updated_callback
-
-
-# Delete methods
 
 
 @router.delete("/{id}", responses={404: {"description": "Item not found"}})

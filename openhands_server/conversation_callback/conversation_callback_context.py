@@ -76,7 +76,12 @@ class ConversationCallbackContext(ABC):
     @classmethod
     @abstractmethod
     def get_instance(cls, *args, **kwargs) -> "ConversationCallbackContext":
-        """Get an instance of conversation callback context"""
+        """
+        Get an instance of conversation callback context. Parameters are not specified 
+        so that they can be defined in the implementation classes and overridden using
+        FastAPI's dependency injection. This allows merging global config with 
+        user / request specific variables.
+        """
 
 
 _conversation_callback_context_type: Type[ConversationCallbackContext] = None

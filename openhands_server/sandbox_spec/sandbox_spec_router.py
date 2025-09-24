@@ -15,12 +15,12 @@ from openhands_server.sandbox_spec.sandbox_spec_models import (
 )
 
 
-router = APIRouter(prefix="/sandbox-specs")
+sandbox_spec_router = APIRouter(prefix="/sandbox-specs")
 
 # Read methods
 
 
-@router.get("/search")
+@sandbox_spec_router.get("/search")
 async def search_sandbox_specs(
     page_id: Annotated[
         str | None,
@@ -42,7 +42,7 @@ async def search_sandbox_specs(
     )
 
 
-@router.get("/{id}", responses={404: {"description": "Item not found"}})
+@sandbox_spec_router.get("/{id}", responses={404: {"description": "Item not found"}})
 async def get_sandbox_spec(
     id: UUID,
     sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_context_dependency),
@@ -54,7 +54,7 @@ async def get_sandbox_spec(
     return sandbox_spec
 
 
-@router.get("/")
+@sandbox_spec_router.get("/")
 async def batch_get_sandbox_specs(
     ids: Annotated[list[UUID], Query()],
     sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_context_dependency),

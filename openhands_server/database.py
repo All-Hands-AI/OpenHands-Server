@@ -1,11 +1,15 @@
 """Database configuration and session management for OpenHands Server."""
 
-import os
+import asyncio
 from typing import AsyncGenerator
 
 from fastapi import Request
+from google.cloud.sql.connector import Connector
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.util import await_only
+
+from openhands_server.config import get_default_config
 
 
 class Base(DeclarativeBase):
@@ -14,15 +18,55 @@ class Base(DeclarativeBase):
     pass
 
 
-# Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./openhands.db")
+async def async_creator():
+    config = get_default_config()
+    loop = asyncio.get_running_loop()
+    async with Connector(loop=loop) as connector:
+        conn = await connector.connect_async(
+            f'{config.gcp.project}:{config.gcp.region}:{config.database.gcp_db_instance}',  # Cloud SQL instance connection name"
+            'asyncpg',
+            user=config.database.user,
+            password=config.database.password,
+            db=config.database.name,
+        )
+        return conn
+
+
+def _create_async_db_engine():
+    config = get_default_config()
+    if config.database.gcp_db_instance:  # GCP environments
+
+        def adapted_creator():
+            dbapi = engine.dialect.dbapi
+            from sqlalchemy.dialects.postgresql.asyncpg import (
+                AsyncAdapt_asyncpg_connection,
+            )
+
+            return AsyncAdapt_asyncpg_connection(
+                dbapi,
+                await_only(async_creator()),
+                prepared_statement_cache_size=100,
+            )
+
+        # create async connection pool with wrapped creator
+        return create_async_engine(
+            'postgresql+asyncpg://',
+            creator=adapted_creator,
+            pool_size=config.database.pool_size,
+            max_overflow=config.database.max_overflow,
+            pool_pre_ping=True,
+        )
+    else:
+        return create_async_engine(
+            config.database.url,
+            pool_size=config.database.pool_size,
+            max_overflow=config.database.max_overflow,
+            pool_pre_ping=True,
+        )
 
 # Create async engine
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=os.getenv("DATABASE_ECHO", "false").lower() == "true",
-    future=True,
-)
+engine = _create_async_db_engine()
+
 
 # Create async session maker
 AsyncSessionLocal = async_sessionmaker(
@@ -81,6 +125,8 @@ async def async_session_dependency(request: Request) -> AsyncGenerator[AsyncSess
                 await session.close()
 
 
+#TODO: We should delete the two methods below once we have alembic migrations set up
+
 async def create_tables() -> None:
     """Create all database tables."""
     async with engine.begin() as conn:
@@ -91,44 +137,3 @@ async def drop_tables() -> None:
     """Drop all database tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-
-
-# Example usage of the async session maker
-async def example_usage() -> None:
-    """
-    Example of how to use the async session maker.
-
-    This function demonstrates the proper way to use async sessions
-    for database operations.
-    """
-    # Method 1: Using the dependency function (recommended for FastAPI)
-    async for session in get_async_session():
-        # Your database operations here
-        # result = await session.execute(select(SomeModel))
-        # await session.commit()
-        pass
-
-    # Method 2: Using the request-scoped session dependency (for FastAPI with request state)
-    # This would be used in FastAPI route handlers like:
-    # @app.get("/example")
-    # async def example_route(
-    #     request: Request,
-    #     session: AsyncSession = Depends(async_session_dependency)
-    # ):
-    #     # Your database operations here
-    #     # result = await session.execute(select(SomeModel))
-    #     # await session.commit()
-    #     pass
-
-    # Method 3: Direct usage with context manager
-    async with AsyncSessionLocal() as session:
-        try:
-            # Your database operations here
-            # result = await session.execute(select(SomeModel))
-            # await session.commit()
-            pass
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()

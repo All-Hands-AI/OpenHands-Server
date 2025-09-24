@@ -34,19 +34,14 @@ class SQLAlchemyConversationCallbackContext(ConversationCallbackContext):
         self.session = session
 
     @classmethod
-    async def get_instance(cls, request: Request) -> "SQLAlchemyConversationCallbackContext":
+    async def get_instance(cls, session: AsyncSession = Depends(async_session_dependency)) -> "SQLAlchemyConversationCallbackContext":
         """
         Get an instance of the SQLAlchemy conversation callback context.
-        
-        Args:
-            request: The FastAPI request object
-            
+
         Returns:
             SQLAlchemyConversationCallbackContext: The context instance
         """
-        # Use the async_session_dependency to get a session from request state
-        async for session in async_session_dependency(request):
-            return cls(session)
+        return cls(session)
 
     async def search_conversation_callbacks(
         self,

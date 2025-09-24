@@ -1,13 +1,13 @@
 """SQLAlchemy database models for conversation callbacks."""
 
-import json
+from __future__ import annotations
 import uuid
-from typing import Any
 
 from sqlalchemy import JSON, UUID, Column, DateTime, String
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from openhands_server.conversation_callback.conversation_callback_models import (
+    ConversationCallback,
     ConversationCallbackProcessor,
     ConversationCallbackStatus,
 )
@@ -87,17 +87,13 @@ class StoredConversationCallback(Base):
         """
         self.status = value.value
 
-    def to_pydantic(self) -> "ConversationCallback":
+    def to_pydantic(self) -> ConversationCallback:
         """
         Convert the SQLAlchemy model to a Pydantic model.
         
         Returns:
             ConversationCallback: The Pydantic model representation
         """
-        from openhands_server.conversation_callback.conversation_callback_models import (
-            ConversationCallback,
-        )
-        
         return ConversationCallback(
             id=self.id,
             status=self.status_enum,
@@ -109,7 +105,7 @@ class StoredConversationCallback(Base):
         )
 
     @classmethod
-    def from_pydantic(cls, callback: "ConversationCallback") -> "StoredConversationCallback":
+    def from_pydantic(cls, callback: ConversationCallback) -> StoredConversationCallback:
         """
         Create a SQLAlchemy model from a Pydantic model.
         
