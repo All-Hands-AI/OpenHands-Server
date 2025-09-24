@@ -26,7 +26,7 @@ class OpenHandsServerConfig(BaseModel):
         description="The class to use for SandboxContext dependencies",
     )
     conversation_callback_context_type: str = Field(
-        default="openhands_server.auth.dummy.DummyAuthContext",
+        default="openhands_server.conversation_callback.sqlalchemy_conversation_callback_context.SQLAlchemyConversationCallbackContext",
         description="The class to use for ConversationCallbackContext dependencies",
     )
     sandboxed_conversation_context_type: str = Field(
