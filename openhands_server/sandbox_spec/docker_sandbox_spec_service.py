@@ -18,7 +18,7 @@ class DockerSandboxSpecService(SandboxSpecService):
     Sandbox spec service for docker images. By default, all images with the repository given
     are loaded and returned (They may have different tag) The combination of the repository
     and tag is treated as the id in the resulting image.
-    """
+    """  # noqa: E501
 
     client: docker.DockerClient = field(default_factory=docker.from_env)
     repository: str = "ghcr.io/all-hands-ai/runtime"
@@ -69,7 +69,7 @@ class DockerSandboxSpecService(SandboxSpecService):
                             sandbox_specs.append(
                                 self._docker_image_to_sandbox_specs(image)
                             )
-                            break  # Only add once per image, even if multiple matching tags
+                            break  # Only add once per image, even if multiple matching tags  # noqa: E501
 
             # Apply pagination
             start_idx = 0

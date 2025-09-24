@@ -71,7 +71,7 @@ async def batch_get_sandboxed_conversations(
         sandboxed_conversation_context_dependency
     ),
 ) -> list[SandboxedConversationInfo | None]:
-    """Get a batch of sandboxed conversations given their ids, returning null for any missing spec."""
+    """Get a batch of sandboxed conversations given their ids, returning null for any missing spec."""  # noqa: E501
     assert len(ids) < 100
     sandboxed_conversations = (
         await sandboxed_conversation_context.batch_get_sandboxed_conversations(ids)

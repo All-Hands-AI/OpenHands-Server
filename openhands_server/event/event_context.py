@@ -13,7 +13,7 @@ from openhands.sdk.security.confirmation_policy import ConfirmationPolicyBase
 
 
 class EventService(ABC):
-    """Read Only Event Service for getting events - which may be related to a conversation, and may or may not be running"""
+    """Read Only Event Service for getting events - which may be related to a conversation, and may or may not be running"""  # noqa: E501
 
     @abstractmethod
     async def get_event(self, event_id: str) -> EventBase | None:

@@ -16,7 +16,10 @@ class GitInfo(BaseModel):
 
     id: UUID = Field(default_factory=uuid.uuid4)
     name: str = Field(
-        description="Descriptive name for this git info - mostly used to distinguish if there are multiple."
+        description=(
+            "Descriptive name for this git info - mostly used to distinguish "
+            "if there are multiple."
+        )
     )
     selected_repository: str | None = None
     selected_branch: str | None = None

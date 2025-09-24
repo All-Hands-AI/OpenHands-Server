@@ -37,7 +37,9 @@ async def search_sandbox_specs(
     """Search / List sandbox specs."""
     assert limit > 0
     assert limit <= 100
-    return await sandbox_spec_context.search_sandbox_specs(page_id=page_id, limit=limit)
+    return await sandbox_spec_context.search_sandbox_specs(
+        page_id=page_id, limit=limit
+    )
 
 
 @router.get("/{id}", responses={404: {"description": "Item not found"}})
@@ -57,7 +59,7 @@ async def batch_get_sandbox_specs(
     ids: Annotated[list[UUID], Query()],
     sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_context_dependency),
 ) -> list[SandboxSpecInfo | None]:
-    """Get a batch of sandbox specs given their ids, returning null for any missing spec."""
+    """Get a batch of sandbox specs given their ids, returning null for any missing spec."""  # noqa: E501
     assert len(ids) <= 100
     sandbox_specs = await sandbox_spec_context.batch_get_sandbox_specs(ids)
     return sandbox_specs

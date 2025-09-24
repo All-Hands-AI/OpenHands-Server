@@ -35,7 +35,7 @@ class VolumeMount:
 
 @dataclass
 class ExposedPort:
-    """Exposed port. A free port will be found for this and an environment variable set"""
+    """Exposed port. A free port will be found for this and an environment variable set"""  # noqa: E501
 
     name: str
     description: str

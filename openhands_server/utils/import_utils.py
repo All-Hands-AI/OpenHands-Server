@@ -23,7 +23,7 @@ def import_from(qual_name: str):
     Example:
         >>> UserAuth = import_from('openhands.server.user_auth.UserAuth')
         >>> auth = UserAuth()
-    """
+    """  # noqa: E501
     parts = qual_name.split(".")
     module_name = ".".join(parts[:-1])
     module = importlib.import_module(module_name)
@@ -70,5 +70,5 @@ def get_impl(cls: type[T], impl_name: str | None) -> type[T]:
         - Service integrations (GitHub, GitLab, Bitbucket services)
 
     The implementation is cached to avoid repeated imports of the same class.
-    """
+    """  # noqa: E501
     return _get_impl(cls, impl_name)  # type: ignore

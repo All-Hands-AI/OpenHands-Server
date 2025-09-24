@@ -30,10 +30,17 @@ class SandboxInfo(BaseModel):
     sandbox_spec_id: str
     status: SandboxStatus
     url: str | None = Field(
-        description="URL to access sandbox. Sandboxes with a status STARTING / PAUSED / DELETED / ERROR will not have a url"
+        description=(
+            "URL to access sandbox. Sandboxes with a status STARTING / PAUSED / "
+            "DELETED / ERROR will not have a url"
+        )
     )
     session_api_key: SecretStr | None = Field(
-        description="Key to access sandbox, to be added as an `X-Session-API-Key` header in each request. Sandboxes with a status STARTING / PAUSED / DELETED / ERROR will not have a key"
+        description=(
+            "Key to access sandbox, to be added as an `X-Session-API-Key` header "
+            "in each request. Sandboxes with a status STARTING / PAUSED / DELETED / "
+            "ERROR will not have a key"
+        )
     )
     exposed_urls: list[ExposedUrl] = Field(
         default_factory=list,
