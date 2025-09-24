@@ -36,10 +36,11 @@ class ExposedPort:
 
     name: str
     description: str
+    container_port: int = 8000
 
 
 @dataclass
-class DockerSandboxService(SandboxContext):
+class DockerSandboxContext(SandboxContext):
     container_name_prefix: str = "openhands-runtime-"
     exposed_url_pattern: str = "http://localhost:{port}"
     # sandbox_spec_context will be created on-demand

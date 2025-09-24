@@ -22,7 +22,7 @@ class OpenHandsServerConfig(BaseModel):
         description="The class to use for SandboxSpecContext dependencies",
     )
     sandbox_context_type: str = Field(
-        default="openhands_server.auth.dummy.DummyAuthContext",
+        default="openhands_server.sandbox.docker_sandbox_context.DockerSandboxContext",
         description="The class to use for SandboxContext dependencies",
     )
     conversation_callback_context_type: str = Field(
