@@ -4,7 +4,7 @@ from datetime import datetime
 import docker
 from docker.errors import APIError, NotFound
 
-from openhands_server.sandbox_spec.sandbox_spec_context import SandboxSpecService
+from openhands_server.sandbox_spec.sandbox_spec_context import SandboxSpecContext
 from openhands_server.sandbox_spec.sandbox_spec_models import (
     SandboxSpecInfo,
     SandboxSpecInfoPage,
@@ -13,14 +13,14 @@ from openhands_server.utils.date_utils import utc_now
 
 
 @dataclass
-class DockerSandboxSpecService(SandboxSpecService):
+class DockerSandboxSpecContext(SandboxSpecContext):
     """
-    Sandbox spec service for docker images. By default, all images with the repository given
+    Sandbox spec context for docker images. By default, all images with the repository given
     are loaded and returned (They may have different tag) The combination of the repository
     and tag is treated as the id in the resulting image.
     """  # noqa: E501
 
-    client: docker.DockerClient = field(default_factory=docker.from_env)
+    client: docker.DockerClient = field(default=None)
     repository: str = "ghcr.io/all-hands-ai/runtime"
     command: str = "python -u -m openhands_server.runtime"
     initial_env: dict[str, str] = field(default_factory=dict)
@@ -114,6 +114,18 @@ class DockerSandboxSpecService(SandboxSpecService):
             results.append(result)
         return results
 
+    async def __aenter__(self):
+        """Start using this sandbox spec context"""
+        if self.client is None:
+            self.client = docker.from_env()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        """Stop using this sandbox spec context"""
+        # Docker client doesn't need explicit cleanup
+        pass
+
     @classmethod
-    def get_instance(cls) -> "SandboxSpecService":
-        return DockerSandboxSpecService()
+    async def get_instance(cls, *args, **kwargs) -> "DockerSandboxSpecContext":
+        """Get an instance of sandbox spec context"""
+        return cls(*args, **kwargs)

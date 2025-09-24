@@ -9,7 +9,7 @@ from docker.errors import APIError, NotFound
 from pydantic import SecretStr
 
 from openhands_server.sandbox.sandbox_context import (
-    SandboxService,
+    SandboxContext,
 )
 from openhands_server.sandbox.sandbox_errors import SandboxError
 from openhands_server.sandbox.sandbox_models import (
@@ -17,11 +17,8 @@ from openhands_server.sandbox.sandbox_models import (
     SandboxPage,
     SandboxStatus,
 )
-from openhands_server.sandbox_spec.docker_sandbox_spec_service import (
-    DockerSandboxSpecService,
-)
 from openhands_server.sandbox_spec.sandbox_spec_context import (
-    get_default_sandbox_spec_service,
+    get_sandbox_spec_context_type,
 )
 from openhands_server.utils.date_utils import utc_now
 
@@ -42,12 +39,10 @@ class ExposedPort:
 
 
 @dataclass
-class DockerSandboxService(SandboxService):
+class DockerSandboxService(SandboxContext):
     container_name_prefix: str = "openhands-runtime-"
     exposed_url_pattern: str = "http://localhost:{port}"
-    sandbox_spec_service: DockerSandboxSpecService = field(
-        default_factory=DockerSandboxSpecService.get_instance
-    )
+    # sandbox_spec_context will be created on-demand
     mounts: list[VolumeMount] = field(default_factory=list)
     exposed_port: list[ExposedPort] = field(
         default_factory=lambda: [
@@ -208,8 +203,9 @@ class DockerSandboxService(SandboxService):
     async def start_sandbox(self, user_id: UUID, sandbox_spec_id: str) -> UUID:
         """Start a new sandbox"""
         # Get runtime image info
-        sandbox_spec_service = get_default_sandbox_spec_service()
-        sandbox_spec = await sandbox_spec_service.get_sandbox_spec(sandbox_spec_id)
+        sandbox_spec_context_type = await get_sandbox_spec_context_type()
+        async with await sandbox_spec_context_type.get_instance() as sandbox_spec_context:
+            sandbox_spec = await sandbox_spec_context.get_sandbox_spec(sandbox_spec_id)
 
         if sandbox_spec is None:
             raise ValueError(f"Runtime image {sandbox_spec_id} not found")
@@ -223,12 +219,11 @@ class DockerSandboxService(SandboxService):
 
         # Prepare port mappings and add port environment variables
         port_mappings = {}
-        for container_port, description in sandbox_spec.exposed_ports.items():
+        for exposed_port in self.exposed_port:
             host_port = self._find_unused_port()
-            port_mappings[container_port] = host_port
+            port_mappings[exposed_port.container_port] = host_port
             # Add port as environment variable
-            env_var_name = f"PORT_{container_port}"
-            env_vars[env_var_name] = str(host_port)
+            env_vars[exposed_port.name] = str(host_port)
 
         # Prepare labels
         labels = {
@@ -328,6 +323,6 @@ class DockerSandboxService(SandboxService):
         self._client = None
 
     @classmethod
-    def get_instance(cls) -> "SandboxService":
+    def get_instance(cls) -> "SandboxContext":
         """Get an instance of sandbox service"""
         return cls()

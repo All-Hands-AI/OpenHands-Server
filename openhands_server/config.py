@@ -18,7 +18,7 @@ class OpenHandsServerConfig(BaseModel):
         description="The class to use for AuthContext dependencies",
     )
     sandbox_spec_context_type: str = Field(
-        default="openhands_server.auth.dummy.DummyAuthContext",
+        default="openhands_server.sandbox_spec.docker_sandbox_spec_context.DockerSandboxSpecContext",
         description="The class to use for SandboxSpecContext dependencies",
     )
     sandbox_context_type: str = Field(

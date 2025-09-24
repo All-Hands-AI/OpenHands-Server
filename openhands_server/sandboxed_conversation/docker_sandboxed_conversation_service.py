@@ -14,7 +14,7 @@ from openhands_server.event.event_context import ReadOnlyEventContext
 from openhands_server.event.event_models import EventPage
 from openhands_server.local_conversation.agent_info import AgentInfo
 from openhands_server.sandbox.sandbox_context import (
-    SandboxService,
+    SandboxContext,
     get_default_sandbox_service,
 )
 from openhands_server.sandbox.sandbox_models import SandboxStatus
@@ -91,7 +91,7 @@ class DockerSandboxedEventContext(ReadOnlyEventContext):
 
 @dataclass
 class DockerSandboxedConversationService(SandboxedConversationService):
-    sandbox_service: SandboxService = field(default_factory=get_default_sandbox_service)
+    sandbox_service: SandboxContext = field(default_factory=get_default_sandbox_service)
 
     def _sandbox_status_to_conversation_status(
         self, sandbox_status: SandboxStatus

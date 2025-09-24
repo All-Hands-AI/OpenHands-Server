@@ -74,6 +74,14 @@ async def get_sandbox_context_type() -> Type[SandboxContext]:
 
 
 async def sandbox_context_dependency(*args, **kwargs):
-    context = get_sandbox_context_type().get_instance(args, kwargs)
+    context_type = await get_sandbox_context_type()
+    context = context_type.get_instance(*args, **kwargs)
     async with context:
         yield context
+
+
+# Legacy compatibility function for existing code
+async def get_default_sandbox_service():
+    """Get default sandbox service - legacy compatibility function"""
+    context_type = await get_sandbox_context_type()
+    return context_type.get_instance()
