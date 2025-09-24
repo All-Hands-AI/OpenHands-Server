@@ -50,6 +50,10 @@ class DatabaseConfig(BaseModel):
 
 
 class OpenHandsServerConfig(BaseModel):
+    event_callback_result_context_type: str = Field(
+        default="openhands_server.auth.dummy.DummyAuthContext",
+        description="The implementation of EventCallbackResultContext to use",
+    )
     auth_context_type: str = Field(
         default="openhands_server.auth.dummy.DummyAuthContext",
         description="The class to use for AuthContext dependencies",

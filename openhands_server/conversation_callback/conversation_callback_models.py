@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from openhands.sdk import EventBase
 from openhands.sdk.utils.models import DiscriminatedUnionMixin, OpenHandsModel
@@ -14,14 +14,6 @@ from openhands_server.utils.date_utils import utc_now
 
 
 _logger = logging.getLogger(__name__)
-
-
-class ConversationCallbackStatus(Enum):
-    """Status of a conversation callback."""
-
-    ACTIVE = "ACTIVE"
-    COMPLETED = "COMPLETED"
-    ERROR = "ERROR"
 
 
 class ConversationCallbackProcessor(DiscriminatedUnionMixin, ABC):
@@ -52,7 +44,6 @@ class LoggingCallbackProcessor(ConversationCallbackProcessor):
 
 
 class CreateConversationCallbackRequest(OpenHandsModel):
-    status: ConversationCallbackStatus
     conversation_id: UUID
     processor: ConversationCallbackProcessor
     event_kind: str | None = Field(
@@ -63,10 +54,22 @@ class CreateConversationCallbackRequest(OpenHandsModel):
 
 class ConversationCallback(CreateConversationCallbackRequest):
     id: UUID = Field(default_factory=uuid4)
-    created_at: datetime = Field(default_factory=utc_now)
-    updated_at: datetime = Field(default_factory=utc_now)
+    timestamp: datetime = Field(default_factory=utc_now)
 
 
 class ConversationCallbackPage(OpenHandsModel):
     items: list[ConversationCallback]
     next_page_id: str | None = None
+
+
+class ConversationCallbackResultStatus(Enum):
+    SUCCESS = "SUCCESS"
+    ERROR = "ERROR"
+
+
+class ConversationCallbackResult(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    conversation_callback_id: UUID
+    status: ConversationCallbackResultStatus
+    details: str | None = None
+    timestamp: datetime = Field(default_factory=utc_now)
