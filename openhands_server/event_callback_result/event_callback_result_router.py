@@ -89,7 +89,7 @@ async def batch_get_event_callback_results(
 ) -> list[EventCallbackResult | None]:
     """Get a batch of event callback results given their ids, returning null for any missing result."""  # noqa: E501
     assert len(ids) <= 100
-    results = await event_callback_result_context.batch_get_conversation_callbacks(ids)
+    results = await event_callback_result_context.batch_get_event_callback_results(ids)
     return results
 
 

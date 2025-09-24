@@ -40,7 +40,7 @@ class EventCallbackResultContext(ABC):
         callback_id, event_id or conversation_id, and sorting by timestamp
         ascending or descending"""
 
-    async def batch_get_conversation_callbacks(
+    async def batch_get_event_callback_results(
         self, ids: list[UUID]
     ) -> list[EventCallbackResult | None]:
         """Get a batch of event callback results, returning None for any
@@ -71,7 +71,7 @@ class EventCallbackResultContext(ABC):
         cls, *args, **kwargs
     ) -> AsyncGenerator[EventCallbackResultContext, None]:
         """
-        Get an instance of conversation callback result context. Parameters are not
+        Get an instance of event callback result context. Parameters are not
         specified so that they can be defined in the implementation classes and
         overridden using FastAPI's dependency injection. This allows merging global
         config with user / request specific variables.
