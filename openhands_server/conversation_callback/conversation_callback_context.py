@@ -6,6 +6,7 @@ from openhands_server.config import get_default_config
 from openhands_server.conversation_callback.conversation_callback_models import (
     ConversationCallback,
     ConversationCallbackPage,
+    CreateConversationCallbackRequest,
 )
 from openhands_server.utils.import_utils import get_impl
 
@@ -19,19 +20,13 @@ class ConversationCallbackContext(ABC):
 
     @abstractmethod
     async def create_conversation_callback(
-        self, callback: ConversationCallback
+        self, request: CreateConversationCallbackRequest
     ) -> ConversationCallback:
         """Create a new conversation callback"""
 
     @abstractmethod
     async def get_conversation_callback(self, id: UUID) -> ConversationCallback | None:
         """Get a single conversation callback, returning None if not found."""
-
-    @abstractmethod
-    async def update_conversation_callback(
-        self, callback: ConversationCallback
-    ) -> ConversationCallback | None:
-        """Update an existing conversation callback, returning None if not found."""
 
     @abstractmethod
     async def delete_conversation_callback(self, id: UUID) -> bool:
@@ -87,7 +82,6 @@ class ConversationCallbackContext(ABC):
 
 
 _conversation_callback_context_type: Type[ConversationCallbackContext] = None
-_dependency = None
 
 
 def get_conversation_callback_context_type() -> Type[ConversationCallbackContext]:

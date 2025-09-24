@@ -44,7 +44,7 @@ class LoggingCallbackProcessor(ConversationCallbackProcessor):
 
 
 class CreateConversationCallbackRequest(OpenHandsModel):
-    conversation_id: UUID
+    conversation_id: UUID | None = None
     processor: ConversationCallbackProcessor
     event_kind: str | None = Field(
         default=None,
@@ -60,16 +60,3 @@ class ConversationCallback(CreateConversationCallbackRequest):
 class ConversationCallbackPage(OpenHandsModel):
     items: list[ConversationCallback]
     next_page_id: str | None = None
-
-
-class ConversationCallbackResultStatus(Enum):
-    SUCCESS = "SUCCESS"
-    ERROR = "ERROR"
-
-
-class ConversationCallbackResult(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    conversation_callback_id: UUID
-    status: ConversationCallbackResultStatus
-    details: str | None = None
-    timestamp: datetime = Field(default_factory=utc_now)
