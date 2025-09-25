@@ -1,5 +1,5 @@
 """
-Unit tests for the configuration system, focusing on get_default_config function
+Unit tests for the configuration system, focusing on get_global_config function
 and JSON configuration loading with environment variable overrides.
 """
 
@@ -16,7 +16,7 @@ from openhands_server.agent_server.config import (
     DEFAULT_CONFIG_FILE_PATH,
     SESSION_API_KEY_ENV,
     Config,
-    get_default_config,
+    get_global_config,
 )
 
 
@@ -165,7 +165,7 @@ class TestConfig:
 
 
 class TestGetDefaultConfig:
-    """Test cases for the get_default_config function."""
+    """Test cases for the get_global_config function."""
 
     def setup_method(self):
         """Reset the global config before each test."""
@@ -174,19 +174,19 @@ class TestGetDefaultConfig:
 
         config_module._default_config = None
 
-    def test_get_default_config_no_env_no_file(self):
-        """Test get_default_config with no environment variable and no default file."""
+    def test_get_global_config_no_env_no_file(self):
+        """Test get_global_config with no environment variable and no default file."""
         with patch.dict(os.environ, {}, clear=True):
             with patch("pathlib.Path.exists", return_value=False):
-                config = get_default_config()
+                config = get_global_config()
 
                 assert config.session_api_key is None
                 assert config.allow_cors_origins == []
                 assert config.conversations_path == Path("workspace/conversations")
                 assert config.workspace_path == Path("workspace/project")
 
-    def test_get_default_config_with_default_file(self):
-        """Test get_default_config using the default config file."""
+    def test_get_global_config_with_default_file(self):
+        """Test get_global_config using the default config file."""
         json_content = {
             "session_api_key": "default-file-key",
             "allow_cors_origins": ["https://default.com"],
@@ -204,7 +204,7 @@ class TestGetDefaultConfig:
                     "openhands_server.agent_server.config.DEFAULT_CONFIG_FILE_PATH",
                     str(temp_path),
                 ):
-                    config = get_default_config()
+                    config = get_global_config()
 
                     assert config.session_api_key == "default-file-key"
                     assert config.allow_cors_origins == ["https://default.com"]
@@ -213,8 +213,8 @@ class TestGetDefaultConfig:
         finally:
             temp_path.unlink()
 
-    def test_get_default_config_with_custom_file_path(self):
-        """Test get_default_config with custom config file path from environment."""
+    def test_get_global_config_with_custom_file_path(self):
+        """Test get_global_config with custom config file path from environment."""
         json_content = {
             "session_api_key": "custom-file-key",
             "allow_cors_origins": ["https://custom.com"],
@@ -228,7 +228,7 @@ class TestGetDefaultConfig:
 
         try:
             with patch.dict(os.environ, {CONFIG_FILE_PATH_ENV: str(temp_path)}):
-                config = get_default_config()
+                config = get_global_config()
 
                 assert config.session_api_key == "custom-file-key"
                 assert config.allow_cors_origins == ["https://custom.com"]
@@ -237,8 +237,8 @@ class TestGetDefaultConfig:
         finally:
             temp_path.unlink()
 
-    def test_get_default_config_with_env_override(self):
-        """Test get_default_config with environment variable override."""
+    def test_get_global_config_with_env_override(self):
+        """Test get_global_config with environment variable override."""
         json_content = {
             "session_api_key": "file-key",
             "allow_cors_origins": ["https://file.com"],
@@ -258,7 +258,7 @@ class TestGetDefaultConfig:
                     SESSION_API_KEY_ENV: "env-override-key",
                 },
             ):
-                config = get_default_config()
+                config = get_global_config()
 
                 # Environment variable should override file value
                 assert config.session_api_key == "env-override-key"
@@ -269,8 +269,8 @@ class TestGetDefaultConfig:
         finally:
             temp_path.unlink()
 
-    def test_get_default_config_caching(self):
-        """Test that get_default_config caches the result."""
+    def test_get_global_config_caching(self):
+        """Test that get_global_config caches the result."""
         json_content = {
             "session_api_key": "cached-key",
             "allow_cors_origins": ["https://cached.com"],
@@ -283,9 +283,9 @@ class TestGetDefaultConfig:
         try:
             with patch.dict(os.environ, {CONFIG_FILE_PATH_ENV: str(temp_path)}):
                 # First call
-                config1 = get_default_config()
+                config1 = get_global_config()
                 # Second call
-                config2 = get_default_config()
+                config2 = get_global_config()
 
                 # Should be the same object (cached)
                 assert config1 is config2
@@ -294,12 +294,12 @@ class TestGetDefaultConfig:
         finally:
             temp_path.unlink()
 
-    def test_get_default_config_nonexistent_custom_file(self):
-        """Test get_default_config with non-existent custom config file."""
+    def test_get_global_config_nonexistent_custom_file(self):
+        """Test get_global_config with non-existent custom config file."""
         with patch.dict(
             os.environ, {CONFIG_FILE_PATH_ENV: "/tmp/nonexistent_config.json"}
         ):
-            config = get_default_config()
+            config = get_global_config()
 
             # Should fall back to defaults
             assert config.session_api_key is None
@@ -307,19 +307,19 @@ class TestGetDefaultConfig:
             assert config.conversations_path == Path("workspace/conversations")
             assert config.workspace_path == Path("workspace/project")
 
-    def test_get_default_config_env_override_only(self):
-        """Test get_default_config with only environment variable override."""
+    def test_get_global_config_env_override_only(self):
+        """Test get_global_config with only environment variable override."""
         with patch.dict(os.environ, {SESSION_API_KEY_ENV: "env-only-key"}):
             with patch("pathlib.Path.exists", return_value=False):
-                config = get_default_config()
+                config = get_global_config()
 
                 assert config.session_api_key == "env-only-key"
                 assert config.allow_cors_origins == []
                 assert config.conversations_path == Path("workspace/conversations")
                 assert config.workspace_path == Path("workspace/project")
 
-    def test_get_default_config_complex_json(self):
-        """Test get_default_config with complex JSON structure."""
+    def test_get_global_config_complex_json(self):
+        """Test get_global_config with complex JSON structure."""
         json_content = {
             "session_api_key": "complex-key",
             "allow_cors_origins": [
@@ -337,7 +337,7 @@ class TestGetDefaultConfig:
 
         try:
             with patch.dict(os.environ, {CONFIG_FILE_PATH_ENV: str(temp_path)}):
-                config = get_default_config()
+                config = get_global_config()
 
                 assert config.session_api_key == "complex-key"
                 assert len(config.allow_cors_origins) == 3

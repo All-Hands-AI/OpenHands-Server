@@ -1,1 +1,0 @@
-An OpenHands SDK server is a minimal server which uses the local filesystem to store files and run agents.
