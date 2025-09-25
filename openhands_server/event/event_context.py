@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Type
 from uuid import UUID
 
 from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.sdk import EventBase
 from openhands_server.config import get_global_config
+from openhands_server.event_callback.event_callback_models import EventKind
 from openhands_server.utils.import_utils import get_impl
 
 
@@ -18,19 +20,29 @@ class EventContext(ABC):
     @abstractmethod
     async def search_events(
         self,
+        conversation_id__eq: UUID | None = None,
+        kind__eq: EventKind | None = None,
+        timestamp__gte: datetime | None = None,
+        timestamp__lt: datetime | None = None,
+        sort_order: EventSortOrder = EventSortOrder.TIMESTAMP,
         page_id: str | None = None,
         limit: int = 100,
-        kind: str | None = None,
-        sort_order: EventSortOrder = EventSortOrder.TIMESTAMP,
     ) -> EventPage:
         """Search events matching the given filters."""
 
     @abstractmethod
     async def count_events(
         self,
-        kind: str | None = None,
+        conversation_id__eq: UUID | None = None,
+        kind__eq: EventKind | None = None,
+        timestamp__gte: datetime | None = None,
+        timestamp__lt: datetime | None = None,
+        sort_order: EventSortOrder = EventSortOrder.TIMESTAMP,
     ) -> int:
         """Count events matching the given filters."""
+
+    async def save_event(self, conversation_id: UUID, event: EventBase):
+        """Save an event. Internal method intended not be part of the REST api"""
 
     @abstractmethod
     async def batch_get_events(self, event_ids: list[str]) -> list[EventBase | None]:
