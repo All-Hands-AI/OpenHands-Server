@@ -64,7 +64,7 @@ class OpenHandsServerConfig(BaseModel):
         description="The class to use for AuthContext dependencies",
     )
     sandbox_spec_context_type: str = Field(
-        default="openhands_server.sandbox_spec.docker_sandbox_spec_context.DockerSandboxSpecContext",
+        default="openhands_server.sandbox.docker_sandbox_spec_context.DockerSandboxSpecContext",
         description="The class to use for SandboxSpecContext dependencies",
     )
     sandbox_context_type: str = Field(
@@ -86,13 +86,13 @@ class OpenHandsServerConfig(BaseModel):
     gcp: GCPConfig = Field(default_factory=GCPConfig)
 
 
-_default_config: OpenHandsServerConfig | None = None
+_global_config: OpenHandsServerConfig | None = None
 
 
-def get_default_config() -> OpenHandsServerConfig:
+def get_global_config() -> OpenHandsServerConfig:
     """Get the default local server config shared across the server"""
-    global _default_config
-    if _default_config is None:
+    global _global_config
+    if _global_config is None:
         # Get config file path from environment variable or use default
         config_file_path = os.getenv(CONFIG_FILE_PATH_ENV, DEFAULT_CONFIG_FILE_PATH)
         config_path = Path(config_file_path)
@@ -100,11 +100,11 @@ def get_default_config() -> OpenHandsServerConfig:
         # Load configuration from JSON file
         if config_path.exists():
             print(f"⚙️  Loading OpenHands Enterprise Server Config from {config_path}")
-            _default_config = OpenHandsServerConfig.model_validate_json(
+            _global_config = OpenHandsServerConfig.model_validate_json(
                 json.loads(config_path.read_text())
             )
         else:
             print("⚙️  Using Default OpenHands Enterprise Server Config")
-            _default_config = OpenHandsServerConfig()
+            _global_config = OpenHandsServerConfig()
 
-    return _default_config
+    return _global_config

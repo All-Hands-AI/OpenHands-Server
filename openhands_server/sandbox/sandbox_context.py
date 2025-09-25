@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Type
 from uuid import UUID
 
-from openhands_server.config import get_default_config
+from openhands_server.config import get_global_config
 from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
 from openhands_server.utils.import_utils import get_impl
 
@@ -65,13 +65,13 @@ class SandboxContext(ABC):
         user / request specific variables."""
 
 
-_sandbox_context_type: Type[SandboxContext] = None
+_sandbox_context_type: Type[SandboxContext] | None = None
 
 
 async def get_sandbox_context_type() -> Type[SandboxContext]:
     global _sandbox_context_type
     if _sandbox_context_type is None:
-        config = get_default_config()
+        config = get_global_config()
         _sandbox_context_type = get_impl(SandboxContext, config.sandbox_context_type)
     return await _sandbox_context_type
 

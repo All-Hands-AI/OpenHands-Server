@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.util import await_only
 
-from openhands_server.config import get_default_config
+from openhands_server.config import get_global_config
 
 
 class Base(DeclarativeBase):
@@ -19,11 +19,11 @@ class Base(DeclarativeBase):
 
 
 async def async_creator():
-    config = get_default_config()
+    config = get_global_config()
     loop = asyncio.get_running_loop()
     async with Connector(loop=loop) as connector:
         conn = await connector.connect_async(
-            f"{config.gcp.project}:{config.gcp.region}:{config.database.gcp_db_instance}",  # Cloud SQL instance connection name"
+            f"{config.gcp.project}:{config.gcp.region}:{config.database.gcp_db_instance}",
             "asyncpg",
             user=config.database.user,
             password=config.database.password,
@@ -33,7 +33,7 @@ async def async_creator():
 
 
 def _create_async_db_engine():
-    config = get_default_config()
+    config = get_global_config()
     if config.database.gcp_db_instance:  # GCP environments
 
         def adapted_creator():

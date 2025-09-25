@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Type
 
-from openhands_server.config import get_default_config
-from openhands_server.sandbox_spec.sandbox_spec_models import (
+from openhands_server.config import get_global_config
+from openhands_server.sandbox.sandbox_spec_models import (
     SandboxSpecInfo,
     SandboxSpecInfoPage,
 )
@@ -60,7 +60,7 @@ _sandbox_spec_context_type: Type[SandboxSpecContext] = None
 async def get_sandbox_spec_context_type() -> Type[SandboxSpecContext]:
     global _sandbox_spec_context_type
     if _sandbox_spec_context_type is None:
-        config = get_default_config()
+        config = get_global_config()
         _sandbox_spec_context_type = get_impl(
             SandboxSpecContext, config.sandbox_spec_context_type
         )

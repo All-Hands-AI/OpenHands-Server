@@ -4,8 +4,8 @@ from datetime import datetime
 import docker
 from docker.errors import APIError, NotFound
 
-from openhands_server.sandbox_spec.sandbox_spec_context import SandboxSpecContext
-from openhands_server.sandbox_spec.sandbox_spec_models import (
+from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContext
+from openhands_server.sandbox.sandbox_spec_models import (
     SandboxSpecInfo,
     SandboxSpecInfoPage,
 )

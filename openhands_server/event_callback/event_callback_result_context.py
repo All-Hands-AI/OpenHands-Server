@@ -5,7 +5,7 @@ from typing import AsyncGenerator, Type
 from uuid import UUID
 
 from openhands.sdk.event.types import EventID
-from openhands_server.config import get_default_config
+from openhands_server.config import get_global_config
 from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultPage,
@@ -84,7 +84,7 @@ _event_callback_result_context_type: Type[EventCallbackResultContext] | None = N
 def get_event_callback_result_context_type() -> Type[EventCallbackResultContext]:
     global _event_callback_result_context_type
     if _event_callback_result_context_type is None:
-        config = get_default_config()
+        config = get_global_config()
         _event_callback_result_context_type = get_impl(
             EventCallbackResultContext, config.event_callback_result_context_type
         )

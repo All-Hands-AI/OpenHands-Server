@@ -13,7 +13,7 @@ from openhands_server.sandbox.sandbox_context import (
 from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
 
 
-router = APIRouter(prefix="/sandbox-containers")
+router = APIRouter(prefix="/sandboxes", tags=["Sandbox"])
 
 # TODO: Currently a sandbox is only available to the user who created it. In future we could have a more advanced permissions model for sharing  # noqa: E501
 
@@ -28,9 +28,7 @@ async def search_sandboxes(
     ] = None,
     limit: Annotated[
         int,
-        Query(
-            title="The max number of results in the page", gt=0, lte=100, default=100
-        ),
+        Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
     sandbox_context: SandboxContext = Depends(sandbox_context_dependency),
 ) -> SandboxPage:

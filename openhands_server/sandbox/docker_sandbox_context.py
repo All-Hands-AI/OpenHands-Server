@@ -17,7 +17,7 @@ from openhands_server.sandbox.sandbox_models import (
     SandboxPage,
     SandboxStatus,
 )
-from openhands_server.sandbox_spec.sandbox_spec_context import (
+from openhands_server.sandbox.sandbox_spec_context import (
     get_sandbox_spec_context_type,
 )
 from openhands_server.utils.date_utils import utc_now
@@ -205,7 +205,9 @@ class DockerSandboxContext(SandboxContext):
         """Start a new sandbox"""
         # Get runtime image info
         sandbox_spec_context_type = await get_sandbox_spec_context_type()
-        async with await sandbox_spec_context_type.get_instance() as sandbox_spec_context:
+        async with (
+            await sandbox_spec_context_type.get_instance() as sandbox_spec_context
+        ):
             sandbox_spec = await sandbox_spec_context.get_sandbox_spec(sandbox_spec_id)
 
         if sandbox_spec is None:
@@ -242,7 +244,7 @@ class DockerSandboxContext(SandboxContext):
 
         try:
             # Create and start the container
-            container = self._client.containers.run(
+            self._client.containers.run(
                 image=sandbox_spec_id,
                 command=sandbox_spec.command,
                 name=container_name,

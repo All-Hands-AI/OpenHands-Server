@@ -6,16 +6,17 @@ from typing import AsyncIterator
 from fastapi import APIRouter, FastAPI
 
 from openhands.agent_server.middleware import LocalhostCORSMiddleware
-from openhands_server.config import get_default_config
+from openhands_server.config import get_global_config
 from openhands_server.database import create_tables, drop_tables
 from openhands_server.event_callback import (
     event_callback_result_router,
     event_callback_router,
     event_webhook_router,
 )
+from openhands_server.sandbox import sandbox_router, sandbox_spec_router
 
 
-_config = get_default_config()
+_config = get_global_config()
 
 
 @asynccontextmanager
@@ -42,6 +43,8 @@ api.add_middleware(LocalhostCORSMiddleware, allow_origins=_config.allow_cors_ori
 api_router = APIRouter(prefix="/api")
 api_router.include_router(event_callback_router.router)
 api_router.include_router(event_callback_result_router.router)
+api_router.include_router(sandbox_spec_router.router)
+api_router.include_router(sandbox_router.router)
 api.include_router(api_router)
 api.include_router(event_webhook_router.router)
 

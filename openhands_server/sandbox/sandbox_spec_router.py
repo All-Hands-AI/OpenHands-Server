@@ -5,22 +5,22 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from openhands_server.sandbox_spec.sandbox_spec_context import (
+from openhands_server.sandbox.sandbox_spec_context import (
     SandboxSpecContext,
     sandbox_spec_context_dependency,
 )
-from openhands_server.sandbox_spec.sandbox_spec_models import (
+from openhands_server.sandbox.sandbox_spec_models import (
     SandboxSpecInfo,
     SandboxSpecInfoPage,
 )
 
 
-sandbox_spec_router = APIRouter(prefix="/sandbox-specs")
+router = APIRouter(prefix="/sandbox-specs", tags=["Sandbox"])
 
 # Read methods
 
 
-@sandbox_spec_router.get("/search")
+@router.get("/search")
 async def search_sandbox_specs(
     page_id: Annotated[
         str | None,
@@ -28,9 +28,7 @@ async def search_sandbox_specs(
     ] = None,
     limit: Annotated[
         int,
-        Query(
-            title="The max number of results in the page", gt=0, lte=100, default=100
-        ),
+        Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
     sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_context_dependency),
 ) -> SandboxSpecInfoPage:
@@ -40,7 +38,7 @@ async def search_sandbox_specs(
     return await sandbox_spec_context.search_sandbox_specs(page_id=page_id, limit=limit)
 
 
-@sandbox_spec_router.get("/{id}", responses={404: {"description": "Item not found"}})
+@router.get("/{id}", responses={404: {"description": "Item not found"}})
 async def get_sandbox_spec(
     id: UUID,
     sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_context_dependency),
@@ -52,7 +50,7 @@ async def get_sandbox_spec(
     return sandbox_spec
 
 
-@sandbox_spec_router.get("/")
+@router.get("/")
 async def batch_get_sandbox_specs(
     ids: Annotated[list[UUID], Query()],
     sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_context_dependency),

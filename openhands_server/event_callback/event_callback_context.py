@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import AsyncGenerator, Type
 from uuid import UUID
 
-from openhands_server.config import get_default_config
+from openhands_server.config import get_global_config
 from openhands_server.event_callback.event_callback_models import (
     CreateEventCallbackRequest,
     EventCallback,
@@ -82,8 +82,9 @@ _event_callback_context_type: Type[EventCallbackContext] | None = None
 def get_event_callback_context_type() -> Type[EventCallbackContext]:
     global _event_callback_context_type
     if _event_callback_context_type is None:
-        config = get_default_config()
+        config = get_global_config()
         _event_callback_context_type = get_impl(
-            EventCallbackContext, config.event_callback_context_type  # type: ignore[type-abstract]
+            EventCallbackContext,
+            config.event_callback_context_type,  # type: ignore[type-abstract]
         )
     return _event_callback_context_type

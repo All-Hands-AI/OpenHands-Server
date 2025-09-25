@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Type
 from uuid import UUID
 
-from openhands_server.config import get_default_config
+from openhands_server.config import get_global_config
 from openhands_server.sandboxed_conversation.sandboxed_conversation_models import (
     SandboxedConversationInfo,
     SandboxedConversationPage,
@@ -71,7 +71,7 @@ async def get_sandboxed_conversation_context_type() -> Type[
 ]:
     global _sandboxed_conversation_context_type
     if _sandboxed_conversation_context_type is None:
-        config = get_default_config()
+        config = get_global_config()
         _sandboxed_conversation_context_type = get_impl(
             SandboxedConversationContext, config.sandboxed_conversation_context_type
         )

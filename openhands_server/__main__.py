@@ -4,6 +4,8 @@ import argparse
 
 import uvicorn
 
+from openhands_server.config import get_global_config
+
 
 def main() -> None:
     """Main entry point for the OpenHands Server."""
@@ -27,6 +29,7 @@ def main() -> None:
     print(f"🚀 Starting OpenHands Enterprise Server on {args.host}:{args.port}")
     print(f"📖 API docs will be available at http://{args.host}:{args.port}/docs")
     print(f"🔄 Auto-reload: {'enabled' if args.reload else 'disabled'}")
+    get_global_config()
     print()
 
     uvicorn.run(

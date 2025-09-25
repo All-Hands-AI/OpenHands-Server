@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import Request
 
 from openhands_server.auth.auth_models import AuthType
-from openhands_server.config import get_default_config
+from openhands_server.config import get_global_config
 from openhands_server.utils.import_utils import get_impl
 
 
@@ -41,6 +41,6 @@ _auth_context_type: Type[AuthContext] | None = None
 async def get_auth_context(request: Request) -> AuthContext:
     global _auth_context_type
     if not _auth_context_type:
-        config = get_default_config()
+        config = get_global_config()
         _auth_context_type = get_impl(AuthContext, config.auth_context_type)
     return await _auth_context_type.get_instance(request)
