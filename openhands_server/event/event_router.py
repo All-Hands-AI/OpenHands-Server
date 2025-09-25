@@ -1,12 +1,12 @@
 """Event router for OpenHands Server."""
 
-from typing import Annotated
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from openhands_server.agent_server.models import EventPage, EventSortOrder
+from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.sdk import EventBase
 from openhands_server.event.event_context import (
     EventContext,

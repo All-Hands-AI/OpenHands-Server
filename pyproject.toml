@@ -26,9 +26,9 @@ dependencies = [
   "google-auth-httplib2>=0.2",
   "google-auth-oauthlib>=1.2.2",
   "greenlet>=3.2.4",
-  "openhands-agent-server @ git+https://github.com/All-Hands-AI/agent-sdk.git@f10d98e0c17dfc381055844e07be9d44fba8f166#subdirectory=openhands/agent_server",
-  "openhands-sdk @ git+https://github.com/All-Hands-AI/agent-sdk.git@f10d98e0c17dfc381055844e07be9d44fba8f166#subdirectory=openhands/sdk",
-  "openhands-tools @ git+https://github.com/All-Hands-AI/agent-sdk.git@f10d98e0c17dfc381055844e07be9d44fba8f166#subdirectory=openhands/tools",
+  "openhands-agent-server @ git+https://github.com/All-Hands-AI/agent-sdk.git@6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043#subdirectory=openhands/agent_server",
+  "openhands-sdk @ git+https://github.com/All-Hands-AI/agent-sdk.git@6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043#subdirectory=openhands/sdk",
+  "openhands-tools @ git+https://github.com/All-Hands-AI/agent-sdk.git@6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043#subdirectory=openhands/tools",
   "pydantic>=2",
   "sqlalchemy>=2",
   "uvicorn>=0.31.1",
@@ -82,6 +82,6 @@ lint.isort.known-first-party = [ "openhands", "openhands_server" ]
 lint.isort.lines-after-imports = 2
 
 [tool.uv.sources]
-openhands-sdk = { git = "https://github.com/All-Hands-AI/agent-sdk.git", subdirectory = "openhands/sdk", rev = "f10d98e0c17dfc381055844e07be9d44fba8f166" }
-openhands-tools = { git = "https://github.com/All-Hands-AI/agent-sdk.git", subdirectory = "openhands/tools", rev = "f10d98e0c17dfc381055844e07be9d44fba8f166" }
-openhands-agent-server = { git = "https://github.com/All-Hands-AI/agent-sdk.git", subdirectory = "openhands/agent_server", rev = "f10d98e0c17dfc381055844e07be9d44fba8f166" }
+openhands-sdk = { git = "https://github.com/All-Hands-AI/agent-sdk.git", subdirectory = "openhands/sdk", rev = "6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043" }
+openhands-tools = { git = "https://github.com/All-Hands-AI/agent-sdk.git", subdirectory = "openhands/tools", rev = "6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043" }
+openhands-agent-server = { git = "https://github.com/All-Hands-AI/agent-sdk.git", subdirectory = "openhands/agent_server", rev = "6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043" }

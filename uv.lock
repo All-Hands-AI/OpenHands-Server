@@ -779,6 +779,12 @@ wheels = [
 ]
 
 [[package]]
+name = "func-timeout"
+version = "4.3.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/0d/bf0567477f7281d9a3926c582bfef21bff7498fc0ffd3e9de21811896a0b/func_timeout-4.3.5.tar.gz", hash = "sha256:74cd3c428ec94f4edfba81f9b2f14904846d5ffccc27c92433b8b5939b5575dd", size = 44264, upload-time = "2019-08-19T21:32:07.43Z" }
+
+[[package]]
 name = "google-api-core"
 version = "2.25.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1618,7 +1624,7 @@ wheels = [
 [[package]]
 name = "openhands-agent-server"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=f10d98e0c17dfc381055844e07be9d44fba8f166#f10d98e0c17dfc381055844e07be9d44fba8f166" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043#6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "alembic" },
@@ -1633,7 +1639,7 @@ dependencies = [
 [[package]]
 name = "openhands-sdk"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=f10d98e0c17dfc381055844e07be9d44fba8f166#f10d98e0c17dfc381055844e07be9d44fba8f166" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043#6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043" }
 dependencies = [
     { name = "fastmcp" },
     { name = "litellm" },
@@ -1702,16 +1708,16 @@ requires-dist = [
     { name = "docker", specifier = ">=7.1,<8" },
     { name = "fastapi", specifier = ">=0.104" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=6" },
-    { name = "google-api-python-client", specifier = ">=2.181.0" },
-    { name = "google-auth-httplib2", specifier = ">=0.2.0" },
+    { name = "google-api-python-client", specifier = ">=2.181" },
+    { name = "google-auth-httplib2", specifier = ">=0.2" },
     { name = "google-auth-oauthlib", specifier = ">=1.2.2" },
     { name = "greenlet", specifier = ">=3.2.4" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.25" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1" },
-    { name = "openhands-agent-server", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=f10d98e0c17dfc381055844e07be9d44fba8f166" },
-    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=f10d98e0c17dfc381055844e07be9d44fba8f166" },
-    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=f10d98e0c17dfc381055844e07be9d44fba8f166" },
+    { name = "openhands-agent-server", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043" },
+    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043" },
+    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
@@ -1739,12 +1745,13 @@ dev = [
 [[package]]
 name = "openhands-tools"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=f10d98e0c17dfc381055844e07be9d44fba8f166#f10d98e0c17dfc381055844e07be9d44fba8f166" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043#6dd2af9e7f31e9b5488321d2eb1ae9e1f357e043" }
 dependencies = [
     { name = "bashlex" },
     { name = "binaryornot" },
     { name = "browser-use" },
     { name = "cachetools" },
+    { name = "func-timeout" },
     { name = "libtmux" },
     { name = "openhands-sdk" },
     { name = "pydantic" },
