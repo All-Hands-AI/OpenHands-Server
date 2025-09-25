@@ -10,7 +10,10 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.event_callback.event_callback_context import EventCallbackContext
+from openhands_server.event_callback.event_callback_context import (
+    EventCallbackContext,
+    EventCallbackContextFactory,
+)
 from openhands_server.event_callback.event_callback_db_models import StoredEventCallback
 from openhands_server.event_callback.event_callback_models import (
     CreateEventCallbackRequest,
@@ -141,11 +144,12 @@ class SQLAlchemyEventCallbackContext(EventCallbackContext):
 
         return EventCallbackPage(items=items, next_page_id=next_page_id)
 
-    @classmethod
-    async def with_instance(  # type: ignore[override]
-        cls,
+
+class SQLAlchemyEventCallbackContextFactory(EventCallbackContextFactory):
+    async def with_instance(
+        self,
         session: AsyncSession = Depends(async_session_dependency),
-    ) -> AsyncGenerator["SQLAlchemyEventCallbackContext", None]:
+    ) -> AsyncGenerator[EventCallbackContext, None]:
         """
         Get an instance of SQLAlchemy event callback context.
 
@@ -153,9 +157,9 @@ class SQLAlchemyEventCallbackContext(EventCallbackContext):
             session: The async SQLAlchemy session from dependency injection
 
         Yields:
-            SQLAlchemyEventCallbackContext: The context instance
+            EventCallbackContext: The context instance
         """
-        context = cls(session)
+        context = SQLAlchemyEventCallbackContext(session)
         try:
             yield context
         finally:

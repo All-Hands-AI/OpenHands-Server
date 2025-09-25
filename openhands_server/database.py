@@ -65,16 +65,29 @@ def _create_async_db_engine():
         )
 
 
-# Create async engine
-engine = _create_async_db_engine()
+# Lazy initialization of engine and session maker
+_engine = None
+_async_session_local = None
 
 
-# Create async session maker
-AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+def get_engine():
+    """Get the database engine, creating it if necessary."""
+    global _engine
+    if _engine is None:
+        _engine = _create_async_db_engine()
+    return _engine
+
+
+def get_async_session_local():
+    """Get the async session maker, creating it if necessary."""
+    global _async_session_local
+    if _async_session_local is None:
+        _async_session_local = async_sessionmaker(
+            get_engine(),
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+    return _async_session_local
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
@@ -87,7 +100,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     Yields:
         AsyncSession: An async SQLAlchemy session
     """
-    async with AsyncSessionLocal() as session:
+    async with get_async_session_local()() as session:
         try:
             yield session
         finally:
@@ -117,7 +130,7 @@ async def async_session_dependency(
         yield request.state.db_session
     else:
         # Create a new session and store it in request state
-        async with AsyncSessionLocal() as session:
+        async with get_async_session_local()() as session:
             try:
                 request.state.db_session = session
                 yield session
