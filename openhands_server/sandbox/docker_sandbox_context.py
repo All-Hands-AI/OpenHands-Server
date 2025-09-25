@@ -10,7 +10,7 @@ from docker.errors import APIError, NotFound
 from fastapi import Depends
 from pydantic import SecretStr
 
-from openhands_server.config import get_global_config
+from openhands_server.dependency import get_dependency_manager
 from openhands_server.sandbox.docker_sandbox_spec_context import get_docker_client
 from openhands_server.sandbox.sandbox_context import (
     SandboxContext,
@@ -325,7 +325,7 @@ class DockerSandboxContextFactory(SandboxContextFactory):
     async def with_instance(
         self,
         sandbox_spec_context: SandboxSpecContext = Depends(
-            get_global_config().sandbox_context_factory.with_instance
+            get_dependency_manager().sandbox.with_instance
         ),
     ) -> AsyncGenerator[SandboxContext, None]:
         yield DockerSandboxContext(sandbox_spec_context=sandbox_spec_context)

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from openhands_server.config import get_global_config
+from openhands_server.dependency import get_dependency_manager
 from openhands_server.event_callback.event_callback_context import (
     EventCallbackContext,
 )
@@ -17,7 +17,7 @@ from openhands_server.event_callback.event_callback_models import (
 
 
 router = APIRouter(prefix="/event-callbacks", tags=["Event Callbacks"])
-context_dependency = get_global_config().event_callback_context_factory.with_instance
+resolve_event_callback_context = get_dependency_manager().event_callback.with_instance
 
 # Read methods
 
@@ -44,7 +44,9 @@ async def search_event_callbacks(
         int,
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
-    event_callback_context: EventCallbackContext = Depends(context_dependency),
+    event_callback_context: EventCallbackContext = Depends(
+        resolve_event_callback_context
+    ),
 ) -> EventCallbackPage:
     """Search / List event callbacks."""
     assert limit > 0
@@ -61,7 +63,9 @@ async def search_event_callbacks(
 @router.get("/{id}", responses={404: {"description": "Item not found"}})
 async def get_event_callback(
     id: UUID,
-    event_callback_context: EventCallbackContext = Depends(context_dependency),
+    event_callback_context: EventCallbackContext = Depends(
+        resolve_event_callback_context
+    ),
 ) -> EventCallback:
     """Get a single event callback given its id."""
     callback = await event_callback_context.get_event_callback(id)
@@ -73,7 +77,9 @@ async def get_event_callback(
 @router.get("/")
 async def batch_get_event_callbacks(
     ids: Annotated[list[UUID], Query()],
-    event_callback_context: EventCallbackContext = Depends(context_dependency),
+    event_callback_context: EventCallbackContext = Depends(
+        resolve_event_callback_context
+    ),
 ) -> list[EventCallback | None]:
     """Get a batch of event callbacks given their ids, returning null for any missing
     callback."""
@@ -88,7 +94,9 @@ async def batch_get_event_callbacks(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_event_callback(
     callback: EventCallback,
-    event_callback_context: EventCallbackContext = Depends(context_dependency),
+    event_callback_context: EventCallbackContext = Depends(
+        resolve_event_callback_context
+    ),
 ) -> EventCallback:
     """Create a new event callback."""
     return await event_callback_context.create_event_callback(callback)
@@ -97,7 +105,9 @@ async def create_event_callback(
 @router.delete("/{id}", responses={404: {"description": "Item not found"}})
 async def delete_event_callback(
     id: UUID,
-    event_callback_context: EventCallbackContext = Depends(context_dependency),
+    event_callback_context: EventCallbackContext = Depends(
+        resolve_event_callback_context
+    ),
 ) -> dict[str, str]:
     """Delete a event callback."""
     deleted = await event_callback_context.delete_event_callback(id)

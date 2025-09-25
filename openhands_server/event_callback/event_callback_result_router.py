@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands.sdk.event.types import EventID
-from openhands_server.config import get_global_config
+from openhands_server.dependency import get_dependency_manager
 from openhands_server.event_callback.event_callback_result_context import (
     EventCallbackResultContext,
 )
@@ -18,7 +18,9 @@ from openhands_server.event_callback.event_callback_result_models import (
 
 
 router = APIRouter(prefix="/event-callback-results", tags=["Event Callbacks"])
-context_dependency = get_global_config().event_callback_context_factory.with_instance
+resolve_event_callback_result_context = (
+    get_dependency_manager().event_callback_result.with_instance
+)
 
 
 # Read methods
@@ -51,7 +53,7 @@ async def search_event_callback_results(
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
     event_callback_result_context: EventCallbackResultContext = Depends(
-        context_dependency
+        resolve_event_callback_result_context
     ),
 ) -> EventCallbackResultPage:
     """Search / List event callback results."""
@@ -71,7 +73,7 @@ async def search_event_callback_results(
 async def get_event_callback_result(
     id: UUID,
     event_callback_result_context: EventCallbackResultContext = Depends(
-        context_dependency
+        resolve_event_callback_result_context
     ),
 ) -> EventCallbackResult:
     """Get a single event callback result given its id."""
@@ -85,7 +87,7 @@ async def get_event_callback_result(
 async def batch_get_event_callback_results(
     ids: Annotated[list[UUID], Query()],
     event_callback_result_context: EventCallbackResultContext = Depends(
-        context_dependency
+        resolve_event_callback_result_context
     ),
 ) -> list[EventCallbackResult | None]:
     """Get a batch of event callback results given their ids, returning null for any
@@ -102,7 +104,7 @@ async def batch_get_event_callback_results(
 async def delete_event_callback_result(
     id: UUID,
     event_callback_result_context: EventCallbackResultContext = Depends(
-        context_dependency
+        resolve_event_callback_result_context
     ),
 ) -> dict[str, str]:
     """Delete an event callback result."""

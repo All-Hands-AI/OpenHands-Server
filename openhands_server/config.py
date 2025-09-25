@@ -1,10 +1,10 @@
 import json
 import os
 from pathlib import Path
-from unittest.mock import MagicMock
 
 from pydantic import BaseModel, Field
 
+from openhands.sdk.utils.models import OpenHandsModel
 from openhands_server.event.event_context import EventContextFactory
 from openhands_server.event_callback.event_callback_context import (
     EventCallbackContextFactory,
@@ -45,50 +45,6 @@ def _get_db_url() -> str:
     return "sqlite+aiosqlite:///./openhands.db"
 
 
-def _get_event_context_factory():
-    from openhands_server.event.filesystem_event_context import (
-        FilesystemEventContextFactory,
-    )
-
-    return FilesystemEventContextFactory()
-
-
-def _get_event_callback_context_factory():
-    from openhands_server.event_callback.sqlalchemy_event_callback_context import (
-        SQLAlchemyEventCallbackContextFactory,
-    )
-
-    return SQLAlchemyEventCallbackContextFactory()
-
-
-def _get_event_callback_result_context_factory():
-    from openhands_server.event_callback import (
-        sqlalchemy_event_callback_result_context as ctx,
-    )
-
-    return ctx.SQLAlchemyEventCallbackResultContextFactory()
-
-
-def _get_sandbox_context_factory():
-    from openhands_server.sandbox import (
-        docker_sandbox_context as ctx,
-    )
-
-    return ctx.DockerSandboxContextFactory()
-
-
-def _get_sandbox_spec_context_factory():
-    from openhands_server.sandbox import (
-        docker_sandbox_spec_context as ctx,
-    )
-
-    return ctx.DockerSandboxSpecContextFactory()
-
-
-def _get_sandboxed_conversation_context_factory():
-    return MagicMock()  # TODO: Replace with real!
-
-
 class GCPConfig(BaseModel):
     project: str | None = os.getenv("GCP_PROJECT")
     region: str | None = os.getenv("GCP_REGION")
@@ -107,26 +63,13 @@ class DatabaseConfig(BaseModel):
     max_overflow: int = int(os.environ.get("DB_MAX_OVERFLOW", "10"))
 
 
-class OpenHandsServerConfig(BaseModel):
-    event_context_factory: EventContextFactory = Field(
-        default_factory=_get_event_context_factory
-    )
-    event_callback_context_factory: EventCallbackContextFactory = Field(
-        default_factory=_get_event_callback_context_factory
-    )
-    event_callback_result_context_factory: EventCallbackResultContextFactory = Field(
-        default_factory=_get_event_callback_result_context_factory
-    )
-    sandbox_context_factory: SandboxContextFactory = Field(
-        default_factory=_get_sandbox_context_factory
-    )
-    sandbox_spec_context_factory: SandboxSpecContextFactory = Field(
-        default_factory=_get_sandbox_spec_context_factory
-    )
-    sandboxed_conversation_context_factory: SandboxedConversationContextFactory = Field(
-        default_factory=_get_sandboxed_conversation_context_factory
-    )
-
+class OpenHandsServerConfig(OpenHandsModel):
+    event: EventContextFactory | None = None
+    event_callback: EventCallbackContextFactory | None = None
+    event_callback_result: EventCallbackResultContextFactory | None = None
+    sandbox: SandboxContextFactory | None = None
+    sandbox_spec: SandboxSpecContextFactory | None = None
+    sandboxed_conversation: SandboxedConversationContextFactory | None = None
     allow_cors_origins: list[str] = Field(
         default_factory=list,
         description=(
