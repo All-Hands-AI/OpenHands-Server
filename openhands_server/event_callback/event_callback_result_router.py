@@ -6,9 +6,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands.sdk.event.types import EventID
+from openhands_server.config import get_global_config
 from openhands_server.event_callback.event_callback_result_context import (
     EventCallbackResultContext,
-    get_event_callback_result_context_type,
 )
 from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
@@ -18,7 +18,7 @@ from openhands_server.event_callback.event_callback_result_models import (
 
 
 router = APIRouter(prefix="/event-callback-results", tags=["Event Callbacks"])
-context_dependency = get_event_callback_result_context_type().with_instance
+context_dependency = get_global_config().event_callback_context_factory.with_instance
 
 
 # Read methods
