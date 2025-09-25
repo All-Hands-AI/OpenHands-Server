@@ -27,14 +27,14 @@ class SandboxContext(ABC):
     async def add_sandbox_permission(
         self, sandbox_id: str, user_id: str, full_access: bool = False
     ) -> SandboxPermission:
-        """Add a sandbox permission for the user given to the sandbox given. Raise a PermissionError
-        if the current user does not have full access to the sandbox"""
+        """Add a sandbox permission for the user given to the sandbox given. Raise a
+        PermissionError if the current user does not have full access to the sandbox"""
 
     @abstractmethod
     async def delete_sandbox_permission(self, sandbox_permission_id: UUID) -> bool:
-        """Delete a sandbox permission. Return false if the permission did not exist, the current user did not
-        have full access to the sandbox, or permission belonged to the current user (User's can't revoke their
-        own permissions)."""
+        """Delete a sandbox permission. Return false if the permission did not exist,
+        the current user did not have full access to the sandbox, or permission
+        belonged to the current user (User's can't revoke their own permissions)."""
 
     @abstractmethod
     async def batch_get_sandbox_permissions(
