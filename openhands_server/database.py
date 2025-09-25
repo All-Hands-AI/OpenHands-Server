@@ -5,6 +5,7 @@ from typing import AsyncGenerator
 
 from fastapi import Request
 from google.cloud.sql.connector import Connector
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.util import await_only
@@ -34,7 +35,28 @@ async def async_creator():
 
 def _create_async_db_engine():
     config = get_global_config()
-    if config.database.gcp_db_instance:  # GCP environments
+    database = config.database
+    if database.gcp_db_instance:  # GCP environments
+
+        def get_db_connection():
+            connector = Connector()
+            gcp = config.gcp
+            instance_string = f"{gcp.project}:{gcp.region}:{database.gcp_db_instance}"
+            return connector.connect(
+                instance_string,
+                "pg8000",
+                user=database.user,
+                password=database.password,
+                db=database.name,
+            )
+
+        engine = create_engine(
+            "postgresql+pg8000://",
+            creator=get_db_connection,
+            pool_size=database.pool_size,
+            max_overflow=database.max_overflow,
+            pool_pre_ping=True,
+        )
 
         def adapted_creator():
             dbapi = engine.dialect.dbapi
@@ -52,15 +74,15 @@ def _create_async_db_engine():
         return create_async_engine(
             "postgresql+asyncpg://",
             creator=adapted_creator,
-            pool_size=config.database.pool_size,
-            max_overflow=config.database.max_overflow,
+            pool_size=database.pool_size,
+            max_overflow=database.max_overflow,
             pool_pre_ping=True,
         )
     else:
         return create_async_engine(
-            config.database.url,
-            pool_size=config.database.pool_size,
-            max_overflow=config.database.max_overflow,
+            database.url,
+            pool_size=database.pool_size,
+            max_overflow=database.max_overflow,
             pool_pre_ping=True,
         )
 
@@ -146,11 +168,11 @@ async def async_session_dependency(
 
 async def create_tables() -> None:
     """Create all database tables."""
-    async with engine.begin() as conn:
+    async with get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
 async def drop_tables() -> None:
     """Drop all database tables."""
-    async with engine.begin() as conn:
+    async with get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
