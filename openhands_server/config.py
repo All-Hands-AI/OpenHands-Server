@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from pydantic import BaseModel, Field
 
@@ -13,6 +14,9 @@ from openhands_server.event_callback.event_callback_result_context import (
 )
 from openhands_server.sandbox.sandbox_context import SandboxContextFactory
 from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextFactory
+from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
+    SandboxedConversationContextFactory,
+)
 
 
 # Environment variable constants
@@ -23,7 +27,7 @@ GCP_REGION = os.environ.get("GCP_REGION")
 DEFAULT_CONFIG_FILE_PATH = "workspace/openhands_enterprise_server_config.json"
 
 
-def _get_default_db_url() -> str:
+def _get_db_url() -> str:
     url = os.environ.get("DB_URL")
     if url:
         return url
@@ -41,7 +45,7 @@ def _get_default_db_url() -> str:
     return "sqlite+aiosqlite:///./openhands.db"
 
 
-def _get_default_event_context_factory():
+def _get_event_context_factory():
     from openhands_server.event.filesystem_event_context import (
         FilesystemEventContextFactory,
     )
@@ -49,7 +53,7 @@ def _get_default_event_context_factory():
     return FilesystemEventContextFactory()
 
 
-def _get_default_event_callback_context_factory():
+def _get_event_callback_context_factory():
     from openhands_server.event_callback.sqlalchemy_event_callback_context import (
         SQLAlchemyEventCallbackContextFactory,
     )
@@ -57,7 +61,7 @@ def _get_default_event_callback_context_factory():
     return SQLAlchemyEventCallbackContextFactory()
 
 
-def _get_default_event_callback_result_context_factory():
+def _get_event_callback_result_context_factory():
     from openhands_server.event_callback import (
         sqlalchemy_event_callback_result_context as ctx,
     )
@@ -65,7 +69,7 @@ def _get_default_event_callback_result_context_factory():
     return ctx.SQLAlchemyEventCallbackResultContextFactory()
 
 
-def _get_default_sandbox_context_factory():
+def _get_sandbox_context_factory():
     from openhands_server.sandbox import (
         docker_sandbox_context as ctx,
     )
@@ -73,12 +77,16 @@ def _get_default_sandbox_context_factory():
     return ctx.DockerSandboxContextFactory()
 
 
-def _get_default_sandbox_spec_context_factory():
+def _get_sandbox_spec_context_factory():
     from openhands_server.sandbox import (
         docker_sandbox_spec_context as ctx,
     )
 
     return ctx.DockerSandboxSpecContextFactory()
+
+
+def _get_sandboxed_conversation_context_factory():
+    return MagicMock()  # TODO: Replace with real!
 
 
 class GCPConfig(BaseModel):
@@ -89,7 +97,7 @@ class GCPConfig(BaseModel):
 class DatabaseConfig(BaseModel):
     """Configuration specific to the database"""
 
-    url: str = _get_default_db_url()
+    url: str = _get_db_url()
     name: str | None = os.getenv("DB_NAME")
     user: str | None = os.getenv("DB_USER")
     password: str | None = os.getenv("DB_PASSWORD")
@@ -101,19 +109,22 @@ class DatabaseConfig(BaseModel):
 
 class OpenHandsServerConfig(BaseModel):
     event_context_factory: EventContextFactory = Field(
-        default_factory=_get_default_event_context_factory
+        default_factory=_get_event_context_factory
     )
     event_callback_context_factory: EventCallbackContextFactory = Field(
-        default_factory=_get_default_event_callback_context_factory
+        default_factory=_get_event_callback_context_factory
     )
     event_callback_result_context_factory: EventCallbackResultContextFactory = Field(
-        default_factory=_get_default_event_callback_result_context_factory
+        default_factory=_get_event_callback_result_context_factory
     )
     sandbox_context_factory: SandboxContextFactory = Field(
-        default_factory=_get_default_sandbox_context_factory
+        default_factory=_get_sandbox_context_factory
     )
     sandbox_spec_context_factory: SandboxSpecContextFactory = Field(
-        default_factory=_get_default_sandbox_spec_context_factory
+        default_factory=_get_sandbox_spec_context_factory
+    )
+    sandboxed_conversation_context_factory: SandboxedConversationContextFactory = Field(
+        default_factory=_get_sandboxed_conversation_context_factory
     )
 
     allow_cors_origins: list[str] = Field(

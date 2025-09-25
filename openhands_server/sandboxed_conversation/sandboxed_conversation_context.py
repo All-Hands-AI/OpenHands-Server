@@ -47,7 +47,7 @@ class SandboxedConversationContext(ABC):
     @abstractmethod
     async def start_sandboxed_conversation(
         self, request: StartSandboxedConversationRequest
-    ):
+    ) -> SandboxedConversationInfo:
         """Start a conversation, optionally specifying a sandbox in which to start. If
         no sandbox is specified a default may be used or started. This is a convenience
         method - the same effect should be achievable by creating / getting a sandbox
