@@ -1,15 +1,14 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Type
+from typing import AsyncGenerator
 from uuid import UUID
 
-from openhands_server.config import get_global_config
+from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.sandboxed_conversation.sandboxed_conversation_models import (
     SandboxedConversationInfo,
     SandboxedConversationPage,
     StartSandboxedConversationRequest,
 )
-from openhands_server.utils.import_utils import get_impl
 
 
 class SandboxedConversationContext(ABC):
@@ -46,7 +45,9 @@ class SandboxedConversationContext(ABC):
         )
 
     @abstractmethod
-    async def start_sandboxed_conversation(request: StartSandboxedConversationRequest):
+    async def start_sandboxed_conversation(
+        self, request: StartSandboxedConversationRequest
+    ):
         """Start a conversation, optionally specifying a sandbox in which to start. If
         no sandbox is specified a default may be used or started. This is a convenience
         method - the same effect should be achievable by creating / getting a sandbox
@@ -62,28 +63,16 @@ class SandboxedConversationContext(ABC):
     async def __aexit__(self, exc_type, exc_value, traceback):
         """Stop using this sandbox context"""
 
-    @classmethod
+
+class SandboxedConversationContextFactory(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    def get_instance(cls, *args, **kwargs) -> "SandboxedConversationContext":
-        """Get an instance of sandbox context"""
-
-
-_sandboxed_conversation_context_type: Type[SandboxedConversationContext] = None
-
-
-async def get_sandboxed_conversation_context_type() -> Type[
-    SandboxedConversationContext
-]:
-    global _sandboxed_conversation_context_type
-    if _sandboxed_conversation_context_type is None:
-        config = get_global_config()
-        _sandboxed_conversation_context_type = get_impl(
-            SandboxedConversationContext, config.sandboxed_conversation_context_type
-        )
-    return await _sandboxed_conversation_context_type
-
-
-async def sandboxed_conversation_context_dependency(*args, **kwargs):
-    context = get_sandboxed_conversation_context_type().get_instance(args, kwargs)
-    async with context:
-        yield context
+    async def with_instance(
+        self, *args, **kwargs
+    ) -> AsyncGenerator["SandboxedConversationContext", None]:
+        """
+        Get an instance of event callback result context. Parameters are not
+        specified so that they can be defined in the implementation classes and
+        overridden using FastAPI's dependency injection. This allows merging global
+        config with user / request specific variables.
+        """
+        yield SandboxedConversationContext()  # type: ignore

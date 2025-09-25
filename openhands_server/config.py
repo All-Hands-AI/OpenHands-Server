@@ -96,16 +96,6 @@ class OpenHandsServerConfig(BaseModel):
         default="openhands_server.sandbox.docker_sandbox_context.DockerSandboxContext",
         description="The class to use for SandboxContext dependencies",
     )
-
-    auth_context_type: str = Field(
-        default="openhands_server.auth.dummy.DummyAuthContext",
-        description="The class to use for AuthContext dependencies",
-    )
-    sandboxed_conversation_context_type: str = Field(
-        default="openhands_server.auth.dummy.DummyAuthContext",
-        description="The class to use for SandboxedConversationContext dependencies",
-    )
-
     allow_cors_origins: list[str] = Field(
         default_factory=list,
         description=(
