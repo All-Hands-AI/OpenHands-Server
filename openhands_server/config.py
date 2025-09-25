@@ -55,7 +55,7 @@ class OpenHandsServerConfig(BaseModel):
         description="The implementation of EventCallbackResultContext to use",
     )
     event_callback_context_type: str = Field(
-        default="openhands_server.auth.dummy.DummyAuthContext",
+        default="openhands_server.event_callback.sqlalchemy_event_callback_context.SQLAlchemyEventCallbackContext",
         description="The implementation of EventCallbackContext to use",
     )
 

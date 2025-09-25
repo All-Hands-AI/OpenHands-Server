@@ -25,7 +25,9 @@ _logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     EventKind = str
 else:
-    EventKind = Literal[tuple(c.__name__ for c in get_known_concrete_subclasses())]
+    EventKind = Literal[
+        tuple(c.__name__ for c in get_known_concrete_subclasses(EventBase))
+    ]
 
 
 class EventCallbackProcessor(DiscriminatedUnionMixin, ABC):

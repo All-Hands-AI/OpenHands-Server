@@ -84,6 +84,6 @@ def get_event_callback_context_type() -> Type[EventCallbackContext]:
     if _event_callback_context_type is None:
         config = get_default_config()
         _event_callback_context_type = get_impl(
-            EventCallbackContext, config._event_callback_context_type
+            EventCallbackContext, config.event_callback_context_type  # type: ignore[type-abstract]
         )
     return _event_callback_context_type
