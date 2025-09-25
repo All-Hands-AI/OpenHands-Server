@@ -15,9 +15,9 @@ from openhands_server.utils.date_utils import utc_now
 @dataclass
 class DockerSandboxSpecContext(SandboxSpecContext):
     """
-    Sandbox spec context for docker images. By default, all images with the repository given
-    are loaded and returned (They may have different tag) The combination of the repository
-    and tag is treated as the id in the resulting image.
+    Sandbox spec context for docker images. By default, all images with the
+    repository given are loaded and returned (They may have different tag) The
+    combination of the repository and tag is treated as the id in the resulting image.
     """
 
     client: docker.DockerClient | None = field(default=None)
@@ -69,7 +69,8 @@ class DockerSandboxSpecContext(SandboxSpecContext):
                             sandbox_specs.append(
                                 self._docker_image_to_sandbox_specs(image)
                             )
-                            break  # Only add once per image, even if multiple matching tags
+                            # Only add once per image, even if multiple matching tags
+                            break
 
             # Apply pagination
             start_idx = 0

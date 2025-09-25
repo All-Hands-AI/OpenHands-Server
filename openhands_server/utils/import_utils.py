@@ -9,9 +9,10 @@ T = TypeVar("T")
 def import_from(qual_name: str):
     """Import a value from its fully qualified name.
 
-    This function is a utility to dynamically import any Python value (class, function, variable)
-    from its fully qualified name. For example, 'openhands.server.user_auth.UserAuth' would
-    import the UserAuth class from the openhands.server.user_auth module.
+    This function is a utility to dynamically import any Python value (class,
+    function, variable) from its fully qualified name. For example,
+    'openhands.server.user_auth.UserAuth' would import the UserAuth class from the
+    openhands.server.user_auth module.
 
     Args:
         qual_name: A fully qualified name in the format 'module.submodule.name'
@@ -43,17 +44,19 @@ def _get_impl(cls: type[T], impl_name: str | None) -> type[T]:
 def get_impl(cls: type[T], impl_name: str | None) -> type[T]:
     """Import and validate a named implementation of a base class.
 
-    This function is an extensibility mechanism in OpenHands that allows runtime substitution
-    of implementations. It enables applications to customize behavior by providing their own
-    implementations of OpenHands base classes.
+    This function is an extensibility mechanism in OpenHands that allows runtime
+    substitution of implementations. It enables applications to customize behavior by
+    providing their own implementations of OpenHands base classes.
 
-    The function ensures type safety by validating that the imported class is either the same as
-    or a subclass of the specified base class.
+    The function ensures type safety by validating that the imported class is either
+    the same as or a subclass of the specified base class.
 
     Args:
         cls: The base class that defines the interface
-        impl_name: Fully qualified name of the implementation class, or None to use the base class
-                  e.g. 'openhands.server.conversation_service.StandaloneConversationService'
+        impl_name: Fully qualified name of the implementation class, or None to use
+                  the base class
+                  e.g. 'openhands.server.conversation_service.'
+                       'StandaloneConversationService'
 
     Returns:
         The implementation class, which is guaranteed to be a subclass of cls
@@ -62,7 +65,9 @@ def get_impl(cls: type[T], impl_name: str | None) -> type[T]:
         >>> # Get default implementation
         >>> ConversationService = get_impl(ConversationService, None)
         >>> # Get custom implementation
-        >>> CustomService = get_impl(ConversationService, 'myapp.CustomConversationService')
+        >>> CustomService = get_impl(
+        ...     ConversationService, 'myapp.CustomConversationService'
+        ... )
 
     Common Use Cases:
         - Server components (ConversationService, UserAuth, etc.)
