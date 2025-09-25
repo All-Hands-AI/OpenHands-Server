@@ -51,7 +51,7 @@ class DatabaseConfig(BaseModel):
 
 class OpenHandsServerConfig(BaseModel):
     event_context_type: str = Field(
-        default="Dummy",
+        default="openhands_server.event.filesystem_event_context.FilesystemEventContext",
         description="The implementation of EventContext to use",
     )
     event_callback_result_context_type: str = Field(

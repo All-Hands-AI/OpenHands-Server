@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Type
+from typing import AsyncGenerator, Type
 from uuid import UUID
 
 from openhands.agent_server.models import EventPage, EventSortOrder
@@ -55,6 +55,18 @@ class EventContext(ABC):
     @abstractmethod
     async def __aexit__(self, exc_type, exc_value, traceback):
         """Stop using this service"""
+
+    @classmethod
+    @abstractmethod
+    async def with_instance(
+        cls, *args, **kwargs
+    ) -> AsyncGenerator["EventContext", None]:
+        """
+        Get an instance of event context. Parameters are not specified
+        so that they can be defined in the implementation classes and overridden using
+        FastAPI's dependency injection. This allows merging global config with
+        user / request specific variables.
+        """
 
 
 _event_context_type: Type[EventContext] | None = None
