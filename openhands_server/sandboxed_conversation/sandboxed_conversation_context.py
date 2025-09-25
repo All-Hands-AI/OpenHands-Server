@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Type
 from uuid import UUID
@@ -30,16 +31,11 @@ class SandboxedConversationContext(ABC):
     ) -> SandboxedConversationInfo | None:
         """Get a single sandboxed conversation info. Return None if the conversation was not found."""  # noqa: E501
 
-    @abstractmethod
     async def batch_get_sandboxed_conversations(
         self, conversation_ids: list[UUID]
     ) -> list[SandboxedConversationInfo | None]:
         """Get a batch of sandboxed conversations. Return None for any conversation which was not found."""  # noqa: E501
-        results = []
-        for conversation_id in conversation_ids:
-            result = await self.get_sandboxed_conversation(conversation_id)
-            results.append(result)
-        return results
+        return await asyncio.gather(*[self.get_sandboxed_conversation(conversation_id) for conversation_id in conversation_ids])
 
     @abstractmethod
     async def start_sandboxed_conversation(request: StartSandboxedConversationRequest):

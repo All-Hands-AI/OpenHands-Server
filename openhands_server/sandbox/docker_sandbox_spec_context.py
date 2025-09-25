@@ -104,15 +104,7 @@ class DockerSandboxSpecContext(SandboxSpecContext):
         except (NotFound, APIError):
             return None
 
-    async def batch_get_sandbox_specs(
-        self, ids: list[str]
-    ) -> list[SandboxSpecInfo | None]:
-        """Get a batch of runtime image info"""
-        results = []
-        for image_id in ids:
-            result = await self.get_sandbox_spec(image_id)
-            results.append(result)
-        return results
+
 
     async def __aenter__(self):
         """Start using this sandbox spec context"""

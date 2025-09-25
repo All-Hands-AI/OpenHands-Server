@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import AsyncGenerator
@@ -43,9 +44,9 @@ class EventContext(ABC):
     async def save_event(self, conversation_id: UUID, event: EventBase):
         """Save an event. Internal method intended not be part of the REST api"""
 
-    @abstractmethod
     async def batch_get_events(self, event_ids: list[str]) -> list[EventBase | None]:
         """Given a list of ids, get events (Or none for any which were not found)"""
+        return await asyncio.gather(*[self.get_event(event_id) for event_id in event_ids])
 
     async def __aenter__(self) -> "EventContext":
         """Start using this service"""

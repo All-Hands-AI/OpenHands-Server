@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Type
 
@@ -36,8 +37,7 @@ class SandboxSpecContext(ABC):
         self, ids: list[str]
     ) -> list[SandboxSpecInfo | None]:
         """Get a batch of sandbox specs, returning None for any spec which was not found"""  # noqa: E501
-        results = [self.get_sandbox_spec(id) for id in ids]
-        return results
+        return await asyncio.gather(*[self.get_sandbox_spec(id) for id in ids])
 
     # Lifecycle methods
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator
 from uuid import UUID
@@ -44,11 +45,7 @@ class EventCallbackResultContext(ABC):
     ) -> list[EventCallbackResult | None]:
         """Get a batch of event callback results, returning None for any
         result which was not found"""
-        results = []
-        for id in ids:
-            result = await self.get_event_callback_result(id)
-            results.append(result)
-        return results
+        return await asyncio.gather(*[self.get_event_callback_result(id) for id in ids])
 
     @abstractmethod
     async def delete_event_callback_result(self, id: UUID) -> bool:
