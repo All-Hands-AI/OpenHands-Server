@@ -30,7 +30,6 @@ class SandboxedConversationContext(ABC):
     ) -> SandboxedConversationInfo | None:
         """Get a single sandboxed conversation info. Return None if the conversation was not found."""
 
-    @abstractmethod
     async def batch_get_sandboxed_conversations(
         self, conversation_ids: list[UUID]
     ) -> list[SandboxedConversationInfo | None]:

@@ -18,12 +18,12 @@ from openhands_server.sandbox.sandbox_context import (
     get_default_sandbox_service,
 )
 from openhands_server.sandbox.sandbox_models import SandboxStatus
+from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
+    SandboxedConversationContext,
+)
 from openhands_server.sandboxed_conversation.sandboxed_conversation_models import (
     SandboxedConversationInfo,
     SandboxedConversationPage,
-)
-from openhands_server.sandboxed_conversation.sandboxed_conversation_service import (
-    SandboxedConversationService,
 )
 from openhands_server.sandboxed_conversation.sandboxed_database_models import (
     StoredConversationMetricsSnapshot,
@@ -90,7 +90,7 @@ class DockerSandboxedEventContext(ReadOnlyEventContext):
 
 
 @dataclass
-class DockerSandboxedConversationService(SandboxedConversationService):
+class DockerSandboxedConversationService(SandboxedConversationContext):
     sandbox_service: SandboxContext = field(default_factory=get_default_sandbox_service)
 
     def _sandbox_status_to_conversation_status(
@@ -337,6 +337,6 @@ class DockerSandboxedConversationService(SandboxedConversationService):
         self._client = None
 
     @classmethod
-    def get_instance(cls) -> "SandboxedConversationService":
+    def get_instance(cls) -> "SandboxedConversationContext":
         """Get an instance of sandboxed conversation service"""
         return cls()
