@@ -1,19 +1,15 @@
 from abc import ABC, abstractmethod
+from typing import Type
 from uuid import UUID
 
-from openhands.agent_server.models import (
-    ConfirmationResponseRequest,
-    EventPage,
-    EventSortOrder,
-)
-from openhands.agent_server.pub_sub import Subscriber
-from openhands.sdk import EventBase, Message
-from openhands.sdk.conversation.secrets_manager import SecretValue
-from openhands.sdk.security.confirmation_policy import ConfirmationPolicyBase
+from openhands.agent_server.models import EventPage, EventSortOrder
+from openhands.sdk import EventBase
+from openhands_server.config import get_global_config
+from openhands_server.utils.import_utils import get_impl
 
 
-class EventService(ABC):
-    """Read Only Event Service for getting events - which may be related to a conversation, and may or may not be running"""  # noqa: E501
+class EventContext(ABC):
+    """Event Context for getting events"""
 
     @abstractmethod
     async def get_event(self, event_id: str) -> EventBase | None:
@@ -41,49 +37,20 @@ class EventService(ABC):
         """Given a list of ids, get events (Or none for any which were not found)"""
 
     @abstractmethod
-    async def send_message(self, message: Message):
-        """Send a message to a conversation"""
-
-    @abstractmethod
-    async def subscribe_to_events(self, subscriber: Subscriber) -> UUID:
-        """Subscribe to events from a conversation"""
-
-    @abstractmethod
-    async def unsubscribe_from_events(self, subscriber_id: UUID) -> bool:
-        """Unsubscribe to events from a conversation"""
-
-    @abstractmethod
-    async def start(self):
-        """Start a conversation"""
-
-    @abstractmethod
-    async def run(self):
-        """Run the conversation asynchronously."""
-
-    @abstractmethod
-    async def respond_to_confirmation(self, request: ConfirmationResponseRequest):
-        """Respond to confirmation"""
-
-    @abstractmethod
-    async def pause(self):
-        """Pause a conversation"""
-
-    @abstractmethod
-    async def update_secrets(self, secrets: dict[str, SecretValue]):
-        """Update secrets in the conversation."""
-
-    @abstractmethod
-    async def set_confirmation_policy(self, policy: ConfirmationPolicyBase):
-        """Set the confirmation policy for the conversation."""
-
-    @abstractmethod
-    async def close(self):
-        """Close this event service."""
-
-    @abstractmethod
     async def __aenter__(self, conversation_id: UUID):
         """Start using this service"""
 
     @abstractmethod
     async def __aexit__(self, exc_type, exc_value, traceback):
         """Stop using this service"""
+
+
+_event_context_type: Type[EventContext] | None = None
+
+
+def get_event_context_type() -> Type[EventContext]:
+    global _event_context_type
+    if _event_context_type is None:
+        config = get_global_config()
+        _event_context_type = get_impl(EventContext, config.event_context_type)
+    return _event_context_type

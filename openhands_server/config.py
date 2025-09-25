@@ -50,6 +50,10 @@ class DatabaseConfig(BaseModel):
 
 
 class OpenHandsServerConfig(BaseModel):
+    event_context_type: str = Field(
+        default="Dummy",
+        description="The implementation of EventContext to use",
+    )
     event_callback_result_context_type: str = Field(
         default="openhands_server.event_callback.sqlalchemy_event_callback_result_context.SQLAlchemyEventCallbackResultContext",
         description="The implementation of EventCallbackResultContext to use",
@@ -57,11 +61,6 @@ class OpenHandsServerConfig(BaseModel):
     event_callback_context_type: str = Field(
         default="openhands_server.event_callback.sqlalchemy_event_callback_context.SQLAlchemyEventCallbackContext",
         description="The implementation of EventCallbackContext to use",
-    )
-
-    auth_context_type: str = Field(
-        default="openhands_server.auth.dummy.DummyAuthContext",
-        description="The class to use for AuthContext dependencies",
     )
     sandbox_spec_context_type: str = Field(
         default="openhands_server.sandbox.docker_sandbox_spec_context.DockerSandboxSpecContext",
@@ -71,10 +70,16 @@ class OpenHandsServerConfig(BaseModel):
         default="openhands_server.sandbox.docker_sandbox_context.DockerSandboxContext",
         description="The class to use for SandboxContext dependencies",
     )
+
+    auth_context_type: str = Field(
+        default="openhands_server.auth.dummy.DummyAuthContext",
+        description="The class to use for AuthContext dependencies",
+    )
     sandboxed_conversation_context_type: str = Field(
         default="openhands_server.auth.dummy.DummyAuthContext",
         description="The class to use for SandboxedConversationContext dependencies",
     )
+
     allow_cors_origins: list[str] = Field(
         default_factory=list,
         description=(
