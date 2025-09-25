@@ -1,13 +1,12 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Type
+from typing import AsyncGenerator
 
-from openhands_server.config import get_global_config
+from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.sandbox.sandbox_spec_models import (
     SandboxSpecInfo,
     SandboxSpecInfoPage,
 )
-from openhands_server.utils.import_utils import get_impl
 
 
 class SandboxSpecContext(ABC):
@@ -39,7 +38,10 @@ class SandboxSpecContext(ABC):
         """Get a batch of sandbox specs, returning None for any spec which was not
         found"""
         results = await asyncio.gather(
-            *[self.get_sandbox(sandbox_spec_id) for sandbox_spec_id in sandbox_spec_ids]
+            *[
+                self.get_sandbox_spec(sandbox_spec_id)
+                for sandbox_spec_id in sandbox_spec_ids
+            ]
         )
         return results
 
@@ -52,34 +54,16 @@ class SandboxSpecContext(ABC):
     async def __aexit__(self, exc_type, exc_value, traceback):
         """Stop using this sandbox spec context"""
 
-    @classmethod
+
+class SandboxSpecContextFactory(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    async def get_instance(cls, *args, **kwargs) -> "SandboxSpecContext":
-        """Get an instance of sandbox spec context"""
-
-
-_sandbox_spec_context_type: Type[SandboxSpecContext] = None
-
-
-async def get_sandbox_spec_context_type() -> Type[SandboxSpecContext]:
-    global _sandbox_spec_context_type
-    if _sandbox_spec_context_type is None:
-        config = get_global_config()
-        _sandbox_spec_context_type = get_impl(
-            SandboxSpecContext, config.sandbox_spec_context_type
-        )
-    return _sandbox_spec_context_type
-
-
-async def sandbox_spec_context_dependency(*args, **kwargs):
-    context_type = await get_sandbox_spec_context_type()
-    context = await context_type.get_instance(*args, **kwargs)
-    async with context:
-        yield context
-
-
-# Legacy compatibility function for existing code
-async def get_default_sandbox_spec_service():
-    """Get default sandbox spec service - legacy compatibility function"""
-    context_type = await get_sandbox_spec_context_type()
-    return await context_type.get_instance()
+    async def with_instance(
+        self, *args, **kwargs
+    ) -> AsyncGenerator["SandboxSpecContext", None]:
+        """
+        Get an instance of sandbox spec context. Parameters are not specified
+        so that they can be defined in the implementation classes and overridden using
+        FastAPI's dependency injection. This allows merging global config with
+        user / request specific variables.
+        """
+        yield SandboxSpecContext()  # type: ignore

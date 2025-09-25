@@ -2,14 +2,19 @@ import secrets
 import socket
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import AsyncGenerator
 from uuid import UUID, uuid4
 
 import docker
 from docker.errors import APIError, NotFound
+from fastapi import Depends
 from pydantic import SecretStr
 
+from openhands_server.config import get_global_config
+from openhands_server.sandbox.docker_sandbox_spec_context import get_docker_client
 from openhands_server.sandbox.sandbox_context import (
     SandboxContext,
+    SandboxContextFactory,
 )
 from openhands_server.sandbox.sandbox_errors import SandboxError
 from openhands_server.sandbox.sandbox_models import (
@@ -17,9 +22,7 @@ from openhands_server.sandbox.sandbox_models import (
     SandboxPage,
     SandboxStatus,
 )
-from openhands_server.sandbox.sandbox_spec_context import (
-    get_sandbox_spec_context_type,
-)
+from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContext
 from openhands_server.utils.date_utils import utc_now
 
 
@@ -42,9 +45,10 @@ class ExposedPort:
 
 @dataclass
 class DockerSandboxContext(SandboxContext):
+    sandbox_spec_context: SandboxSpecContext
     container_name_prefix: str = "openhands-runtime-"
     exposed_url_pattern: str = "http://localhost:{port}"
-    # sandbox_spec_context will be created on-demand
+    docker_client: docker.DockerClient = field(default_factory=get_docker_client)
     mounts: list[VolumeMount] = field(default_factory=list)
     exposed_port: list[ExposedPort] = field(
         default_factory=lambda: [
@@ -54,7 +58,6 @@ class DockerSandboxContext(SandboxContext):
             )
         ]
     )
-    _client: docker.DockerClient | None = field(default=None)
 
     def _find_unused_port(self) -> int:
         """Find an unused port on the host machine"""
@@ -151,11 +154,9 @@ class DockerSandboxContext(SandboxContext):
         limit: int = 100,
     ) -> SandboxPage:
         """Search for sandboxes"""
-        if not self._client:
-            raise ValueError("inactive_service")
         try:
             # Get all containers with our prefix
-            all_containers = self._client.containers.list(all=True)
+            all_containers = self.docker_client.containers.list(all=True)
             sandboxes = []
 
             for container in all_containers:
@@ -195,28 +196,24 @@ class DockerSandboxContext(SandboxContext):
 
     async def get_sandbox(self, id: UUID) -> SandboxInfo | None:
         """Get a single sandbox info"""
-        if not self._client:
-            raise ValueError("inactive_service")
         try:
             container_name = self._container_name_from_id(id)
-            container = self._client.containers.get(container_name)
+            container = self.docker_client.containers.get(container_name)
             return self._container_to_sandbox_info(container)
         except (NotFound, APIError):
             return None
 
-    async def start_sandbox(self, sandbox_spec_id: str) -> SandboxInfo:
+    async def start_sandbox(self, sandbox_spec_id: str | None = None) -> SandboxInfo:
         """Start a new sandbox"""
-        if not self._client:
-            raise ValueError("inactive_service")
-        # Get runtime image info
-        sandbox_spec_context_type = await get_sandbox_spec_context_type()
-        async with (
-            await sandbox_spec_context_type.get_instance() as sandbox_spec_context
-        ):
-            sandbox_spec = await sandbox_spec_context.get_sandbox_spec(sandbox_spec_id)
+        if sandbox_spec_id is None:
+            sandbox_spec = await self.sandbox_spec_context.get_default_sandbox_spec()
+        else:
+            sandbox_spec = await self.sandbox_spec_context.get_sandbox_spec(
+                sandbox_spec_id
+            )
 
         if sandbox_spec is None:
-            raise ValueError(f"Runtime image {sandbox_spec_id} not found")
+            raise ValueError("Sandbox Spec not found")
 
         # Generate container ID and name
         container_id = uuid4()
@@ -249,8 +246,8 @@ class DockerSandboxContext(SandboxContext):
 
         try:
             # Create and start the container
-            container = self._client.containers.run(
-                image=sandbox_spec_id,
+            container = self.docker_client.containers.run(
+                image=sandbox_spec.id,
                 command=sandbox_spec.command,
                 name=container_name,
                 environment=env_vars,
@@ -271,11 +268,9 @@ class DockerSandboxContext(SandboxContext):
 
     async def resume_sandbox(self, id: UUID) -> bool:
         """Resume a paused sandbox"""
-        if not self._client:
-            raise ValueError("inactive_service")
         try:
             container_name = self._container_name_from_id(id)
-            container = self._client.containers.get(container_name)
+            container = self.docker_client.containers.get(container_name)
 
             if container.status == "paused":
                 container.unpause()
@@ -288,11 +283,9 @@ class DockerSandboxContext(SandboxContext):
 
     async def pause_sandbox(self, id: UUID) -> bool:
         """Pause a running sandbox"""
-        if not self._client:
-            raise ValueError("inactive_service")
         try:
             container_name = self._container_name_from_id(id)
-            container = self._client.containers.get(container_name)
+            container = self.docker_client.containers.get(container_name)
 
             if container.status == "running":
                 container.pause()
@@ -303,11 +296,9 @@ class DockerSandboxContext(SandboxContext):
 
     async def delete_sandbox(self, id: UUID) -> bool:
         """Delete a sandbox"""
-        if not self._client:
-            raise ValueError("inactive_service")
         try:
             container_name = self._container_name_from_id(id)
-            container = self._client.containers.get(container_name)
+            container = self.docker_client.containers.get(container_name)
 
             # Stop the container if it's running
             if container.status in ["running", "paused"]:
@@ -319,7 +310,7 @@ class DockerSandboxContext(SandboxContext):
             # Remove associated volume
             try:
                 volume_name = f"openhands-workspace-{id}"
-                volume = self._client.volumes.get(volume_name)
+                volume = self.docker_client.volumes.get(volume_name)
                 volume.remove()
             except (NotFound, APIError):
                 # Volume might not exist or already removed
@@ -329,11 +320,12 @@ class DockerSandboxContext(SandboxContext):
         except (NotFound, APIError):
             return False
 
-    async def __aenter__(self):
-        """Start using this sandbox service"""
-        self._client = docker.from_env()
-        return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Stop using this sandbox service"""
-        self._client = None
+class DockerSandboxContextFactory(SandboxContextFactory):
+    async def with_instance(
+        self,
+        sandbox_spec_context: SandboxSpecContext = Depends(
+            get_global_config().sandbox_context_factory.with_instance
+        ),
+    ) -> AsyncGenerator[SandboxContext, None]:
+        yield DockerSandboxContext(sandbox_spec_context=sandbox_spec_context)

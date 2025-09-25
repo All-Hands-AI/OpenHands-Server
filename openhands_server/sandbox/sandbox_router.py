@@ -6,23 +6,25 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands.agent_server.models import Success
+from openhands_server.config import get_global_config
 from openhands_server.sandbox.sandbox_context import (
     SandboxContext,
-    sandbox_context_dependency,
 )
 from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
 
 
 router = APIRouter(prefix="/sandboxes", tags=["Sandbox"])
-
-# TODO: Currently a sandbox is only available to the user who created it. In
-# future we could have a more advanced permissions model for sharing
+context_dependency = get_global_config().sandbox_context_factory.with_instance
 
 # Read methods
 
 
 @router.get("/search")
 async def search_sandboxes(
+    created_by_user_id__eq: Annotated[
+        str | None,
+        Query(title="Optional id of the user who created the sandbox"),
+    ] = None,
     page_id: Annotated[
         str | None,
         Query(title="Optional next_page_id from the previously returned page"),
@@ -31,18 +33,20 @@ async def search_sandboxes(
         int,
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
-    sandbox_context: SandboxContext = Depends(sandbox_context_dependency),
+    sandbox_context: SandboxContext = Depends(context_dependency),
 ) -> SandboxPage:
     """Search / list sandboxes owned by the current user."""
     assert limit > 0
     assert limit <= 100
-    return await sandbox_context.search_sandboxes(page_id, limit)
+    return await sandbox_context.search_sandboxes(
+        created_by_user_id__eq=created_by_user_id__eq, page_id=page_id, limit=limit
+    )
 
 
 @router.get("/{id}", responses={404: {"description": "Item not found"}})
 async def get_sandbox(
     id: UUID,
-    sandbox_context: SandboxContext = Depends(sandbox_context_dependency),
+    sandbox_context: SandboxContext = Depends(context_dependency),
 ) -> SandboxInfo:
     """Get a single sandbox given an id"""
     sandbox = await sandbox_context.get_sandbox(id)
@@ -54,7 +58,7 @@ async def get_sandbox(
 @router.get("/")
 async def batch_get_sandboxes(
     ids: Annotated[list[UUID], Query()],
-    sandbox_context: SandboxContext = Depends(sandbox_context_dependency),
+    sandbox_context: SandboxContext = Depends(context_dependency),
 ) -> list[SandboxInfo | None]:
     """Get a batch of sandboxes given their ids, returning null for any missing
     sandbox."""
@@ -69,7 +73,7 @@ async def batch_get_sandboxes(
 @router.post("/")
 async def start_sandbox(
     sandbox_spec_id: str | None = None,
-    sandbox_context: SandboxContext = Depends(sandbox_context_dependency),
+    sandbox_context: SandboxContext = Depends(context_dependency),
 ) -> SandboxInfo:
     info = await sandbox_context.start_sandbox(sandbox_spec_id)
     return info
@@ -78,7 +82,7 @@ async def start_sandbox(
 @router.post("/{id}/pause", responses={404: {"description": "Item not found"}})
 async def pause_sandbox(
     id: UUID,
-    sandbox_context: SandboxContext = Depends(sandbox_context_dependency),
+    sandbox_context: SandboxContext = Depends(context_dependency),
 ) -> Success:
     exists = await sandbox_context.pause_sandbox(id)
     if not exists:
@@ -89,7 +93,7 @@ async def pause_sandbox(
 @router.post("/{id}/resume", responses={404: {"description": "Item not found"}})
 async def resume_sandbox(
     id: UUID,
-    sandbox_context: SandboxContext = Depends(sandbox_context_dependency),
+    sandbox_context: SandboxContext = Depends(context_dependency),
 ) -> Success:
     exists = await sandbox_context.resume_sandbox(id)
     if not exists:
@@ -100,7 +104,7 @@ async def resume_sandbox(
 @router.delete("/{id}", responses={404: {"description": "Item not found"}})
 async def delete_sandbox(
     id: UUID,
-    sandbox_context: SandboxContext = Depends(sandbox_context_dependency),
+    sandbox_context: SandboxContext = Depends(context_dependency),
 ) -> Success:
     exists = await sandbox_context.delete_sandbox(id)
     if not exists:

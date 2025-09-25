@@ -1,15 +1,29 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import AsyncGenerator
 
 import docker
 from docker.errors import APIError, NotFound
 
-from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContext
+from openhands_server.sandbox.sandbox_spec_context import (
+    SandboxSpecContext,
+    SandboxSpecContextFactory,
+)
 from openhands_server.sandbox.sandbox_spec_models import (
     SandboxSpecInfo,
     SandboxSpecInfoPage,
 )
 from openhands_server.utils.date_utils import utc_now
+
+
+_global_docker_client: docker.DockerClient | None = None
+
+
+def get_docker_client() -> docker.DockerClient:
+    global _global_docker_client
+    if _global_docker_client is None:
+        _global_docker_client = docker.from_env()
+    return _global_docker_client
 
 
 @dataclass
@@ -20,9 +34,9 @@ class DockerSandboxSpecContext(SandboxSpecContext):
     combination of the repository and tag is treated as the id in the resulting image.
     """
 
-    client: docker.DockerClient | None = field(default=None)
+    docker_client: docker.DockerClient = field(default_factory=get_docker_client)
     repository: str = "ghcr.io/all-hands-ai/runtime"
-    command: str = "python -u -m openhands_server.runtime"
+    command: str = "python -u -m openhands.agent_server"
     initial_env: dict[str, str] = field(default_factory=dict)
     working_dir: str = "/openhands/code"
 
@@ -57,7 +71,7 @@ class DockerSandboxSpecContext(SandboxSpecContext):
         """Search for runtime images"""
         try:
             # Get all images that match the repository
-            images = self.client.images.list(name=self.repository)
+            images = self.docker_client.images.list(name=self.repository)
 
             # Convert Docker images to SandboxSpecInfo
             sandbox_specs = []
@@ -100,26 +114,12 @@ class DockerSandboxSpecContext(SandboxSpecContext):
         """Get a single runtime image info by ID"""
         try:
             # Try to get the image by ID (which should be repository:tag)
-            image = self.client.images.get(id)
+            image = self.docker_client.images.get(id)
             return self._docker_image_to_sandbox_specs(image)
         except (NotFound, APIError):
             return None
 
-    async def __aenter__(self):
-        """Start using this sandbox spec context"""
-        if self.client is None:
-            self.client = docker.from_env()
-        return self
 
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        """Stop using this sandbox spec context"""
-        # Docker client doesn't need explicit cleanup
-        pass
-
-    @classmethod
-    async def get_instance(cls, *args, **kwargs) -> "DockerSandboxSpecContext":
-        """Get an instance of sandbox spec context. Parameters are not specified
-        so that they can be defined in the implementation classes and overridden using
-        FastAPI's dependency injection. This allows merging global config with
-        user / request specific variables."""
-        return cls(*args, **kwargs)
+class DockerSandboxSpecContextFactory(SandboxSpecContextFactory):
+    async def with_instance(self) -> AsyncGenerator["SandboxSpecContext", None]:
+        yield DockerSandboxSpecContext()

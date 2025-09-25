@@ -1,11 +1,18 @@
 import json
 import os
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel, Field
 
 from openhands_server.event.event_context import EventContextFactory
+from openhands_server.event_callback.event_callback_context import (
+    EventCallbackContextFactory,
+)
+from openhands_server.event_callback.event_callback_result_context import (
+    EventCallbackResultContextFactory,
+)
+from openhands_server.sandbox.sandbox_context import SandboxContextFactory
+from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextFactory
 
 
 # Environment variable constants
@@ -58,6 +65,22 @@ def _get_default_event_callback_result_context_factory():
     return ctx.SQLAlchemyEventCallbackResultContextFactory()
 
 
+def _get_default_sandbox_context_factory():
+    from openhands_server.sandbox import (
+        docker_sandbox_context as ctx,
+    )
+
+    return ctx.DockerSandboxContextFactory()
+
+
+def _get_default_sandbox_spec_context_factory():
+    from openhands_server.sandbox import (
+        docker_sandbox_spec_context as ctx,
+    )
+
+    return ctx.DockerSandboxSpecContextFactory()
+
+
 class GCPConfig(BaseModel):
     project: str | None = os.getenv("GCP_PROJECT")
     region: str | None = os.getenv("GCP_REGION")
@@ -80,22 +103,19 @@ class OpenHandsServerConfig(BaseModel):
     event_context_factory: EventContextFactory = Field(
         default_factory=_get_default_event_context_factory
     )
-    event_callback_context_factory: Any = Field(
-        default_factory=_get_default_event_callback_context_factory,
-        description="The factory for EventCallbackContext instances",
+    event_callback_context_factory: EventCallbackContextFactory = Field(
+        default_factory=_get_default_event_callback_context_factory
     )
-    event_callback_result_context_factory: Any = Field(
-        default_factory=_get_default_event_callback_result_context_factory,
-        description="The factory for EventCallbackResultContext instances",
+    event_callback_result_context_factory: EventCallbackResultContextFactory = Field(
+        default_factory=_get_default_event_callback_result_context_factory
     )
-    sandbox_spec_context_type: str = Field(
-        default="openhands_server.sandbox.docker_sandbox_spec_context.DockerSandboxSpecContext",
-        description="The class to use for SandboxSpecContext dependencies",
+    sandbox_context_factory: SandboxContextFactory = Field(
+        default_factory=_get_default_sandbox_context_factory
     )
-    sandbox_context_type: str = Field(
-        default="openhands_server.sandbox.docker_sandbox_context.DockerSandboxContext",
-        description="The class to use for SandboxContext dependencies",
+    sandbox_spec_context_factory: SandboxSpecContextFactory = Field(
+        default_factory=_get_default_sandbox_spec_context_factory
     )
+
     allow_cors_origins: list[str] = Field(
         default_factory=list,
         description=(
