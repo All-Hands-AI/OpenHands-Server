@@ -18,14 +18,14 @@ from openhands_server.sandbox.sandbox_context import (
     get_default_sandbox_service,
 )
 from openhands_server.sandbox.sandbox_models import SandboxStatus
-from openhands_server.sandboxed_conversation.sandboxed_conversation_models import (  # noqa: E501
+from openhands_server.sandboxed_conversation.sandboxed_conversation_models import (
     SandboxedConversationInfo,
     SandboxedConversationPage,
 )
-from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (  # noqa: E501
+from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContext,
 )
-from openhands_server.sandboxed_conversation.sandboxed_database_models import (  # noqa: E501
+from openhands_server.sandboxed_conversation.sandboxed_database_models import (
     StoredConversationMetricsSnapshot,
     StoredSandboxedConversationInfo,
 )
@@ -111,7 +111,7 @@ class DockerSandboxedConversationService(SandboxedConversationContext):
         stored: StoredSandboxedConversationInfo,
         metrics: Optional[StoredConversationMetricsSnapshot] = None,
     ) -> SandboxedConversationInfo:
-        """Convert stored database model to SandboxedConversationInfo with live status"""  # noqa: E501
+        """Convert stored database model to SandboxedConversationInfo with live status"""
         # Get live sandbox status
         sandbox_info = None
         status = AgentExecutionStatus.FINISHED
@@ -156,7 +156,7 @@ class DockerSandboxedConversationService(SandboxedConversationContext):
     async def search_sandboxed_conversations(
         self, user_id: UUID | None = None, page_id: str | None = None, limit: int = 100
     ) -> SandboxedConversationPage:
-        """Load a page of sandboxed conversation info from the database and combine it with live status from the docker container"""  # noqa: E501
+        """Load a page of sandboxed conversation info from the database and combine it with live status from the docker container"""
         async with AsyncSessionLocal() as session:
             # Build query
             query = select(StoredSandboxedConversationInfo).order_by(
@@ -218,7 +218,7 @@ class DockerSandboxedConversationService(SandboxedConversationContext):
     async def get_sandboxed_conversation(
         self, user_id: UUID, conversation_id: UUID
     ) -> SandboxedConversationInfo | None:
-        """Get a single sandboxed conversation info from the database and combine it with live status from the docker container."""  # noqa: E501
+        """Get a single sandboxed conversation info from the database and combine it with live status from the docker container."""
         async with AsyncSessionLocal() as session:
             # Get stored conversation
             query = select(StoredSandboxedConversationInfo).where(
@@ -248,7 +248,7 @@ class DockerSandboxedConversationService(SandboxedConversationContext):
     async def batch_get_sandboxed_conversations(
         self, user_id: UUID, conversation_ids: list[UUID]
     ) -> list[SandboxedConversationInfo | None]:
-        """Get a batch of sandboxed conversation info from the database and by id and combine it with live status from the docker container(s). Return None for any conversation which was not found."""  # noqa: E501
+        """Get a batch of sandboxed conversation info from the database and by id and combine it with live status from the docker container(s). Return None for any conversation which was not found."""
         if not conversation_ids:
             return []
 
@@ -303,7 +303,7 @@ class DockerSandboxedConversationService(SandboxedConversationContext):
     # Event methods...
 
     async def get_event_context(self, id: UUID) -> ReadOnlyEventContext | None:
-        """Create an event context which loads directly from the sanboxed container via its rest API."""  # noqa: E501
+        """Create an event context which loads directly from the sanboxed container via its rest API."""
         # Get the conversation to find its sandbox
         conversation = await self.get_sandboxed_conversation(
             None, id

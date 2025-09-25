@@ -11,7 +11,7 @@ from openhands_server.utils.import_utils import get_impl
 class SandboxContext(ABC):
     """
     Context for accessing sandboxes available to the current user in which conversations may be run.
-    """  # noqa: E501
+    """
 
     @abstractmethod
     async def search_sandboxes(
@@ -29,19 +29,19 @@ class SandboxContext(ABC):
 
     @abstractmethod
     async def start_sandbox(self, sandbox_spec_id: str) -> SandboxInfo:
-        """Begin the process of starting a sandbox. Return the info on the new sandbox"""  # noqa: E501
+        """Begin the process of starting a sandbox. Return the info on the new sandbox"""
 
     @abstractmethod
     async def resume_sandbox(self, id: UUID) -> bool:
-        """Begin the process of resuming a sandbox. Return True if the sandbox exists and is being resumed or is already running. Return False if the sandbox did not exist"""  # noqa: E501
+        """Begin the process of resuming a sandbox. Return True if the sandbox exists and is being resumed or is already running. Return False if the sandbox did not exist"""
 
     @abstractmethod
     async def pause_sandbox(self, id: UUID) -> bool:
-        """Begin the process of deleting a sandbox. Return True if the sandbox exists and is being paused or is already paused. Return False if the sandbox did not exist"""  # noqa: E501
+        """Begin the process of deleting a sandbox. Return True if the sandbox exists and is being paused or is already paused. Return False if the sandbox did not exist"""
 
     @abstractmethod
     async def delete_sandbox(self, id: UUID) -> bool:
-        """Begin the process of deleting a sandbox (self, Which may involve stopping it first). Return False if the sandbox did not exist"""  # noqa: E501
+        """Begin the process of deleting a sandbox (self, Which may involve stopping it first). Return False if the sandbox did not exist"""
 
     # Lifecycle methods
 

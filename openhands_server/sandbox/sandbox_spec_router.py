@@ -55,7 +55,7 @@ async def batch_get_sandbox_specs(
     ids: Annotated[list[UUID], Query()],
     sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_context_dependency),
 ) -> list[SandboxSpecInfo | None]:
-    """Get a batch of sandbox specs given their ids, returning null for any missing spec."""  # noqa: E501
+    """Get a batch of sandbox specs given their ids, returning null for any missing spec."""
     assert len(ids) <= 100
     sandbox_specs = await sandbox_spec_context.batch_get_sandbox_specs(ids)
     return sandbox_specs
