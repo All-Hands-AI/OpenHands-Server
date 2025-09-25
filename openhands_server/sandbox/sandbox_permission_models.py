@@ -9,6 +9,7 @@ from openhands_server.utils.date_utils import utc_now
 class SandboxPermission(BaseModel):
     """Permission model for sandbox. Conversation permissions are handled at the sandbox level.
     (Since once a user has access to the session_api_key, enforcing further constraints is impossilbe)"""
+
     id: UUID = Field(default_factory=uuid4)
     sandbox_id: str
     user_id: str
