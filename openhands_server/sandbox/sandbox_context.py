@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Type
 from uuid import UUID
@@ -22,14 +23,9 @@ class SandboxContext(ABC):
     async def get_sandbox(self, id: UUID) -> SandboxInfo | None:
         """Get a single sandbox. Return None if the sandbox was not found."""
 
-    @abstractmethod
     async def batch_get_sandboxes(self, ids: list[UUID]) -> list[SandboxInfo | None]:
         """Get a batch of sandboxes, returning None for any which were not found."""
-        results = []
-        for id in ids:
-            result = await self.get_sandbox(id)
-            results.append(result)
-        return results
+        return await asyncio.gather(*[self.get_sandbox(id) for id in ids])
 
     @abstractmethod
     async def start_sandbox(self, sandbox_spec_id: str) -> SandboxInfo:

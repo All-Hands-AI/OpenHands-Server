@@ -193,13 +193,7 @@ class DockerSandboxContext(SandboxContext):
         except (NotFound, APIError):
             return None
 
-    async def batch_get_sandboxes(self, ids: list[UUID]) -> list[SandboxInfo | None]:
-        """Get multiple sandbox infos"""
-        results = []
-        for sandbox_id in ids:
-            sandbox_info = await self.get_sandbox(sandbox_id)
-            results.append(sandbox_info)
-        return results
+
 
     async def start_sandbox(self, user_id: UUID, sandbox_spec_id: str) -> UUID:
         """Start a new sandbox"""
