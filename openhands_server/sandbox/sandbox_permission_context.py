@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import asyncio
 from uuid import UUID
 
 from openhands_server.sandbox.sandbox_permission_models import (
@@ -23,12 +24,22 @@ class SandboxContext(ABC):
         """Get a single sandbox. Return None if the sandbox was not found."""
 
     @abstractmethod
-    async def batch_get_sandboxes(
-        self, ids: list[UUID]
+    async def add_sandbox_permission(self, sandbox_id: str, user_id: str, full_access: bool = False) -> SandboxPermission:
+        """Add a sandbox permission for the user given to the sandbox given. Raise a PermissionError
+        if the current user does not have full access to the sandbox"""
+
+    @abstractmethod
+    async def delete_sandbox_permission(self, sandbox_permission_id: UUID) -> bool:
+        """ Delete a sandbox permission. Return false if the permission did not exist, the current user did not
+        have full access to the sandbox, or permission belonged to the current user (User's can't revoke their
+        own permissions)."""
+
+    @abstractmethod
+    async def batch_get_sandbox_permissions(
+        self, sandbox_permission_ids: list[UUID]
     ) -> list[SandboxPermission | None]:
         """Get a batch of sandboxes, returning None for any which were not found."""
-        results = []
-        for id in ids:
-            result = await self.get_sandbox_permission(id)
-            results.append(result)
+        results = await asyncio.gather(
+            *[self.get_sandbox(sandbox_id) for sandbox_id in sandbox_permission_ids]
+        )
         return results
