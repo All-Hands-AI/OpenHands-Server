@@ -9,13 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands.sdk.event.types import EventID
 from openhands_server.database import async_session_dependency
-from openhands_server.event_callback_result.event_callback_result_context import (
+from openhands_server.event_callback.event_callback_result_context import (
     EventCallbackResultContext,
 )
-from openhands_server.event_callback_result.event_callback_result_db_models import (
+from openhands_server.event_callback.event_callback_result_db_models import (
     StoredEventCallbackResult,
 )
-from openhands_server.event_callback_result.event_callback_result_models import (
+from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultPage,
     EventCallbackResultSortOrder,

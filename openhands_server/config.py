@@ -51,7 +51,7 @@ class DatabaseConfig(BaseModel):
 
 class OpenHandsServerConfig(BaseModel):
     event_callback_result_context_type: str = Field(
-        default="openhands_server.event_callback_result.sqlalchemy_event_callback_result_context.SQLAlchemyEventCallbackResultContext",
+        default="openhands_server.event_callback.sqlalchemy_event_callback_result_context.SQLAlchemyEventCallbackResultContext",
         description="The implementation of EventCallbackResultContext to use",
     )
     event_callback_context_type: str = Field(

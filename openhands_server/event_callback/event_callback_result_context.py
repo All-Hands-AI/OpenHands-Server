@@ -6,7 +6,7 @@ from uuid import UUID
 
 from openhands.sdk.event.types import EventID
 from openhands_server.config import get_default_config
-from openhands_server.event_callback_result.event_callback_result_models import (
+from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultPage,
     EventCallbackResultSortOrder,

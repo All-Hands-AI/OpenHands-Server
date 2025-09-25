@@ -8,7 +8,7 @@ from sqlalchemy import UUID, Column, DateTime, String, Text
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from openhands_server.database import Base
-from openhands_server.event_callback_result.event_callback_result_models import (
+from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultStatus,
 )

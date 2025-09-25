@@ -14,7 +14,7 @@ from openhands.sdk.utils.models import (
     OpenHandsModel,
     get_known_concrete_subclasses,
 )
-from openhands_server.event_callback_result.event_callback_result_models import (
+from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultStatus,
 )

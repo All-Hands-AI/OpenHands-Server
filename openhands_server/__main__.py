@@ -4,8 +4,6 @@ import argparse
 
 import uvicorn
 
-from openhands_server.api import api
-
 
 def main() -> None:
     """Main entry point for the OpenHands Server."""
@@ -31,7 +29,9 @@ def main() -> None:
     print(f"🔄 Auto-reload: {'enabled' if args.reload else 'disabled'}")
     print()
 
-    uvicorn.run(api, host=args.host, port=args.port)
+    uvicorn.run(
+        "openhands_server.api:api", host=args.host, port=args.port, reload=args.reload
+    )
 
 
 if __name__ == "__main__":

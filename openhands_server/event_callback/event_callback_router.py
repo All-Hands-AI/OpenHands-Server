@@ -16,7 +16,7 @@ from openhands_server.event_callback.event_callback_models import (
 )
 
 
-router = APIRouter(prefix="/event-callbacks")
+router = APIRouter(prefix="/event-callbacks", tags=["Event Callbacks"])
 context_dependency = get_event_callback_context_type().with_instance
 
 # Read methods
