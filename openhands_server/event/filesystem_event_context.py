@@ -1,6 +1,5 @@
 """Filesystem-based EventContext implementation."""
 
-import asyncio
 import glob
 import json
 from datetime import datetime
@@ -10,21 +9,20 @@ from uuid import UUID
 
 from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.sdk import EventBase
-from openhands_server.event.event_context import EventContext
+from openhands_server.event.event_context import EventContext, EventContextFactory
 from openhands_server.event_callback.event_callback_models import EventKind
 
 
 class FilesystemEventContext(EventContext):
     """
     Filesystem-based implementation of EventContext.
-    
+
     Events are stored in files with the naming format:
     {conversation_id}/{YYYYMMDDHHMMSS}_{kind}_{id.hex}
     """
 
     def __init__(self, events_dir: Path):
         self.events_dir = Path(events_dir)
-        self._conversation_id: UUID | None = None
 
     def _ensure_events_dir(self, conversation_id: UUID | None = None) -> Path:
         """Ensure the events directory exists."""
@@ -39,7 +37,7 @@ class FilesystemEventContext(EventContext):
         """Convert timestamp to YYYYMMDDHHMMSS format."""
         if isinstance(timestamp, str):
             # Parse ISO format timestamp string
-            dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
             return dt.strftime("%Y%m%d%H%M%S")
         return timestamp.strftime("%Y%m%d%H%M%S")
 
@@ -49,7 +47,7 @@ class FilesystemEventContext(EventContext):
         kind = event.__class__.__name__
         # Handle both UUID objects and string UUIDs
         if isinstance(event.id, str):
-            id_hex = event.id.replace('-', '')
+            id_hex = event.id.replace("-", "")
         else:
             id_hex = event.id.hex
         return f"{timestamp_str}_{kind}_{id_hex}"
@@ -73,13 +71,15 @@ class FilesystemEventContext(EventContext):
         except Exception:
             return None
 
-    def _get_event_files_by_pattern(self, pattern: str, conversation_id: UUID | None = None) -> list[Path]:
+    def _get_event_files_by_pattern(
+        self, pattern: str, conversation_id: UUID | None = None
+    ) -> list[Path]:
         """Get event files matching a glob pattern, sorted by timestamp."""
         if conversation_id:
             search_path = self.events_dir / str(conversation_id) / pattern
         else:
             search_path = self.events_dir / "*" / pattern
-        
+
         files = glob.glob(str(search_path))
         return sorted([Path(f) for f in files])
 
@@ -91,11 +91,7 @@ class FilesystemEventContext(EventContext):
                 timestamp_str = parts[0]
                 kind = "_".join(parts[1:-1])  # Handle kinds with underscores
                 event_id = parts[-1]
-                return {
-                    "timestamp": timestamp_str,
-                    "kind": kind,
-                    "event_id": event_id
-                }
+                return {"timestamp": timestamp_str, "kind": kind, "event_id": event_id}
         except Exception:
             pass
         return None
@@ -110,45 +106,47 @@ class FilesystemEventContext(EventContext):
     ) -> list[Path]:
         """Filter files based on search criteria."""
         filtered_files = []
-        
+
         for file_path in files:
             # Check conversation_id filter
             if conversation_id__eq:
                 if str(conversation_id__eq) not in str(file_path):
                     continue
-            
+
             # Parse filename for additional filtering
             filename_info = self._parse_filename(file_path.name)
             if not filename_info:
                 continue
-            
+
             # Check kind filter
             if kind__eq and filename_info["kind"] != kind__eq:
                 continue
-            
+
             # Check timestamp filters
             if timestamp__gte or timestamp__lt:
                 try:
-                    file_timestamp = datetime.strptime(filename_info["timestamp"], "%Y%m%d%H%M%S")
+                    file_timestamp = datetime.strptime(
+                        filename_info["timestamp"], "%Y%m%d%H%M%S"
+                    )
                     if timestamp__gte and file_timestamp < timestamp__gte:
                         continue
                     if timestamp__lt and file_timestamp >= timestamp__lt:
                         continue
                 except ValueError:
                     continue
-            
+
             filtered_files.append(file_path)
-        
+
         return filtered_files
 
     async def get_event(self, event_id: str) -> EventBase | None:
         """Get the event with the given id, or None if not found."""
         # Convert event_id to hex format (remove dashes) for filename matching
-        if isinstance(event_id, str) and '-' in event_id:
-            id_hex = event_id.replace('-', '')
+        if isinstance(event_id, str) and "-" in event_id:
+            id_hex = event_id.replace("-", "")
         else:
             id_hex = event_id
-            
+
         # Use glob pattern to find files ending with the event_id
         pattern = f"*_{id_hex}"
         files = self._get_event_files_by_pattern(pattern)
@@ -173,12 +171,12 @@ class FilesystemEventContext(EventContext):
         # Build the search pattern
         pattern = "*"
         files = self._get_event_files_by_pattern(pattern, conversation_id__eq)
-        
+
         # Filter files based on criteria
         files = self._filter_files_by_criteria(
             files, conversation_id__eq, kind__eq, timestamp__gte, timestamp__lt
         )
-        
+
         # Sort files
         files.sort(
             key=lambda f: f.name,
@@ -194,7 +192,7 @@ class FilesystemEventContext(EventContext):
                     break
 
         # Collect items for this page
-        page_files = files[start_index:start_index + limit]
+        page_files = files[start_index : start_index + limit]
         next_page_id = None
         if start_index + limit < len(files):
             next_page_id = files[start_index + limit].name
@@ -220,12 +218,12 @@ class FilesystemEventContext(EventContext):
         # Build the search pattern
         pattern = "*"
         files = self._get_event_files_by_pattern(pattern, conversation_id__eq)
-        
+
         # Filter files based on criteria
         files = self._filter_files_by_criteria(
             files, conversation_id__eq, kind__eq, timestamp__gte, timestamp__lt
         )
-        
+
         return len(files)
 
     async def save_event(self, conversation_id: UUID, event: EventBase):
@@ -240,27 +238,10 @@ class FilesystemEventContext(EventContext):
             results.append(result)
         return results
 
-    async def __aenter__(self, conversation_id: UUID):
-        """Start using this service"""
-        self._conversation_id = conversation_id
-        return self
 
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        """Stop using this service"""
-        self._conversation_id = None
+class FilesystemEventContextFactory(EventContextFactory):
+    events_dir: Path = Path("workspace/events")
 
-    @classmethod
-    async def with_instance(
-        cls, events_dir: Path | None = None, *args, **kwargs
-    ) -> AsyncGenerator["FilesystemEventContext", None]:
-        """
-        Get an instance of filesystem event context.
-        """
-        if events_dir is None:
-            events_dir = Path("./events")
-        
-        instance = cls(events_dir)
-        try:
-            yield instance
-        finally:
-            pass  # No cleanup needed for filesystem implementation
+    async def with_instance(self) -> AsyncGenerator[EventContext, None]:
+        async with FilesystemEventContext(events_dir=self.events_dir) as context:
+            yield context

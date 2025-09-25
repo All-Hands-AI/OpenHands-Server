@@ -8,6 +8,7 @@ from fastapi import APIRouter, FastAPI
 from openhands.agent_server.middleware import LocalhostCORSMiddleware
 from openhands_server.config import get_global_config
 from openhands_server.database import create_tables, drop_tables
+from openhands_server.event import event_router
 from openhands_server.event_callback import (
     event_callback_result_router,
     event_callback_router,
@@ -41,6 +42,7 @@ api.add_middleware(LocalhostCORSMiddleware, allow_origins=_config.allow_cors_ori
 
 # Include routers
 api_router = APIRouter(prefix="/api")
+api_router.include_router(event_router.router)
 api_router.include_router(event_callback_router.router)
 api_router.include_router(event_callback_result_router.router)
 api_router.include_router(sandbox_spec_router.router)

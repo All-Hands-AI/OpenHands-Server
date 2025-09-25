@@ -8,15 +8,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.sdk import EventBase
-from openhands_server.event.event_context import (
-    EventContext,
-    get_event_context_type,
-)
+from openhands_server.config import get_global_config
+from openhands_server.event.event_context import EventContext
 from openhands_server.event_callback.event_callback_models import EventKind
 
 
 router = APIRouter(prefix="/events", tags=["Events"])
-context_dependency = get_event_context_type().with_instance
+context_dependency = get_global_config().event_context_factory.with_instance
+
 
 # Read methods
 

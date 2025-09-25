@@ -4,6 +4,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from openhands_server.event.event_context import EventContextFactory
+
 
 # Environment variable constants
 CONFIG_FILE_PATH_ENV = "OPENHANDS_ENTERPRISE_SERVER_CONFIG_PATH"
@@ -31,6 +33,14 @@ def _get_default_db_url() -> str:
     return "sqlite+aiosqlite:///./openhands.db"
 
 
+def _get_default_event_context_factory():
+    from openhands_server.event.filesystem_event_context import (
+        FilesystemEventContextFactory,
+    )
+
+    return FilesystemEventContextFactory()
+
+
 class GCPConfig(BaseModel):
     project: str | None = os.getenv("GCP_PROJECT")
     region: str | None = os.getenv("GCP_REGION")
@@ -50,9 +60,8 @@ class DatabaseConfig(BaseModel):
 
 
 class OpenHandsServerConfig(BaseModel):
-    event_context_type: str = Field(
-        default="openhands_server.event.filesystem_event_context.FilesystemEventContext",
-        description="The implementation of EventContext to use",
+    event_context_factory: EventContextFactory = Field(
+        default_factory=_get_default_event_context_factory
     )
     event_callback_result_context_type: str = Field(
         default="openhands_server.event_callback.sqlalchemy_event_callback_result_context.SQLAlchemyEventCallbackResultContext",
