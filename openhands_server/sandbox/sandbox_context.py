@@ -36,9 +36,9 @@ class SandboxContext(ABC):
         return results
 
     @abstractmethod
-    async def start_sandbox(self, sandbox_spec_id: str) -> SandboxInfo:
+    async def start_sandbox(self, sandbox_spec_id: str | None = None) -> SandboxInfo:
         """Begin the process of starting a sandbox. Return the info on the new
-        sandbox"""
+        sandbox. If no spec is selected, use the default."""
 
     @abstractmethod
     async def resume_sandbox(self, id: UUID) -> bool:
