@@ -61,13 +61,13 @@ class StoredEventCallbackResult(Base):
             EventCallbackResult: The Pydantic model representation
         """
         return EventCallbackResult(
-            id=self.id,
+            id=self.id,  # type: ignore[arg-type]
             status=self.status_enum,
-            event_callback_id=self.event_callback_id,
-            event_id=self.event_id,
-            conversation_id=self.conversation_id,
-            detail=self.detail,
-            created_at=self.created_at,
+            event_callback_id=self.event_callback_id,  # type: ignore[arg-type]
+            event_id=self.event_id,  # type: ignore[arg-type]
+            conversation_id=self.conversation_id,  # type: ignore[arg-type]
+            detail=self.detail,  # type: ignore[arg-type]
+            created_at=self.created_at,  # type: ignore[arg-type]
         )
 
     @classmethod

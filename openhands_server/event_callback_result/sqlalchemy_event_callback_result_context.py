@@ -35,9 +35,9 @@ class SQLAlchemyEventCallbackResultContext(EventCallbackResultContext):
         self.session = session
 
     @classmethod
-    async def with_instance(
+    async def with_instance(  # type: ignore[misc]
         cls, session: AsyncSession = Depends(async_session_dependency)
-    ) -> AsyncGenerator[EventCallbackResultContext, None]:
+    ) -> AsyncGenerator["EventCallbackResultContext", None]:
         """
         Yield an instance of the SQLAlchemy event callback result context.
         """

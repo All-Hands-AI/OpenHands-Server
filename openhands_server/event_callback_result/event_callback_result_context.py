@@ -69,7 +69,7 @@ class EventCallbackResultContext(ABC):
     @abstractmethod
     async def with_instance(
         cls, *args, **kwargs
-    ) -> AsyncGenerator[EventCallbackResultContext, None]:
+    ) -> AsyncGenerator["EventCallbackResultContext", None]:
         """
         Get an instance of event callback result context. Parameters are not
         specified so that they can be defined in the implementation classes and
