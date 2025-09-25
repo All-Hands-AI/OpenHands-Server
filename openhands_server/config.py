@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -41,6 +42,22 @@ def _get_default_event_context_factory():
     return FilesystemEventContextFactory()
 
 
+def _get_default_event_callback_context_factory():
+    from openhands_server.event_callback.sqlalchemy_event_callback_context import (
+        SQLAlchemyEventCallbackContextFactory,
+    )
+
+    return SQLAlchemyEventCallbackContextFactory()
+
+
+def _get_default_event_callback_result_context_factory():
+    from openhands_server.event_callback.sqlalchemy_event_callback_result_context import (
+        SQLAlchemyEventCallbackResultContextFactory,
+    )
+
+    return SQLAlchemyEventCallbackResultContextFactory()
+
+
 class GCPConfig(BaseModel):
     project: str | None = os.getenv("GCP_PROJECT")
     region: str | None = os.getenv("GCP_REGION")
@@ -63,13 +80,13 @@ class OpenHandsServerConfig(BaseModel):
     event_context_factory: EventContextFactory = Field(
         default_factory=_get_default_event_context_factory
     )
-    event_callback_result_context_type: str = Field(
-        default="openhands_server.event_callback.sqlalchemy_event_callback_result_context.SQLAlchemyEventCallbackResultContext",
-        description="The implementation of EventCallbackResultContext to use",
+    event_callback_context_factory: Any = Field(
+        default_factory=_get_default_event_callback_context_factory,
+        description="The factory for EventCallbackContext instances",
     )
-    event_callback_context_type: str = Field(
-        default="openhands_server.event_callback.sqlalchemy_event_callback_context.SQLAlchemyEventCallbackContext",
-        description="The implementation of EventCallbackContext to use",
+    event_callback_result_context_factory: Any = Field(
+        default_factory=_get_default_event_callback_result_context_factory,
+        description="The factory for EventCallbackResultContext instances",
     )
     sandbox_spec_context_type: str = Field(
         default="openhands_server.sandbox.docker_sandbox_spec_context.DockerSandboxSpecContext",
