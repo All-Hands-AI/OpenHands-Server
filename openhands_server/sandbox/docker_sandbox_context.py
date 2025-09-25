@@ -68,7 +68,7 @@ class DockerSandboxContext(SandboxContext):
         """Generate container name from UUID"""
         return f"{self.container_name_prefix}{container_id}"
 
-    def _runtime_id_from_container_name(self, container_name: str) -> UUID | None:
+    def _sandbox_id_from_container_name(self, container_name: str) -> UUID | None:
         """Extract runtime ID from container name"""
         if not container_name.startswith(self.container_name_prefix):
             return None
@@ -79,7 +79,7 @@ class DockerSandboxContext(SandboxContext):
         except ValueError:
             return None
 
-    def _docker_status_to_runtime_status(self, docker_status: str) -> SandboxStatus:
+    def _docker_status_to_sandbox_status(self, docker_status: str) -> SandboxStatus:
         """Convert Docker container status to SandboxStatus"""
         status_mapping = {
             "running": SandboxStatus.RUNNING,
@@ -92,23 +92,23 @@ class DockerSandboxContext(SandboxContext):
         }
         return status_mapping.get(docker_status.lower(), SandboxStatus.ERROR)
 
-    def _container_to_runtime_info(self, container) -> SandboxInfo | None:
+    def _container_to_sandbox_info(self, container) -> SandboxInfo | None:
         """Convert Docker container to SandboxInfo"""
-        # Extract runtime ID from container name
-        runtime_id = self._runtime_id_from_container_name(container.name)
-        if runtime_id is None:
+        # Extract sandbox ID from container name
+        sandbox_id = self._sandbox_id_from_container_name(container.name)
+        if sandbox_id is None:
             return None
 
         # Get user_id and sandbox_spec_id from labels
         labels = container.labels or {}
-        user_id_str = labels.get("user_id")
+        created_by_user_id = labels.get("created_by_user_id")
         sandbox_spec_id = labels.get("sandbox_spec_id")
 
-        if not user_id_str or not sandbox_spec_id:
+        if not created_by_user_id or not sandbox_spec_id:
             return None
 
         # Convert Docker status to runtime status
-        status = self._docker_status_to_runtime_status(container.status)
+        status = self._docker_status_to_sandbox_status(container.status)
 
         # Parse creation time
         created_str = container.attrs.get("Created", "")
@@ -135,8 +135,8 @@ class DockerSandboxContext(SandboxContext):
             session_api_key = SecretStr(secrets.token_urlsafe(32))
 
         return SandboxInfo(
-            id=runtime_id,
-            user_id=user_id_str,
+            id=sandbox_id,
+            created_by_user_id=created_by_user_id,
             sandbox_spec_id=sandbox_spec_id,
             status=status,
             url=url,
@@ -145,9 +145,14 @@ class DockerSandboxContext(SandboxContext):
         )
 
     async def search_sandboxes(
-        self, user_id: UUID | None = None, page_id: str | None = None, limit: int = 100
+        self,
+        created_by_user_id__eq: str | None = None,
+        page_id: str | None = None,
+        limit: int = 100,
     ) -> SandboxPage:
         """Search for sandboxes"""
+        if not self._client:
+            raise ValueError("inactive_service")
         try:
             # Get all containers with our prefix
             all_containers = self._client.containers.list(all=True)
@@ -155,11 +160,14 @@ class DockerSandboxContext(SandboxContext):
 
             for container in all_containers:
                 if container.name.startswith(self.container_name_prefix):
-                    runtime_info = self._container_to_runtime_info(container)
-                    if runtime_info:
+                    sandbox_info = self._container_to_sandbox_info(container)
+                    if sandbox_info:
                         # Filter by user_id if specified
-                        if user_id is None or runtime_info.user_id == str(user_id):
-                            sandboxes.append(runtime_info)
+                        if (
+                            created_by_user_id__eq is None
+                            or sandbox_info.created_by_user_id == created_by_user_id__eq
+                        ):
+                            sandboxes.append(sandbox_info)
 
             # Sort by creation time (newest first)
             sandboxes.sort(key=lambda x: x.created_at, reverse=True)
@@ -187,15 +195,19 @@ class DockerSandboxContext(SandboxContext):
 
     async def get_sandbox(self, id: UUID) -> SandboxInfo | None:
         """Get a single sandbox info"""
+        if not self._client:
+            raise ValueError("inactive_service")
         try:
             container_name = self._container_name_from_id(id)
             container = self._client.containers.get(container_name)
-            return self._container_to_runtime_info(container)
+            return self._container_to_sandbox_info(container)
         except (NotFound, APIError):
             return None
 
-    async def start_sandbox(self, user_id: UUID, sandbox_spec_id: str) -> UUID:
+    async def start_sandbox(self, sandbox_spec_id: str) -> SandboxInfo:
         """Start a new sandbox"""
+        if not self._client:
+            raise ValueError("inactive_service")
         # Get runtime image info
         sandbox_spec_context_type = await get_sandbox_spec_context_type()
         async with (
@@ -223,7 +235,7 @@ class DockerSandboxContext(SandboxContext):
 
         # Prepare labels
         labels = {
-            "user_id": str(user_id),
+            "user_id": "NO_USER",  # TODO: Integrate auth service
             "sandbox_spec_id": sandbox_spec_id,
         }
 
@@ -237,7 +249,7 @@ class DockerSandboxContext(SandboxContext):
 
         try:
             # Create and start the container
-            self._client.containers.run(
+            container = self._client.containers.run(
                 image=sandbox_spec_id,
                 command=sandbox_spec.command,
                 name=container_name,
@@ -250,13 +262,17 @@ class DockerSandboxContext(SandboxContext):
                 remove=False,
             )
 
-            return container_id
+            sandbox_info = self._container_to_sandbox_info(container)
+            assert sandbox_info is not None
+            return sandbox_info
 
         except APIError as e:
             raise SandboxError(f"Failed to start container: {e}")
 
     async def resume_sandbox(self, id: UUID) -> bool:
         """Resume a paused sandbox"""
+        if not self._client:
+            raise ValueError("inactive_service")
         try:
             container_name = self._container_name_from_id(id)
             container = self._client.containers.get(container_name)
@@ -272,6 +288,8 @@ class DockerSandboxContext(SandboxContext):
 
     async def pause_sandbox(self, id: UUID) -> bool:
         """Pause a running sandbox"""
+        if not self._client:
+            raise ValueError("inactive_service")
         try:
             container_name = self._container_name_from_id(id)
             container = self._client.containers.get(container_name)
@@ -285,6 +303,8 @@ class DockerSandboxContext(SandboxContext):
 
     async def delete_sandbox(self, id: UUID) -> bool:
         """Delete a sandbox"""
+        if not self._client:
+            raise ValueError("inactive_service")
         try:
             container_name = self._container_name_from_id(id)
             container = self._client.containers.get(container_name)
@@ -317,8 +337,3 @@ class DockerSandboxContext(SandboxContext):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Stop using this sandbox service"""
         self._client = None
-
-    @classmethod
-    def get_instance(cls) -> "SandboxContext":
-        """Get an instance of sandbox service"""
-        return cls()

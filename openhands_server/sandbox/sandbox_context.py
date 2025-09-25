@@ -1,11 +1,10 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Type
+from typing import AsyncGenerator
 from uuid import UUID
 
-from openhands_server.config import get_global_config
+from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
-from openhands_server.utils.import_utils import get_impl
 
 
 class SandboxContext(ABC):
@@ -16,7 +15,10 @@ class SandboxContext(ABC):
 
     @abstractmethod
     async def search_sandboxes(
-        self, page_id: str | None = None, limit: int = 100
+        self,
+        created_by_user_id__eq: str | None = None,
+        page_id: str | None = None,
+        limit: int = 100,
     ) -> SandboxPage:
         """Search for sandboxes"""
 
@@ -64,35 +66,16 @@ class SandboxContext(ABC):
     async def __aexit__(self, exc_type, exc_value, traceback):
         """Stop using this sandbox context"""
 
-    @classmethod
+
+class SandboxContextFactory(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    def get_instance(cls, *args, **kwargs) -> "SandboxContext":
-        """Get an instance of sandbox context. Parameters are not specified
+    async def with_instance(
+        self, *args, **kwargs
+    ) -> AsyncGenerator["SandboxContext", None]:
+        """
+        Get an instance of sandbox context. Parameters are not specified
         so that they can be defined in the implementation classes and overridden using
         FastAPI's dependency injection. This allows merging global config with
-        user / request specific variables."""
-
-
-_sandbox_context_type: Type[SandboxContext] | None = None
-
-
-async def get_sandbox_context_type() -> Type[SandboxContext]:
-    global _sandbox_context_type
-    if _sandbox_context_type is None:
-        config = get_global_config()
-        _sandbox_context_type = get_impl(SandboxContext, config.sandbox_context_type)
-    return await _sandbox_context_type
-
-
-async def sandbox_context_dependency(*args, **kwargs):
-    context_type = await get_sandbox_context_type()
-    context = context_type.get_instance(*args, **kwargs)
-    async with context:
-        yield context
-
-
-# Legacy compatibility function for existing code
-async def get_default_sandbox_service():
-    """Get default sandbox service - legacy compatibility function"""
-    context_type = await get_sandbox_context_type()
-    return context_type.get_instance()
+        user / request specific variables.
+        """
+        yield SandboxContext()  # type: ignore
