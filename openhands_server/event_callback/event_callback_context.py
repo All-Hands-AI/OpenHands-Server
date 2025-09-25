@@ -47,7 +47,8 @@ class EventCallbackContext(ABC):
     async def batch_get_event_callbacks(
         self, event_callback_ids: list[UUID]
     ) -> list[EventCallback | None]:
-        """Get a batch of event callbacks, returning None for any callback which was not found"""
+        """Get a batch of event callbacks, returning None for any callback which was
+        not found"""
         results = await asyncio.gather(
             *[
                 self.get_event_callback(event_callback_id)

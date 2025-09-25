@@ -36,17 +36,12 @@ class SandboxSpecContext(ABC):
     async def batch_get_sandbox_specs(
         self, sandbox_spec_ids: list[str]
     ) -> list[SandboxSpecInfo | None]:
-<<<<<<< HEAD
-        """Get a batch of sandbox specs, returning None for any spec which was not found"""
+        """Get a batch of sandbox specs, returning None for any spec which was not
+        found"""
         results = await asyncio.gather(
             *[self.get_sandbox(sandbox_spec_id) for sandbox_spec_id in sandbox_spec_ids]
         )
         return results
-=======
-        """Get a batch of sandbox specs, returning None for any spec which was not
-        found"""
-        return await asyncio.gather(*[self.get_sandbox_spec(id) for id in ids])
->>>>>>> main
 
     # Lifecycle methods
 

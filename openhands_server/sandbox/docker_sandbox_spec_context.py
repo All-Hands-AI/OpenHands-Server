@@ -105,11 +105,6 @@ class DockerSandboxSpecContext(SandboxSpecContext):
         except (NotFound, APIError):
             return None
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> main
     async def __aenter__(self):
         """Start using this sandbox spec context"""
         if self.client is None:
