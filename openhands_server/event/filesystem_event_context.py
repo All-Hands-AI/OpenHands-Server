@@ -230,14 +230,6 @@ class FilesystemEventContext(EventContext):
         """Save an event. Internal method intended not be part of the REST api"""
         self._save_event_to_file(conversation_id, event)
 
-    async def batch_get_events(self, event_ids: list[str]) -> list[EventBase | None]:
-        """Given a list of ids, get events (Or none for any which were not found)"""
-        results = []
-        for event_id in event_ids:
-            result = await self.get_event(event_id)
-            results.append(result)
-        return results
-
 
 class FilesystemEventContextFactory(EventContextFactory):
     events_dir: Path = Path("workspace/events")

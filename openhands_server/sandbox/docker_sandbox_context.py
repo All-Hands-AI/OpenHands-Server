@@ -32,7 +32,7 @@ class VolumeMount:
 
 @dataclass
 class ExposedPort:
-    """Exposed port. A free port will be found for this and an environment variable set"""  # noqa: E501
+    """Exposed port. A free port will be found for this and an environment variable set"""
 
     name: str
     description: str
@@ -192,14 +192,6 @@ class DockerSandboxContext(SandboxContext):
             return self._container_to_runtime_info(container)
         except (NotFound, APIError):
             return None
-
-    async def batch_get_sandboxes(self, ids: list[UUID]) -> list[SandboxInfo | None]:
-        """Get multiple sandbox infos"""
-        results = []
-        for sandbox_id in ids:
-            sandbox_info = await self.get_sandbox(sandbox_id)
-            results.append(sandbox_info)
-        return results
 
     async def start_sandbox(self, user_id: UUID, sandbox_spec_id: str) -> UUID:
         """Start a new sandbox"""

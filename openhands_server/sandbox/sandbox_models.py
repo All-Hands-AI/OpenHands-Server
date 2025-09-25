@@ -26,7 +26,7 @@ class SandboxInfo(BaseModel):
     """Information about a sandbox"""
 
     id: UUID
-    user_id: str
+    created_by_user_id: str
     sandbox_spec_id: str
     status: SandboxStatus
     url: str | None = Field(
@@ -38,8 +38,9 @@ class SandboxInfo(BaseModel):
     session_api_key: SecretStr | None = Field(
         description=(
             "Key to access sandbox, to be added as an `X-Session-API-Key` header "
-            "in each request. Sandboxes with a status STARTING / PAUSED / DELETED / "
-            "ERROR will not have a key"
+            "in each request. In cases where the sandbox statues is STARTING, "
+            "PAUSED or DELETED, or the current user does not have full access "
+            "the session_api_key will be None."
         )
     )
     exposed_urls: list[ExposedUrl] = Field(

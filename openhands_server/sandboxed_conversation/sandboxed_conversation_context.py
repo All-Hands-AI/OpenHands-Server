@@ -14,7 +14,7 @@ from openhands_server.utils.import_utils import get_impl
 class SandboxedConversationContext(ABC):
     """
     Context for accessing conversations running in sandboxes to which the user has access
-    """  # noqa: E501
+    """
 
     @abstractmethod
     async def search_sandboxed_conversations(
@@ -28,13 +28,13 @@ class SandboxedConversationContext(ABC):
     async def get_sandboxed_conversation(
         self, conversation_id: UUID
     ) -> SandboxedConversationInfo | None:
-        """Get a single sandboxed conversation info. Return None if the conversation was not found."""  # noqa: E501
+        """Get a single sandboxed conversation info. Return None if the conversation was not found."""
 
     @abstractmethod
     async def batch_get_sandboxed_conversations(
         self, conversation_ids: list[UUID]
     ) -> list[SandboxedConversationInfo | None]:
-        """Get a batch of sandboxed conversations. Return None for any conversation which was not found."""  # noqa: E501
+        """Get a batch of sandboxed conversations. Return None for any conversation which was not found."""
         results = []
         for conversation_id in conversation_ids:
             result = await self.get_sandboxed_conversation(conversation_id)
@@ -46,7 +46,7 @@ class SandboxedConversationContext(ABC):
         """Start a conversation, optionally specifying a sandbox in which to start. If no sandbox
         is specified a default may be used or started. This is a convenience method - the same
         effect should be achievable by creating / getting a sandbox id, starting a conversation,
-        attaching a callback, and then running the conversation."""  # noqa: E501
+        attaching a callback, and then running the conversation."""
 
     # Lifecycle methods
 

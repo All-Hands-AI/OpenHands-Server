@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator, Type
 from uuid import UUID
@@ -45,13 +46,15 @@ class EventCallbackContext(ABC):
         """Search for event callbacks, optionally filtered by event_id"""
 
     async def batch_get_event_callbacks(
-        self, ids: list[UUID]
+        self, event_callback_ids: list[UUID]
     ) -> list[EventCallback | None]:
-        """Get a batch of event callbacks, returning None for any callback which was not found"""  # noqa: E501
-        results = []
-        for id in ids:
-            result = await self.get_event_callback(id)
-            results.append(result)
+        """Get a batch of event callbacks, returning None for any callback which was not found"""
+        results = await asyncio.gather(
+            *[
+                self.get_event_callback(event_callback_id)
+                for event_callback_id in event_callback_ids
+            ]
+        )
         return results
 
     # Lifecycle methods

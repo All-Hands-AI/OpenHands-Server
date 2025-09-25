@@ -18,9 +18,9 @@ class DockerSandboxSpecContext(SandboxSpecContext):
     Sandbox spec context for docker images. By default, all images with the repository given
     are loaded and returned (They may have different tag) The combination of the repository
     and tag is treated as the id in the resulting image.
-    """  # noqa: E501
+    """
 
-    client: docker.DockerClient = field(default=None)
+    client: docker.DockerClient | None = field(default=None)
     repository: str = "ghcr.io/all-hands-ai/runtime"
     command: str = "python -u -m openhands_server.runtime"
     initial_env: dict[str, str] = field(default_factory=dict)
@@ -69,7 +69,7 @@ class DockerSandboxSpecContext(SandboxSpecContext):
                             sandbox_specs.append(
                                 self._docker_image_to_sandbox_specs(image)
                             )
-                            break  # Only add once per image, even if multiple matching tags  # noqa: E501
+                            break  # Only add once per image, even if multiple matching tags
 
             # Apply pagination
             start_idx = 0
@@ -103,16 +103,6 @@ class DockerSandboxSpecContext(SandboxSpecContext):
             return self._docker_image_to_sandbox_specs(image)
         except (NotFound, APIError):
             return None
-
-    async def batch_get_sandbox_specs(
-        self, ids: list[str]
-    ) -> list[SandboxSpecInfo | None]:
-        """Get a batch of runtime image info"""
-        results = []
-        for image_id in ids:
-            result = await self.get_sandbox_spec(image_id)
-            results.append(result)
-        return results
 
     async def __aenter__(self):
         """Start using this sandbox spec context"""

@@ -18,9 +18,9 @@ def oauth_callback() -> RedirectResponse:
 
 @router.get("/logout")
 def logout():
-    pass
+    raise NotImplementedError()
 
 
 @router.get("/me")
 def me():
-    pass
+    raise NotImplementedError()

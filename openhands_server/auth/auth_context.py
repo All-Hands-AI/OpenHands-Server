@@ -1,27 +1,25 @@
 from abc import ABC, abstractmethod
-from typing import Type
+from typing import AsyncGenerator
 from uuid import UUID
 
-from fastapi import Request
-
-from openhands_server.auth.auth_models import AuthType
-from openhands_server.config import get_global_config
-from openhands_server.utils.import_utils import get_impl
+from openhands.sdk.utils.models import DiscriminatedUnionMixin
+from openhands_server.auth.auth_models import StoreUserSettingsRequest, UserSettings
 
 
 class AuthContext(ABC):
     """Object for providing user access"""
 
     user_id: UUID
-    auth_type: AuthType
 
-    # TODO: Implement this as needed
+    @abstractmethod
+    async def load_settings(self) -> UserSettings:
+        """Load settings for the user"""
+        raise NotImplementedError()
 
-    # async def load_settings():
-    #    """ Load settings for the user """
-
-    # async def store_settings():
-    #    """ Store settings for the user """
+    @abstractmethod
+    async def store_settings(self, settings: StoreUserSettingsRequest) -> UserSettings:
+        """Store settings for the user"""
+        raise NotImplementedError()
 
     # async def load_secrets():
     #    """ Load secrets for the user """
@@ -29,18 +27,23 @@ class AuthContext(ABC):
     # async def store_secrets():
     #    """ Store secrets for the user """
 
-    @classmethod
+    async def __aenter__(self) -> "AuthContext":
+        """Start using this service"""
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        """Stop using this service"""
+
+
+class AuthContextFactory(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    async def get_instance(cls, request: Request) -> "AuthContext":
-        """Get an instance of the auth context for the current request"""
-
-
-_auth_context_type: Type[AuthContext] | None = None
-
-
-async def get_auth_context(request: Request) -> AuthContext:
-    global _auth_context_type
-    if not _auth_context_type:
-        config = get_global_config()
-        _auth_context_type = get_impl(AuthContext, config.auth_context_type)
-    return await _auth_context_type.get_instance(request)
+    async def with_instance(
+        self, *args, **kwargs
+    ) -> AsyncGenerator["AuthContext", None]:
+        """
+        Get an instance of auth context. Parameters are not specified
+        so that they can be defined in the implementation classes and overridden using
+        FastAPI's dependency injection. This allows merging global config with
+        user / request specific variables.
+        """
+        yield AuthContext()  # type: ignore

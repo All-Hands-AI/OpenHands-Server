@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Type
 from uuid import UUID
@@ -10,7 +11,7 @@ from openhands_server.utils.import_utils import get_impl
 class SandboxContext(ABC):
     """
     Context for accessing sandboxes available to the current user in which conversations may be run.
-    """  # noqa: E501
+    """
 
     @abstractmethod
     async def search_sandboxes(
@@ -22,30 +23,30 @@ class SandboxContext(ABC):
     async def get_sandbox(self, id: UUID) -> SandboxInfo | None:
         """Get a single sandbox. Return None if the sandbox was not found."""
 
-    @abstractmethod
-    async def batch_get_sandboxes(self, ids: list[UUID]) -> list[SandboxInfo | None]:
+    async def batch_get_sandboxes(
+        self, sandbox_ids: list[UUID]
+    ) -> list[SandboxInfo | None]:
         """Get a batch of sandboxes, returning None for any which were not found."""
-        results = []
-        for id in ids:
-            result = await self.get_sandbox(id)
-            results.append(result)
+        results = await asyncio.gather(
+            *[self.get_sandbox(sandbox_id) for sandbox_id in sandbox_ids]
+        )
         return results
 
     @abstractmethod
     async def start_sandbox(self, sandbox_spec_id: str) -> SandboxInfo:
-        """Begin the process of starting a sandbox. Return the info on the new sandbox"""  # noqa: E501
+        """Begin the process of starting a sandbox. Return the info on the new sandbox"""
 
     @abstractmethod
     async def resume_sandbox(self, id: UUID) -> bool:
-        """Begin the process of resuming a sandbox. Return True if the sandbox exists and is being resumed or is already running. Return False if the sandbox did not exist"""  # noqa: E501
+        """Begin the process of resuming a sandbox. Return True if the sandbox exists and is being resumed or is already running. Return False if the sandbox did not exist"""
 
     @abstractmethod
     async def pause_sandbox(self, id: UUID) -> bool:
-        """Begin the process of deleting a sandbox. Return True if the sandbox exists and is being paused or is already paused. Return False if the sandbox did not exist"""  # noqa: E501
+        """Begin the process of deleting a sandbox. Return True if the sandbox exists and is being paused or is already paused. Return False if the sandbox did not exist"""
 
     @abstractmethod
     async def delete_sandbox(self, id: UUID) -> bool:
-        """Begin the process of deleting a sandbox (self, Which may involve stopping it first). Return False if the sandbox did not exist"""  # noqa: E501
+        """Begin the process of deleting a sandbox (self, Which may involve stopping it first). Return False if the sandbox did not exist"""
 
     # Lifecycle methods
 

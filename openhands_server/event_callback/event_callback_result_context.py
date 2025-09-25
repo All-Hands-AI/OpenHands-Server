@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator, Type
 from uuid import UUID
@@ -41,14 +42,16 @@ class EventCallbackResultContext(ABC):
         ascending or descending"""
 
     async def batch_get_event_callback_results(
-        self, ids: list[UUID]
+        self, event_callback_result_ids: list[UUID]
     ) -> list[EventCallbackResult | None]:
         """Get a batch of event callback results, returning None for any
         result which was not found"""
-        results = []
-        for id in ids:
-            result = await self.get_event_callback_result(id)
-            results.append(result)
+        results = await asyncio.gather(
+            *[
+                self.get_event_callback_result(event_callback_result_id)
+                for event_callback_result_id in event_callback_result_ids
+            ]
+        )
         return results
 
     @abstractmethod

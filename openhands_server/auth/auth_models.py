@@ -1,9 +1,15 @@
-from enum import Enum
+from datetime import datetime
+
+from pydantic import BaseModel, Field
+
+from openhands_server.utils.date_utils import utc_now
 
 
-class AuthType(Enum):
-    """Authentication type for user context"""
+class StoreUserSettingsRequest(BaseModel):
+    language: str | None = None
+    confirmation_mode: bool = False
+    default_llm_model: str | None = None
 
-    BEARER = "BEARER"
-    API_KEY = "API_KEY"
-    OAUTH = "OAUTH"
+
+class UserSettings(BaseModel):
+    timestamp: datetime = Field(default_factory=utc_now)
