@@ -15,7 +15,8 @@ from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
 
 router = APIRouter(prefix="/sandboxes", tags=["Sandbox"])
 
-# TODO: Currently a sandbox is only available to the user who created it. In future we could have a more advanced permissions model for sharing
+# TODO: Currently a sandbox is only available to the user who created it. In
+# future we could have a more advanced permissions model for sharing
 
 # Read methods
 
@@ -55,7 +56,8 @@ async def batch_get_sandboxes(
     ids: Annotated[list[UUID], Query()],
     sandbox_context: SandboxContext = Depends(sandbox_context_dependency),
 ) -> list[SandboxInfo | None]:
-    """Get a batch of sandboxes given their ids, returning null for any missing sandbox."""
+    """Get a batch of sandboxes given their ids, returning null for any missing
+    sandbox."""
     assert len(ids) < 100
     sandboxes = await sandbox_context.batch_get_sandboxes(ids)
     return sandboxes

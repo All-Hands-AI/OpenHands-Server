@@ -51,11 +51,14 @@ def _get_default_event_callback_context_factory():
 
 
 def _get_default_event_callback_result_context_factory():
-    from openhands_server.event_callback.sqlalchemy_event_callback_result_context import (
-        SQLAlchemyEventCallbackResultContextFactory,
+    from openhands_server.event_callback import (
+        sqlalchemy_event_callback_result_context,
     )
 
-    return SQLAlchemyEventCallbackResultContextFactory()
+    return (
+        sqlalchemy_event_callback_result_context
+        .SQLAlchemyEventCallbackResultContextFactory()
+    )
 
 
 class GCPConfig(BaseModel):

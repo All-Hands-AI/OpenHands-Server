@@ -75,7 +75,8 @@ async def batch_get_event_callbacks(
     ids: Annotated[list[UUID], Query()],
     event_callback_context: EventCallbackContext = Depends(context_dependency),
 ) -> list[EventCallback | None]:
-    """Get a batch of event callbacks given their ids, returning null for any missing callback."""
+    """Get a batch of event callbacks given their ids, returning null for any missing
+    callback."""
     assert len(ids) <= 100
     callbacks = await event_callback_context.batch_get_event_callbacks(ids)
     return callbacks

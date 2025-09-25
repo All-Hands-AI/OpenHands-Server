@@ -12,10 +12,10 @@ from openhands_server.utils.import_utils import get_impl
 
 class SandboxSpecContext(ABC):
     """
-    Sandbox specs available to the current user. At present this is read only. The plan is that
-    later this class will allow building and deleting sandbox specs and limiting access of images
-    by user and group. It would also be nice to be able to set the desired number of warm
-    sandboxes for a spec and scale this up and down.
+    Sandbox specs available to the current user. At present this is read only. The
+    plan is that later this class will allow building and deleting sandbox specs and
+    limiting access of images by user and group. It would also be nice to be able to
+    set the desired number of warm sandboxes for a spec and scale this up and down.
     """
 
     @abstractmethod
@@ -36,7 +36,8 @@ class SandboxSpecContext(ABC):
     async def batch_get_sandbox_specs(
         self, ids: list[str]
     ) -> list[SandboxSpecInfo | None]:
-        """Get a batch of sandbox specs, returning None for any spec which was not found"""
+        """Get a batch of sandbox specs, returning None for any spec which was not
+        found"""
         return await asyncio.gather(*[self.get_sandbox_spec(id) for id in ids])
 
     # Lifecycle methods
