@@ -31,13 +31,13 @@ class EventCallbackResultContext(ABC):
         event_id__eq: EventID | None = None,
         conversation_id__eq: UUID | None = None,
         sort_order: EventCallbackResultSortOrder = (
-            EventCallbackResultSortOrder.TIMESTAMP
+            EventCallbackResultSortOrder.created_at
         ),
         page_id: str | None = None,
         limit: int = 100,
     ) -> EventCallbackResultPage:
         """Search for event callback results, optionally filtered by
-        callback_id, event_id or conversation_id, and sorting by timestamp
+        callback_id, event_id or conversation_id, and sorting by created_at
         ascending or descending"""
 
     async def batch_get_event_callback_results(

@@ -12,7 +12,7 @@ from openhands_server.database import async_session_dependency
 from openhands_server.event_callback_result.event_callback_result_context import (
     EventCallbackResultContext,
 )
-from openhands_server.event_callback_result.event_callback_result_database_models import (
+from openhands_server.event_callback_result.event_callback_result_db_models import (
     StoredEventCallbackResult,
 )
 from openhands_server.event_callback_result.event_callback_result_models import (
@@ -37,7 +37,7 @@ class SQLAlchemyEventCallbackResultContext(EventCallbackResultContext):
     @classmethod
     async def with_instance(
         cls, session: AsyncSession = Depends(async_session_dependency)
-    ) -> AsyncGenerator["SQLAlchemyEventCallbackResultContext", None]:
+    ) -> AsyncGenerator[EventCallbackResultContext, None]:
         """
         Yield an instance of the SQLAlchemy event callback result context.
         """
@@ -70,14 +70,14 @@ class SQLAlchemyEventCallbackResultContext(EventCallbackResultContext):
         event_id__eq: EventID | None = None,
         conversation_id__eq: UUID | None = None,
         sort_order: EventCallbackResultSortOrder = (
-            EventCallbackResultSortOrder.TIMESTAMP
+            EventCallbackResultSortOrder.created_at
         ),
         page_id: str | None = None,
         limit: int = 100,
     ) -> EventCallbackResultPage:
         """
         Search for event callback results, optionally filtered by
-        callback_id, event_id or conversation_id, and sorting by timestamp
+        callback_id, event_id or conversation_id, and sorting by created_at
         ascending or descending.
 
         Args:
@@ -113,7 +113,7 @@ class SQLAlchemyEventCallbackResultContext(EventCallbackResultContext):
         if page_id:
             try:
                 page_uuid = UUID(page_id)
-                if sort_order == EventCallbackResultSortOrder.TIMESTAMP_DESC:
+                if sort_order == EventCallbackResultSortOrder.created_at_DESC:
                     query = query.where(StoredEventCallbackResult.id < page_uuid)
                 else:
                     query = query.where(StoredEventCallbackResult.id > page_uuid)
@@ -122,12 +122,12 @@ class SQLAlchemyEventCallbackResultContext(EventCallbackResultContext):
                 pass
 
         # Apply sorting
-        if sort_order == EventCallbackResultSortOrder.TIMESTAMP_DESC:
-            query = query.order_by(desc(StoredEventCallbackResult.timestamp)).order_by(
+        if sort_order == EventCallbackResultSortOrder.created_at_DESC:
+            query = query.order_by(desc(StoredEventCallbackResult.created_at)).order_by(
                 desc(StoredEventCallbackResult.id)
             )
         else:
-            query = query.order_by(StoredEventCallbackResult.timestamp).order_by(
+            query = query.order_by(StoredEventCallbackResult.created_at).order_by(
                 StoredEventCallbackResult.id
             )
 

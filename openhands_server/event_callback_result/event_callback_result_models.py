@@ -14,8 +14,8 @@ class EventCallbackResultStatus(Enum):
 
 
 class EventCallbackResultSortOrder(Enum):
-    TIMESTAMP = "TIMESTAMP"
-    TIMESTAMP_DESC = "TIMESTAMP_DESC"
+    created_at = "created_at"
+    created_at_DESC = "created_at_DESC"
 
 
 class EventCallbackResult(BaseModel):
@@ -27,7 +27,7 @@ class EventCallbackResult(BaseModel):
     event_id: EventID
     conversation_id: UUID
     detail: str | None = None
-    timestamp: datetime = Field(default_factory=utc_now)
+    created_at: datetime = Field(default_factory=utc_now)
 
 
 class EventCallbackResultPage(BaseModel):

@@ -26,7 +26,7 @@ class StoredEventCallbackResult(Base):
     event_id = Column(String, nullable=False, index=True)
     conversation_id = Column(UUID, nullable=False, index=True)
     detail = Column(Text, nullable=True)
-    timestamp = Column(
+    created_at = Column(
         DateTime(timezone=True),
         default=utc_now,
         nullable=False,
@@ -44,7 +44,7 @@ class StoredEventCallbackResult(Base):
         return EventCallbackResultStatus(self.status)
 
     @status_enum.setter
-    def status_enum(self, value: EventCallbackResultStatus) -> None:
+    def set_status_enum(self, value: EventCallbackResultStatus) -> None:
         """
         Set the status from an enum.
 
@@ -67,13 +67,11 @@ class StoredEventCallbackResult(Base):
             event_id=self.event_id,
             conversation_id=self.conversation_id,
             detail=self.detail,
-            timestamp=self.timestamp,
+            created_at=self.created_at,
         )
 
     @classmethod
-    def from_pydantic(
-        cls, result: EventCallbackResult
-    ) -> StoredEventCallbackResult:
+    def from_pydantic(cls, result: EventCallbackResult) -> StoredEventCallbackResult:
         """
         Create a SQLAlchemy model from a Pydantic model.
 
@@ -90,5 +88,5 @@ class StoredEventCallbackResult(Base):
             event_id=result.event_id,
             conversation_id=result.conversation_id,
             detail=result.detail,
-            timestamp=result.timestamp,
+            created_at=result.created_at,
         )

@@ -40,7 +40,7 @@ async def search_event_callback_results(
     sort_order: Annotated[
         EventCallbackResultSortOrder,
         Query(title="Sort order for results"),
-    ] = EventCallbackResultSortOrder.TIMESTAMP,
+    ] = EventCallbackResultSortOrder.created_at,
     page_id: Annotated[
         str | None,
         Query(title="Optional next_page_id from the previously returned page"),

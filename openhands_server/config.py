@@ -54,6 +54,11 @@ class OpenHandsServerConfig(BaseModel):
         default="openhands_server.event_callback_result.sqlalchemy_event_callback_result_context.SQLAlchemyEventCallbackResultContext",
         description="The implementation of EventCallbackResultContext to use",
     )
+    event_callback_context_type: str = Field(
+        default="openhands_server.auth.dummy.DummyAuthContext",
+        description="The implementation of EventCallbackContext to use",
+    )
+
     auth_context_type: str = Field(
         default="openhands_server.auth.dummy.DummyAuthContext",
         description="The class to use for AuthContext dependencies",
@@ -65,10 +70,6 @@ class OpenHandsServerConfig(BaseModel):
     sandbox_context_type: str = Field(
         default="openhands_server.sandbox.docker_sandbox_context.DockerSandboxContext",
         description="The class to use for SandboxContext dependencies",
-    )
-    conversation_callback_context_type: str = Field(
-        default="openhands_server.conversation_callback.sqlalchemy_conversation_callback_context.SQLAlchemyConversationCallbackContext",
-        description="The class to use for ConversationCallbackContext dependencies",
     )
     sandboxed_conversation_context_type: str = Field(
         default="openhands_server.auth.dummy.DummyAuthContext",
