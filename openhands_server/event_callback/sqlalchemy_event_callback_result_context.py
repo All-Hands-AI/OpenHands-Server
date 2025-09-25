@@ -11,6 +11,7 @@ from openhands.sdk.event.types import EventID
 from openhands_server.database import async_session_dependency
 from openhands_server.event_callback.event_callback_result_context import (
     EventCallbackResultContext,
+    EventCallbackResultContextFactory,
 )
 from openhands_server.event_callback.event_callback_result_db_models import (
     StoredEventCallbackResult,
@@ -33,15 +34,6 @@ class SQLAlchemyEventCallbackResultContext(EventCallbackResultContext):
             session: The SQLAlchemy async session
         """
         self.session = session
-
-    @classmethod
-    async def with_instance(  # type: ignore[misc]
-        cls, session: AsyncSession = Depends(async_session_dependency)
-    ) -> AsyncGenerator["EventCallbackResultContext", None]:
-        """
-        Yield an instance of the SQLAlchemy event callback result context.
-        """
-        yield cls(session)
 
     async def get_event_callback_result(self, id: UUID) -> EventCallbackResult | None:
         """
@@ -173,3 +165,25 @@ class SQLAlchemyEventCallbackResultContext(EventCallbackResultContext):
         await self.session.commit()
 
         return True
+
+
+class SQLAlchemyEventCallbackResultContextFactory(EventCallbackResultContextFactory):
+    async def with_instance(
+        self,
+        session: AsyncSession = Depends(async_session_dependency),
+    ) -> AsyncGenerator[EventCallbackResultContext, None]:
+        """
+        Get an instance of SQLAlchemy event callback result context.
+
+        Args:
+            session: The async SQLAlchemy session from dependency injection
+
+        Yields:
+            EventCallbackResultContext: The context instance
+        """
+        context = SQLAlchemyEventCallbackResultContext(session)
+        try:
+            yield context
+        finally:
+            # Session cleanup is handled by the dependency
+            pass

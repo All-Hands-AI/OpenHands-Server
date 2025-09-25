@@ -2,17 +2,16 @@ from __future__ import annotations
 
 import asyncio
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator, Type
+from typing import AsyncGenerator
 from uuid import UUID
 
 from openhands.sdk.event.types import EventID
-from openhands_server.config import get_global_config
+from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultPage,
     EventCallbackResultSortOrder,
 )
-from openhands_server.utils.import_utils import get_impl
 
 
 class EventCallbackResultContext(ABC):
@@ -68,10 +67,11 @@ class EventCallbackResultContext(ABC):
     async def __aexit__(self, exc_type, exc_value, traceback):
         """Stop using this context"""
 
-    @classmethod
+
+class EventCallbackResultContextFactory(DiscriminatedUnionMixin, ABC):
     @abstractmethod
     async def with_instance(
-        cls, *args, **kwargs
+        self, *args, **kwargs
     ) -> AsyncGenerator["EventCallbackResultContext", None]:
         """
         Get an instance of event callback result context. Parameters are not
@@ -79,16 +79,4 @@ class EventCallbackResultContext(ABC):
         overridden using FastAPI's dependency injection. This allows merging global
         config with user / request specific variables.
         """
-
-
-_event_callback_result_context_type: Type[EventCallbackResultContext] | None = None
-
-
-def get_event_callback_result_context_type() -> Type[EventCallbackResultContext]:
-    global _event_callback_result_context_type
-    if _event_callback_result_context_type is None:
-        config = get_global_config()
-        _event_callback_result_context_type = get_impl(
-            EventCallbackResultContext, config.event_callback_result_context_type
-        )
-    return _event_callback_result_context_type
+        yield EventCallbackResultContext()  # type: ignore
