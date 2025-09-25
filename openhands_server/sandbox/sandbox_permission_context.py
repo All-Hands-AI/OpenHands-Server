@@ -42,6 +42,9 @@ class SandboxContext(ABC):
     ) -> list[SandboxPermission | None]:
         """Get a batch of sandboxes, returning None for any which were not found."""
         results = await asyncio.gather(
-            *[self.get_sandbox(sandbox_id) for sandbox_id in sandbox_permission_ids]
+            *[
+                self.get_sandbox_permission(sandbox_permission_id)
+                for sandbox_permission_id in sandbox_permission_ids
+            ]
         )
         return results

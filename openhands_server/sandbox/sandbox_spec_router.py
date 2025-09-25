@@ -1,7 +1,6 @@
 """Runtime Images router for OpenHands Server."""
 
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -40,7 +39,7 @@ async def search_sandbox_specs(
 
 @router.get("/{id}", responses={404: {"description": "Item not found"}})
 async def get_sandbox_spec(
-    id: UUID,
+    id: str,
     sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_context_dependency),
 ) -> SandboxSpecInfo:
     """Get a single sandbox spec given its id."""
@@ -52,7 +51,7 @@ async def get_sandbox_spec(
 
 @router.get("/")
 async def batch_get_sandbox_specs(
-    ids: Annotated[list[UUID], Query()],
+    ids: Annotated[list[str], Query()],
     sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_context_dependency),
 ) -> list[SandboxSpecInfo | None]:
     """Get a batch of sandbox specs given their ids, returning null for any missing
