@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Type
+from typing import AsyncGenerator
 from uuid import UUID
 
 from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.sdk import EventBase
-from openhands_server.config import get_global_config
+from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.event_callback.event_callback_models import EventKind
-from openhands_server.utils.import_utils import get_impl
 
 
 class EventContext(ABC):
@@ -48,21 +47,23 @@ class EventContext(ABC):
     async def batch_get_events(self, event_ids: list[str]) -> list[EventBase | None]:
         """Given a list of ids, get events (Or none for any which were not found)"""
 
-    @abstractmethod
-    async def __aenter__(self, conversation_id: UUID):
+    async def __aenter__(self) -> "EventContext":
         """Start using this service"""
+        return self
 
-    @abstractmethod
     async def __aexit__(self, exc_type, exc_value, traceback):
         """Stop using this service"""
 
 
-_event_context_type: Type[EventContext] | None = None
-
-
-def get_event_context_type() -> Type[EventContext]:
-    global _event_context_type
-    if _event_context_type is None:
-        config = get_global_config()
-        _event_context_type = get_impl(EventContext, config.event_context_type)
-    return _event_context_type
+class EventContextFactory(DiscriminatedUnionMixin, ABC):
+    @abstractmethod
+    async def with_instance(
+        self, *args, **kwargs
+    ) -> AsyncGenerator["EventContext", None]:
+        """
+        Get an instance of event context. Parameters are not specified
+        so that they can be defined in the implementation classes and overridden using
+        FastAPI's dependency injection. This allows merging global config with
+        user / request specific variables.
+        """
+        yield EventContext()  # type: ignore
