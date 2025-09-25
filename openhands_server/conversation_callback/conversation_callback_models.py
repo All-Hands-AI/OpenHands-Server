@@ -3,10 +3,9 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
-from enum import Enum
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from openhands.sdk import EventBase
 from openhands.sdk.utils.models import DiscriminatedUnionMixin, OpenHandsModel
