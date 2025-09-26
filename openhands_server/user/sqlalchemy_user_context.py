@@ -285,16 +285,7 @@ class SQLAlchemyUserContext(UserContext):
 
 
 class SQLAlchemyUserContextResolver(UserContextResolver):
-    """Resolver for SQLAlchemy-based user context."""
-
-    def __init__(self, current_user_id: str | None = None):
-        """
-        Initialize the resolver with the current user ID.
-
-        Args:
-            current_user_id: The ID of the current user
-        """
-        self.current_user_id = current_user_id
+    current_user_id: str | None = None
 
     def get_resolver(self) -> Callable:
         return self.resolve

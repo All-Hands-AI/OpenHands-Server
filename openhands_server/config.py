@@ -128,8 +128,9 @@ def get_global_config() -> AppServerConfig:
             if config_path.exists():
                 print(f"⚙️  Loading OpenHands App Server Config from {config_path}")
                 _global_config = AppServerConfig.model_validate_json(
-                    json.loads(config_path.read_text())
+                    config_path.read_text()
                 )
+                return _global_config
         except Exception as exc:
             print(f"⚠️  Error OpenHands App Server Config: {exc}")
 
