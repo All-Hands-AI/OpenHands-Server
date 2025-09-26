@@ -1,5 +1,5 @@
 # Services package
 
-from .encryption_service import EncryptionService, get_default_encryption_service
+from .jwt_service import JWTService, get_default_jwt_service
 
-__all__ = ["EncryptionService", "get_default_encryption_service"]
+__all__ = ["JWTService", "get_default_jwt_service"]
