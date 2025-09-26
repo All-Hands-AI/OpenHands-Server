@@ -147,6 +147,7 @@ def get_global_config() -> AppServerConfig:
                 _global_config.encryption_keys, config_dict["encryption_keys"]
             )
         ]
+        config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text(json.dumps(config_dict, indent=2))
 
     return _global_config
