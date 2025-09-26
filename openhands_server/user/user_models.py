@@ -33,6 +33,6 @@ class UserInfo(UpdateUserRequest):
     updated_at: datetime = Field(default_factory=utc_now)
 
 
-class UserInfoPage:
+class UserInfoPage(BaseModel):
     items: list[UserInfo]
     next_page_id: str | None = None
