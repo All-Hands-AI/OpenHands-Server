@@ -139,7 +139,7 @@ def get_global_config() -> AppServerConfig:
 
         # Save the config because the encryption keys are required between restarts
         # We need to explicitly include secret values for persistence
-        config_dict = _global_config.model_dump(mode="json")
+        config_dict = _global_config.model_dump(mode="json", exclude_defaults=True)
         # Manually include the secret values for the encryption keys
         config_dict["encryption_keys"] = [
             {**key_dict, "key": key.key.get_secret_value()}
