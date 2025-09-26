@@ -14,7 +14,12 @@ class MockEncryptionKey:
     """Mock EncryptionKey for testing."""
 
     def __init__(
-        self, key: str, id: str = None, notes: str = None, created_at: datetime = None, active: bool = True
+        self,
+        key: str,
+        id: str = None,
+        notes: str = None,
+        created_at: datetime = None,
+        active: bool = True,
     ):
         from uuid import uuid4
 
@@ -264,7 +269,11 @@ class TestJWTService:
         """Test service initialization fails with no active keys."""
         inactive_keys = [
             MockEncryptionKey(
-                "test_key_1", "key1", "First test key", datetime(2023, 1, 1), active=False
+                "test_key_1",
+                "key1",
+                "First test key",
+                datetime(2023, 1, 1),
+                active=False,
             ),
         ]
         with pytest.raises(ValueError, match="At least one active key is required"):
@@ -424,8 +433,6 @@ class TestJWTService:
 
         with pytest.raises(ValueError, match="Key ID 'invalid' not found"):
             self.service.decrypt_jwe_token(token, key_id="invalid")
-
-
 
     def test_default_key_id_property(self):
         """Test default_key_id property."""
