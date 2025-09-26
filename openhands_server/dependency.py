@@ -15,7 +15,7 @@ from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextReso
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContextResolver,
 )
-from openhands_server.user.sqlalchemy_user_context import SQLAlchemyUserContextResolver
+from openhands_server.user.user_context import UserContextResolver
 
 
 _logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class DependencyResolver:
     sandbox: SandboxContextResolver
     sandbox_spec: SandboxSpecContextResolver
     sandboxed_conversation: SandboxedConversationContextResolver
-    user: SQLAlchemyUserContextResolver
+    user: UserContextResolver
 
 
 _dependency_resolver: DependencyResolver | None = None
@@ -103,4 +103,8 @@ def _get_sandboxed_conversation_context_factory():
 
 
 def _get_user_context_factory():
+    from openhands_server.user.sqlalchemy_user_context import (
+        SQLAlchemyUserContextResolver,
+    )
+
     return SQLAlchemyUserContextResolver()

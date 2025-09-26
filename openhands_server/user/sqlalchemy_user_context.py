@@ -22,7 +22,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.user.user_context import UserContext
+from openhands_server.user.user_context import UserContext, UserContextResolver
 from openhands_server.user.user_db_models import StoredUser
 from openhands_server.user.user_models import (
     CreateUserRequest,
@@ -284,7 +284,7 @@ class SQLAlchemyUserContext(UserContext):
         return result.scalar_one_or_none()
 
 
-class SQLAlchemyUserContextResolver:
+class SQLAlchemyUserContextResolver(UserContextResolver):
     """Resolver for SQLAlchemy-based user context."""
 
     def __init__(self, current_user_id: str | None = None):
