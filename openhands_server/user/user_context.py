@@ -1,6 +1,8 @@
 import asyncio
 from abc import ABC, abstractmethod
+from typing import Callable
 
+from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.user.user_models import (
     CreateUserRequest,
     UpdateUserRequest,
@@ -55,3 +57,11 @@ class UserContext(ABC):
         """Delete a user if possible. Raise a PermissionError if it is not - the
         current user may not have permission to delete users. Returns True if the
         user was deleted, False if the user was not found."""
+
+
+class UserContextResolver(DiscriminatedUnionMixin, ABC):
+    @abstractmethod
+    def get_resolver(self) -> Callable:
+        """
+        Get a resolver which may be used to resolve an instance of user context.
+        """

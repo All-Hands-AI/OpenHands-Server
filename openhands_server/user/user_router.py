@@ -4,8 +4,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from openhands_server.user.models import Success
 from openhands_server.dependency import get_dependency_resolver
+from openhands_server.user.models import Success
 from openhands_server.user.user_context import UserContext
 from openhands_server.user.user_models import (
     CreateUserRequest,
@@ -37,7 +37,8 @@ async def search_users(
     ] = 100,
     user_context: UserContext = user_context_dependency,
 ) -> UserInfoPage:
-    """Search / list users. Regular users can only see themselves, super admins can see all users."""
+    """Search / list users. Regular users can only see themselves, super admins can
+    see all users."""
     assert limit > 0
     assert limit <= 100
     return await user_context.search_users(
@@ -61,7 +62,8 @@ async def get_user(
     id: str,
     user_context: UserContext = user_context_dependency,
 ) -> UserInfo:
-    """Get a single user given an id. Users can only see themselves unless they're super admin."""
+    """Get a single user given an id. Users can only see themselves unless
+    they're super admin."""
     user = await user_context.get_user(id)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
@@ -105,7 +107,7 @@ async def update_user(
     """Update a user. Users can update themselves, super admins can update anyone."""
     # Ensure the ID in the path matches the ID in the request
     request.id = id
-    
+
     try:
         user = await user_context.update_user(request)
         return user

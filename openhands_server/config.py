@@ -19,7 +19,7 @@ from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextReso
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContextResolver,
 )
-from openhands_server.user.sqlalchemy_user_context import SQLAlchemyUserContextResolver
+from openhands_server.user.user_context import UserContextResolver
 
 
 # Environment variable constants
@@ -50,22 +50,24 @@ def _get_db_url() -> str:
 
 class EncryptionKey(BaseModel):
     """Configuration for an encryption key."""
-    
+
     id: str = Field(default_factory=lambda: str(uuid4()))
     key: SecretStr
-    use_for_encryption: bool = True
+    active: bool = True
     notes: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 def _get_default_encryption_keys() -> list[EncryptionKey]:
     """Generate default encryption keys."""
-    master_key = os.getenv("JWT_SECRET") or os.getenv("MASTER_KEY") or os.urandom(32).hex()
+    master_key = (
+        os.getenv("JWT_SECRET") or os.getenv("MASTER_KEY") or os.urandom(32).hex()
+    )
     return [
         EncryptionKey(
             key=SecretStr(master_key),
-            use_for_encryption=True,
-            notes="Default master key"
+            active=True,
+            notes="Default master key",
         )
     ]
 
@@ -89,14 +91,16 @@ class DatabaseConfig(BaseModel):
 
 
 class AppServerConfig(OpenHandsModel):
-    encryption_keys: list[EncryptionKey] = Field(default_factory=_get_default_encryption_keys)
+    encryption_keys: list[EncryptionKey] = Field(
+        default_factory=_get_default_encryption_keys
+    )
     event: EventContextResolver | None = None
     event_callback: EventCallbackContextResolver | None = None
     event_callback_result: EventCallbackResultContextResolver | None = None
     sandbox: SandboxContextResolver | None = None
     sandbox_spec: SandboxSpecContextResolver | None = None
     sandboxed_conversation: SandboxedConversationContextResolver | None = None
-    user: SQLAlchemyUserContextResolver | None = None
+    user: UserContextResolver | None = None
     allow_cors_origins: list[str] = Field(
         default_factory=list,
         description=(
@@ -120,26 +124,28 @@ def get_global_config() -> AppServerConfig:
         config_path = Path(config_file_path)
 
         # Load configuration from JSON file
-        if config_path.exists():
-            print(f"⚙️  Loading OpenHands App Server Config from {config_path}")
-            _global_config = AppServerConfig.model_validate_json(
-                json.loads(config_path.read_text())
-            )
-        else:
-            print("⚙️  Generating Default OpenHands App Server Config")
-            _global_config = AppServerConfig()
+        try:
+            if config_path.exists():
+                print(f"⚙️  Loading OpenHands App Server Config from {config_path}")
+                _global_config = AppServerConfig.model_validate_json(
+                    json.loads(config_path.read_text())
+                )
+        except Exception as exc:
+            print(f"⚠️  Error OpenHands App Server Config: {exc}")
 
-            # Save the config because the encryption keys are required between restarts
-            # We need to explicitly include secret values for persistence
-            config_dict = _global_config.model_dump(mode='json')
-            # Manually include the secret values for the encryption keys
-            config_dict['encryption_keys'] = [
-                {
-                    **key_dict,
-                    'key': key.key.get_secret_value()
-                }
-                for key, key_dict in zip(_global_config.encryption_keys, config_dict['encryption_keys'])
-            ]
-            config_path.write_text(json.dumps(config_dict, indent=2))
+        print("⚙️  Generating Default OpenHands App Server Config")
+        _global_config = AppServerConfig()
+
+        # Save the config because the encryption keys are required between restarts
+        # We need to explicitly include secret values for persistence
+        config_dict = _global_config.model_dump(mode="json")
+        # Manually include the secret values for the encryption keys
+        config_dict["encryption_keys"] = [
+            {**key_dict, "key": key.key.get_secret_value()}
+            for key, key_dict in zip(
+                _global_config.encryption_keys, config_dict["encryption_keys"]
+            )
+        ]
+        config_path.write_text(json.dumps(config_dict, indent=2))
 
     return _global_config
