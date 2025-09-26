@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 from openhands.sdk.utils.models import OpenHandsModel
 from openhands_server.event.event_context import EventContextResolver
@@ -45,6 +45,12 @@ def _get_db_url() -> str:
     return "sqlite+aiosqlite:///./openhands.db"
 
 
+def _get_master_key():
+    return SecretStr(
+        os.getenv("JWT_SECRET") or os.getenv("MASTER_KEY") or os.urandom(32).hex()
+    )
+
+
 class GCPConfig(BaseModel):
     project: str | None = os.getenv("GCP_PROJECT")
     region: str | None = os.getenv("GCP_REGION")
@@ -64,6 +70,7 @@ class DatabaseConfig(BaseModel):
 
 
 class AppServerConfig(OpenHandsModel):
+    master_key: SecretStr = Field(default_factory=_get_master_key)
     event: EventContextResolver | None = None
     event_callback: EventCallbackContextResolver | None = None
     event_callback_result: EventCallbackResultContextResolver | None = None
@@ -99,7 +106,10 @@ def get_global_config() -> AppServerConfig:
                 json.loads(config_path.read_text())
             )
         else:
-            print("⚙️  Using Default OpenHands App Server Config")
+            print("⚙️  Generating Default OpenHands App Server Config")
             _global_config = AppServerConfig()
+
+            # Save the comnfig because the master key is required between restarts
+            config_path.write_text(_global_config.model_dump_json())
 
     return _global_config
