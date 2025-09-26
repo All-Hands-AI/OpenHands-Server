@@ -231,7 +231,7 @@ class SQLAlchemyUserContext(UserContext):
         existing_user.default_llm_model = request.default_llm_model  # type: ignore
         existing_user.email = request.email  # type: ignore
         existing_user.accepted_tos = request.accepted_tos  # type: ignore
-        existing_user.user_scopes = request.user_scopes  # type: ignore
+        existing_user.user_scopes = [scope.value for scope in request.user_scopes]  # type: ignore
         existing_user.updated_at = utc_now()  # type: ignore
 
         await self.session.commit()

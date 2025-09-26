@@ -23,7 +23,7 @@ class TestConfig:
         config = get_global_config()
         assert isinstance(config, AppServerConfig)
 
-    def test_master_key_persistence_in_config_file(self):
+    def test_encryption_keys_persistence_in_config_file(self):
         """Test that the master key is correctly saved and loaded from config file."""
 
         # Create a temporary directory for the test
@@ -42,7 +42,7 @@ class TestConfig:
 
                 # Generate a new config (this should create the file)
                 config1 = get_global_config()
-                master_key1 = config1.master_key.get_secret_value()
+                master_key1 = config1.encryption_keys[0].key.get_secret_value()
 
                 # Verify the config file was created and contains the master key
                 assert config_file_path.exists(), "Config file should be created"
@@ -51,16 +51,22 @@ class TestConfig:
                 with open(config_file_path, "r") as f:
                     config_data = json.load(f)
 
-                assert "master_key" in config_data, "Config file contains master_key"
-                assert config_data["master_key"] != "**********", "Key not redacted"
-                assert config_data["master_key"] == master_key1, "Master key matches"
+                assert "encryption_keys" in config_data, (
+                    "Config file contains encryption_keys"
+                )
+                assert config_data["encryption_keys"][0]["key"] != "**********", (
+                    "Key not redacted"
+                )
+                assert config_data["encryption_keys"][0]["key"] == master_key1, (
+                    "Master key matches"
+                )
 
                 # Clear the global config and load again
                 openhands_server.config._global_config = None
 
                 # Load the config again (this should read from the file)
                 config2 = get_global_config()
-                master_key2 = config2.master_key.get_secret_value()
+                master_key2 = config2.encryption_keys[0].key.get_secret_value()
 
                 # Verify the master key is the same
                 assert master_key1 == master_key2, "Master key should be preserved"
