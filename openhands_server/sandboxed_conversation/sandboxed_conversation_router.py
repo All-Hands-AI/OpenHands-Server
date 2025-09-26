@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from openhands_server.config import get_global_config
+from openhands_server.dependency import get_dependency_resolver
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContext,
 )
@@ -17,8 +17,8 @@ from openhands_server.sandboxed_conversation.sandboxed_conversation_models impor
 
 
 router = APIRouter(prefix="/sandboxed-conversations")
-context_dependency = (
-    get_global_config().sandboxed_conversation_context_factory.with_instance
+sandboxed_conversation_context_dependency = Depends(
+    get_dependency_resolver().sandboxed_conversation.get_resolver()
 )
 
 # Read methods
@@ -36,8 +36,8 @@ async def search_sandboxed_conversations(
             title="The max number of results in the page", gt=0, lte=100, default=100
         ),
     ] = 100,
-    sandboxed_conversation_context: SandboxedConversationContext = Depends(
-        context_dependency
+    sandboxed_conversation_context: SandboxedConversationContext = (
+        sandboxed_conversation_context_dependency
     ),
 ) -> SandboxedConversationPage:
     """Search / List sandboxed conversations"""
@@ -51,8 +51,8 @@ async def search_sandboxed_conversations(
 @router.get("/{id}", responses={404: {"description": "Item not found"}})
 async def get_sandboxed_conversation(
     id: UUID,
-    sandboxed_conversation_context: SandboxedConversationContext = Depends(
-        context_dependency
+    sandboxed_conversation_context: SandboxedConversationContext = (
+        sandboxed_conversation_context_dependency
     ),
 ) -> SandboxedConversationInfo:
     """Get a sandboxed conversation given an id"""
@@ -67,8 +67,8 @@ async def get_sandboxed_conversation(
 @router.get("/")
 async def batch_get_sandboxed_conversations(
     ids: Annotated[list[UUID], Query()],
-    sandboxed_conversation_context: SandboxedConversationContext = Depends(
-        context_dependency
+    sandboxed_conversation_context: SandboxedConversationContext = (
+        sandboxed_conversation_context_dependency
     ),
 ) -> list[SandboxedConversationInfo | None]:
     """Get a batch of sandboxed conversations given their ids, returning null for
@@ -83,8 +83,8 @@ async def batch_get_sandboxed_conversations(
 @router.post("/")
 async def start_sandboxed_conversation(
     request: StartSandboxedConversationRequest,
-    sandboxed_conversation_context: SandboxedConversationContext = Depends(
-        context_dependency
+    sandboxed_conversation_context: SandboxedConversationContext = (
+        sandboxed_conversation_context_dependency
     ),
 ) -> SandboxedConversationInfo:
     return await sandboxed_conversation_context.start_sandboxed_conversation(request)
