@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import ARRAY, Boolean, Column, DateTime, String
-from sqlalchemy.dialects.postgresql import ENUM
+from sqlalchemy import JSON, Boolean, Column, DateTime, String
 
 from openhands_server.database import Base
 from openhands_server.user.user_models import UserInfo, UserScope
@@ -23,7 +22,7 @@ class StoredUser(Base):
     email = Column(String, nullable=True)
     accepted_tos = Column(Boolean, nullable=False, default=False)
     user_scopes = Column(
-        ARRAY(ENUM(UserScope, name="user_scope_enum")),
+        JSON,
         nullable=False,
         default=list,
     )
@@ -56,7 +55,7 @@ class StoredUser(Base):
             default_llm_model=self.default_llm_model,  # type: ignore[arg-type]
             email=self.email,  # type: ignore[arg-type]
             accepted_tos=self.accepted_tos,  # type: ignore[arg-type]
-            user_scopes=self.user_scopes or [],  # type: ignore[arg-type]
+            user_scopes=[UserScope(scope) for scope in (self.user_scopes or [])],  # type: ignore[arg-type]
             created_at=self.created_at,  # type: ignore[arg-type]
             updated_at=self.updated_at,  # type: ignore[arg-type]
         )
@@ -80,7 +79,7 @@ class StoredUser(Base):
             default_llm_model=user_info.default_llm_model,
             email=user_info.email,
             accepted_tos=user_info.accepted_tos,
-            user_scopes=user_info.user_scopes,
+            user_scopes=[scope.value for scope in user_info.user_scopes],
             created_at=user_info.created_at,
             updated_at=user_info.updated_at,
         )
