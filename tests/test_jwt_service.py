@@ -15,14 +15,14 @@ class TestJWTService:
         """Set up test fixtures."""
         self.keys = [
             EncryptionKey(
-                id="test_key_1",
-                key=SecretStr("key1"),
+                id="key1",
+                key=SecretStr("test_key_1"),
                 notes="First test key",
                 created_at=datetime(2023, 1, 1),
             ),
             EncryptionKey(
-                id="test_key_2",
-                key=SecretStr("key2"),
+                id="key2",
+                key=SecretStr("test_key_2"),
                 notes="Second test key",
                 created_at=datetime(2023, 1, 2),
             ),
@@ -38,7 +38,7 @@ class TestJWTService:
 
     def test_initialization_no_keys(self):
         """Test service initialization fails with no keys."""
-        with pytest.raises(ValueError, match="At least one key is required"):
+        with pytest.raises(ValueError, match="At least one active key is required"):
             JWTService([])
 
     def test_create_jws_token_default_key(self):

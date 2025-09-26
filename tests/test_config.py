@@ -51,9 +51,15 @@ class TestConfig:
                 with open(config_file_path, "r") as f:
                     config_data = json.load(f)
 
-                assert "master_key" in config_data, "Config file contains master_key"
-                assert config_data["master_key"] != "**********", "Key not redacted"
-                assert config_data["master_key"] == master_key1, "Master key matches"
+                assert "encryption_keys" in config_data, (
+                    "Config file contains encryption_keys"
+                )
+                assert config_data["encryption_keys"][0]["key"] != "**********", (
+                    "Key not redacted"
+                )
+                assert config_data["encryption_keys"][0]["key"] == master_key1, (
+                    "Master key matches"
+                )
 
                 # Clear the global config and load again
                 openhands_server.config._global_config = None
