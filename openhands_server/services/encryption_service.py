@@ -207,22 +207,26 @@ class EncryptionService:
         
         jwt_payload = {
             **payload,
-            'iss': key_id,  # Use key_id as issuer
             'iat': now,
             'exp': now + expires_in
         }
         
-        # Use the raw key for JWT signing
+        # Use the raw key for JWT signing with key_id in header
         secret_key = self._keys[key_id].key.get_secret_value()
         
-        return jwt.encode(jwt_payload, secret_key, algorithm='HS256')
+        return jwt.encode(
+            jwt_payload, 
+            secret_key, 
+            algorithm='HS256',
+            headers={'kid': key_id}
+        )
 
     def verify_jwt_token(self, token: str, key_id: str | None = None) -> Dict[str, Any]:
         """Verify and decode a JWT token.
         
         Args:
             token: The JWT token to verify
-            key_id: The key ID to use for verification. If None, extracts from token's iss claim.
+            key_id: The key ID to use for verification. If None, extracts from token's kid header.
             
         Returns:
             The decoded JWT payload
@@ -232,12 +236,12 @@ class EncryptionService:
             jwt.InvalidTokenError: If token verification fails
         """
         if key_id is None:
-            # Try to extract key_id from the token's iss claim
+            # Try to extract key_id from the token's kid header
             try:
-                unverified_payload = jwt.decode(token, options={"verify_signature": False})
-                key_id = unverified_payload.get('iss')
+                unverified_header = jwt.get_unverified_header(token)
+                key_id = unverified_header.get('kid')
                 if not key_id:
-                    raise ValueError("Token does not contain 'iss' claim with key ID")
+                    raise ValueError("Token does not contain 'kid' header with key ID")
             except jwt.DecodeError:
                 raise ValueError("Invalid JWT token format")
         

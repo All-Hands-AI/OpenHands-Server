@@ -148,21 +148,25 @@ class TestEncryptionService:
         
         assert isinstance(token, str)
         
+        # Check header for kid
+        header = jwt.get_unverified_header(token)
+        assert header['kid'] == 'key2'  # Default key
+        
         # Decode without verification to check structure
         unverified = jwt.decode(token, options={"verify_signature": False})
         assert unverified['user_id'] == 123
         assert unverified['role'] == 'admin'
-        assert unverified['iss'] == 'key2'  # Default key
         assert 'iat' in unverified
         assert 'exp' in unverified
+        assert 'iss' not in unverified  # Should not have iss claim
 
     def test_create_jwt_token_specific_key(self):
         """Test JWT token creation with specific key."""
         payload = {'user_id': 123}
         token = self.service.create_jwt_token(payload, key_id="key1")
         
-        unverified = jwt.decode(token, options={"verify_signature": False})
-        assert unverified['iss'] == 'key1'
+        header = jwt.get_unverified_header(token)
+        assert header['kid'] == 'key1'
 
     def test_create_jwt_token_custom_expiration(self):
         """Test JWT token creation with custom expiration."""
@@ -190,11 +194,11 @@ class TestEncryptionService:
         payload = {'user_id': 123, 'role': 'admin'}
         token = self.service.create_jwt_token(payload, key_id="key1")
         
-        # Verify without specifying key_id (should auto-detect from iss)
+        # Verify without specifying key_id (should auto-detect from kid header)
         decoded = self.service.verify_jwt_token(token)
         assert decoded['user_id'] == 123
         assert decoded['role'] == 'admin'
-        assert decoded['iss'] == 'key1'
+        assert 'iss' not in decoded  # Should not have iss claim
 
     def test_verify_jwt_token_specific_key(self):
         """Test JWT token verification with specific key."""
@@ -221,13 +225,13 @@ class TestEncryptionService:
         with pytest.raises(ValueError, match="Key ID 'invalid' not found"):
             self.service.verify_jwt_token(token, key_id="invalid")
 
-    def test_verify_jwt_token_no_iss_claim(self):
-        """Test JWT token verification fails when token has no iss claim."""
-        # Create token manually without iss claim
+    def test_verify_jwt_token_no_kid_header(self):
+        """Test JWT token verification fails when token has no kid header."""
+        # Create token manually without kid header
         payload = {'user_id': 123}
         token = jwt.encode(payload, "some_key", algorithm='HS256')
         
-        with pytest.raises(ValueError, match="Token does not contain 'iss' claim with key ID"):
+        with pytest.raises(ValueError, match="Token does not contain 'kid' header with key ID"):
             self.service.verify_jwt_token(token)
 
     def test_verify_jwt_token_invalid_format(self):
