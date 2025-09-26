@@ -35,10 +35,15 @@ class DockerSandboxSpecContext(SandboxSpecContext):
     """
 
     docker_client: docker.DockerClient = field(default_factory=get_docker_client)
-    repository: str = "ghcr.io/all-hands-ai/runtime"
-    command: str = "python -u -m openhands.agent_server"
-    initial_env: dict[str, str] = field(default_factory=dict)
-    working_dir: str = "/openhands/code"
+    repository: str = "ghcr.io/all-hands-ai/agent-server"
+    command: str = "/usr/local/bin/openhands-agent-server"
+    initial_env: dict[str, str] = field(
+        default_factory=lambda: {
+            "OPENVSCODE_SERVER_ROOT": "/openhands/.openvscode-server",
+            "LOG_JSON": "true",
+        }
+    )
+    working_dir: str = "/home/openhands"
 
     def _docker_image_to_sandbox_specs(self, image) -> SandboxSpecInfo:
         """Convert a Docker image to SandboxSpecInfo"""

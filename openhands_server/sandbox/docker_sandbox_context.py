@@ -46,7 +46,7 @@ class ExposedPort:
 @dataclass
 class DockerSandboxContext(SandboxContext):
     sandbox_spec_context: SandboxSpecContext
-    container_name_prefix: str = "openhands-runtime-"
+    container_name_prefix: str = "openhands-agent-server-"
     exposed_url_pattern: str = "http://localhost:{port}"
     docker_client: docker.DockerClient = field(default_factory=get_docker_client)
     mounts: list[VolumeMount] = field(default_factory=list)
@@ -232,8 +232,8 @@ class DockerSandboxContext(SandboxContext):
 
         # Prepare labels
         labels = {
-            "user_id": "NO_USER",  # TODO: Integrate auth service
-            "sandbox_spec_id": sandbox_spec_id,
+            "created_by_user_id": "NO_USER",  # TODO: Integrate auth service
+            "sandbox_spec_id": sandbox_spec.id,
         }
 
         # TODO: Handle mounts - for now, we'll create a basic volume mount
@@ -248,9 +248,9 @@ class DockerSandboxContext(SandboxContext):
             # Create and start the container
             container = self.docker_client.containers.run(
                 image=sandbox_spec.id,
-                command=sandbox_spec.command,
+                # command=sandbox_spec.command,  # TODO: Re-enable this later
                 name=container_name,
-                environment=env_vars,
+                # environment=env_vars,  # TODO: Re-enable this later
                 ports=port_mappings,
                 volumes=volumes,
                 working_dir=sandbox_spec.working_dir,
