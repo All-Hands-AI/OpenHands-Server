@@ -52,7 +52,7 @@ class SQLAlchemyUserContext(UserContext):
         """Get the current user."""
         if self.current_user_id is None:
             return None
-        
+
         return await self.get_user(self.current_user_id)
 
     async def search_users(
@@ -64,15 +64,18 @@ class SQLAlchemyUserContext(UserContext):
         """Search for users."""
         # Check if current user has permission to search users
         current_user = await self.get_current_user()
-        if current_user is None or UserScope.SUPER_ADMIN not in current_user.user_scopes:
+        if (
+            current_user is None
+            or UserScope.SUPER_ADMIN not in current_user.user_scopes
+        ):
             # Regular users can only see themselves
             if self.current_user_id is None:
                 return UserInfoPage(items=[], next_page_id=None)
-            
+
             user = await self.get_user(self.current_user_id)
             if user is None:
                 return UserInfoPage(items=[], next_page_id=None)
-            
+
             return UserInfoPage(items=[user], next_page_id=None)
 
         # Super admin can search all users
@@ -148,18 +151,24 @@ class SQLAlchemyUserContext(UserContext):
         """
         # Check if current user has permission to create users
         current_user = await self.get_current_user()
-        if current_user is None or UserScope.SUPER_ADMIN not in current_user.user_scopes:
+        if (
+            current_user is None
+            or UserScope.SUPER_ADMIN not in current_user.user_scopes
+        ):
             raise PermissionError("Only super admins can create users")
 
         # Check if requested scopes are valid
         if UserScope.SUPER_ADMIN in request.user_scopes:
             # Only super admins can create other super admins
-            if current_user is None or UserScope.SUPER_ADMIN not in current_user.user_scopes:
+            if (
+                current_user is None
+                or UserScope.SUPER_ADMIN not in current_user.user_scopes
+            ):
                 raise PermissionError("Only super admins can create super admin users")
 
         # Create the user info with generated ID and timestamps
         from uuid import uuid4
-        
+
         user_info = UserInfo(
             id=uuid4().hex,
             name=request.name,
@@ -211,17 +220,19 @@ class SQLAlchemyUserContext(UserContext):
         if UserScope.SUPER_ADMIN in request.user_scopes:
             # Only super admins can grant super admin privileges
             if UserScope.SUPER_ADMIN not in current_user.user_scopes:
-                raise PermissionError("Only super admins can grant super admin privileges")
+                raise PermissionError(
+                    "Only super admins can grant super admin privileges"
+                )
 
         # Update the user
-        existing_user.name = request.name
-        existing_user.avatar_url = request.avatar_url
-        existing_user.language = request.language
-        existing_user.default_llm_model = request.default_llm_model
-        existing_user.email = request.email
-        existing_user.accepted_tos = request.accepted_tos
-        existing_user.user_scopes = request.user_scopes
-        existing_user.updated_at = utc_now()
+        existing_user.name = request.name  # type: ignore
+        existing_user.avatar_url = request.avatar_url  # type: ignore
+        existing_user.language = request.language  # type: ignore
+        existing_user.default_llm_model = request.default_llm_model  # type: ignore
+        existing_user.email = request.email  # type: ignore
+        existing_user.accepted_tos = request.accepted_tos  # type: ignore
+        existing_user.user_scopes = request.user_scopes  # type: ignore
+        existing_user.updated_at = utc_now()  # type: ignore
 
         await self.session.commit()
         await self.session.refresh(existing_user)
@@ -232,17 +243,21 @@ class SQLAlchemyUserContext(UserContext):
         """
         Delete a user if possible. Raise a PermissionError if it is not - the
         current user may not have permission to delete users.
-        
+
         Note: The method signature uses CreateUserRequest but we need an ID to delete.
         This seems to be an error in the abstract method signature.
         For now, we'll assume the request has an ID field.
         """
         # Check if current user has permission to delete users
         current_user = await self.get_current_user()
-        if current_user is None or UserScope.SUPER_ADMIN not in current_user.user_scopes:
+        if (
+            current_user is None
+            or UserScope.SUPER_ADMIN not in current_user.user_scopes
+        ):
             raise PermissionError("Only super admins can delete users")
 
-        # We need to get the user ID somehow - this is a design issue with the abstract method
+        # We need to get the user ID somehow - this is a design issue with the
+        # abstract method
         # For now, let's assume we have access to the user ID through some means
         # In a real implementation, this method signature should be fixed
         raise NotImplementedError(

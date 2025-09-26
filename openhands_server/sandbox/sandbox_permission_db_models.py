@@ -36,16 +36,18 @@ class StoredSandboxPermission(Base):
             SandboxPermission: The Pydantic representation of the sandbox permission
         """
         return SandboxPermission(
-            id=self.id,  # type: ignore[arg-type]
-            sandbox_id=self.sandbox_id,
-            user_id=self.user_id,
-            created_by_user_id=self.created_by_user_id,
-            full_access=self.full_access,
-            timestamp=self.timestamp,  # type: ignore[arg-type]
+            id=self.id,  # type: ignore
+            sandbox_id=self.sandbox_id,  # type: ignore
+            user_id=self.user_id,  # type: ignore
+            created_by_user_id=self.created_by_user_id,  # type: ignore
+            full_access=self.full_access,  # type: ignore
+            timestamp=self.timestamp,  # type: ignore
         )
 
     @classmethod
-    def from_pydantic(cls, sandbox_permission: SandboxPermission) -> "StoredSandboxPermission":
+    def from_pydantic(
+        cls, sandbox_permission: SandboxPermission
+    ) -> "StoredSandboxPermission":
         """
         Create a SQLAlchemy model from a Pydantic model.
 
