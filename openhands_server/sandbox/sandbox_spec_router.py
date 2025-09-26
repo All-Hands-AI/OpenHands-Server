@@ -16,7 +16,7 @@ from openhands_server.sandbox.sandbox_spec_models import (
 
 router = APIRouter(prefix="/sandbox-specs", tags=["Sandbox"])
 sandbox_spec_context_dependency = Depends(
-    get_dependency_resolver().event_callback.get_resolver()
+    get_dependency_resolver().sandbox_spec.get_resolver()
 )
 
 
