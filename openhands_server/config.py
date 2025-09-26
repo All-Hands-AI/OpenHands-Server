@@ -1,6 +1,8 @@
 import json
 import os
+from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
 
 from pydantic import BaseModel, Field, SecretStr
 
@@ -46,10 +48,26 @@ def _get_db_url() -> str:
     return "sqlite+aiosqlite:///./openhands.db"
 
 
-def _get_master_key():
-    return SecretStr(
-        os.getenv("JWT_SECRET") or os.getenv("MASTER_KEY") or os.urandom(32).hex()
-    )
+class EncryptionKey(BaseModel):
+    """Configuration for an encryption key."""
+    
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    key: SecretStr
+    use_for_encryption: bool = True
+    notes: str | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+def _get_default_encryption_keys() -> list[EncryptionKey]:
+    """Generate default encryption keys."""
+    master_key = os.getenv("JWT_SECRET") or os.getenv("MASTER_KEY") or os.urandom(32).hex()
+    return [
+        EncryptionKey(
+            key=SecretStr(master_key),
+            use_for_encryption=True,
+            notes="Default master key"
+        )
+    ]
 
 
 class GCPConfig(BaseModel):
@@ -71,7 +89,7 @@ class DatabaseConfig(BaseModel):
 
 
 class AppServerConfig(OpenHandsModel):
-    master_key: SecretStr = Field(default_factory=_get_master_key)
+    encryption_keys: list[EncryptionKey] = Field(default_factory=_get_default_encryption_keys)
     event: EventContextResolver | None = None
     event_callback: EventCallbackContextResolver | None = None
     event_callback_result: EventCallbackResultContextResolver | None = None
@@ -111,11 +129,17 @@ def get_global_config() -> AppServerConfig:
             print("⚙️  Generating Default OpenHands App Server Config")
             _global_config = AppServerConfig()
 
-            # Save the config because the master key is required between restarts
+            # Save the config because the encryption keys are required between restarts
             # We need to explicitly include secret values for persistence
             config_dict = _global_config.model_dump(mode='json')
-            # Manually include the secret value for the master key
-            config_dict['master_key'] = _global_config.master_key.get_secret_value()
+            # Manually include the secret values for the encryption keys
+            config_dict['encryption_keys'] = [
+                {
+                    **key_dict,
+                    'key': key.key.get_secret_value()
+                }
+                for key, key_dict in zip(_global_config.encryption_keys, config_dict['encryption_keys'])
+            ]
             config_path.write_text(json.dumps(config_dict, indent=2))
 
     return _global_config
