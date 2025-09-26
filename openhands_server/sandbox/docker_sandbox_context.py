@@ -222,6 +222,8 @@ class DockerSandboxContext(SandboxContext):
         # Prepare environment variables
         env_vars = sandbox_spec.initial_env.copy()
 
+        # TODO: We need a session api key for the sandbox here...
+
         # Prepare port mappings and add port environment variables
         port_mappings = {}
         for exposed_port in self.exposed_port:

@@ -57,7 +57,7 @@ api.include_router(event_webhook_router.router)
 async def root():
     """Root endpoint."""
     return {
-        "message": "Welcome to OpenHands Server",
+        "title": "OpenHands App Server",
         "version": "0.1.0",
         "docs": "/docs",
         "redoc": "/redoc",
