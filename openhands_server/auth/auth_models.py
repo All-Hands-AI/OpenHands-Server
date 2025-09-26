@@ -9,6 +9,7 @@ class StoreUserSettingsRequest(BaseModel):
     language: str | None = None
     confirmation_mode: bool = False
     default_llm_model: str | None = None
+    email: str | None
 
 
 class UserSettings(BaseModel):

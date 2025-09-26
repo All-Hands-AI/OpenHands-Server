@@ -10,7 +10,7 @@ from openhands_server.sandbox.sandbox_permission_models import (
 )
 
 
-class SandboxContext(ABC):
+class SandboxPermissionContext(ABC):
     """
     Context for accessing sandbox permissions available to the current user.
     """

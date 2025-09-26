@@ -9,13 +9,15 @@ from openhands_server.auth.auth_models import StoreUserSettingsRequest, UserSett
 class DummyAuthContext(AuthContext):
     """Dummy User context used for testing"""
 
-    user_id: UUID = UUID("00000000-0000-0000-0000-000000000000")
+    user_id: str = UUID("00000000-0000-0000-0000-000000000001").hex
 
-    async def load_settings(self) -> UserSettings:
+    async def load_user_settings(self) -> UserSettings:
         """Load settings for the user"""
         raise NotImplementedError()
 
-    async def store_settings(self, settings: StoreUserSettingsRequest) -> UserSettings:
+    async def store_user_settings(
+        self, settings: StoreUserSettingsRequest
+    ) -> UserSettings:
         """Store settings for the user"""
         raise NotImplementedError()
 
