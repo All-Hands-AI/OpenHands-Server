@@ -228,26 +228,26 @@ class SQLAlchemyUserContext(UserContext):
 
         return existing_user.to_pydantic()
 
-    async def delete_user(self, request: CreateUserRequest) -> bool:
+    async def delete_user(self, user_id: str) -> bool:
         """
         Delete a user if possible. Raise a PermissionError if it is not - the
         current user may not have permission to delete users.
-        
-        Note: The method signature uses CreateUserRequest but we need an ID to delete.
-        This seems to be an error in the abstract method signature.
-        For now, we'll assume the request has an ID field.
         """
         # Check if current user has permission to delete users
         current_user = await self.get_current_user()
         if current_user is None or UserScope.SUPER_ADMIN not in current_user.user_scopes:
             raise PermissionError("Only super admins can delete users")
 
-        # We need to get the user ID somehow - this is a design issue with the abstract method
-        # For now, let's assume we have access to the user ID through some means
-        # In a real implementation, this method signature should be fixed
-        raise NotImplementedError(
-            "Delete user method signature needs to be fixed to accept user ID"
-        )
+        # Check if user exists
+        existing_user = await self._get_user_by_id_direct(user_id)
+        if existing_user is None:
+            return False
+
+        # Delete the user
+        await self.session.delete(existing_user)
+        await self.session.commit()
+        
+        return True
 
     async def _get_current_user_without_recursion(self) -> UserInfo | None:
         """Get current user without causing recursion in permission checks."""
