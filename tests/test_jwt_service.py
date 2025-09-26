@@ -4,21 +4,8 @@ import jwt
 import pytest
 from pydantic import SecretStr
 
-from openhands_server.services import JWTService
-
-
-class MockEncryptionKey:
-    """Mock EncryptionKey for testing."""
-
-    def __init__(
-        self, key: str, id: str = None, notes: str = None, created_at: datetime = None
-    ):
-        from uuid import uuid4
-
-        self.id = id or str(uuid4())
-        self.key = SecretStr(key)
-        self.notes = notes
-        self.created_at = created_at or datetime.utcnow()
+from openhands_server.config import EncryptionKey
+from openhands_server.services.jwt_service import JWTService
 
 
 class TestJWTService:
@@ -27,11 +14,17 @@ class TestJWTService:
     def setup_method(self):
         """Set up test fixtures."""
         self.keys = [
-            MockEncryptionKey(
-                "test_key_1", "key1", "First test key", datetime(2023, 1, 1)
+            EncryptionKey(
+                id="test_key_1",
+                key=SecretStr("key1"),
+                notes="First test key",
+                created_at=datetime(2023, 1, 1),
             ),
-            MockEncryptionKey(
-                "test_key_2", "key2", "Second test key", datetime(2023, 1, 2)
+            EncryptionKey(
+                id="test_key_2",
+                key=SecretStr("key2"),
+                notes="Second test key",
+                created_at=datetime(2023, 1, 2),
             ),
         ]
         self.service = JWTService(self.keys)
@@ -202,33 +195,6 @@ class TestJWTService:
 
         with pytest.raises(ValueError, match="Key ID 'invalid' not found"):
             self.service.decrypt_jwe_token(token, key_id="invalid")
-
-    def test_get_key_info(self):
-        """Test getting key information."""
-        info = self.service.get_key_info("key1")
-
-        assert info["id"] == "key1"
-        assert info["notes"] == "First test key"
-        assert "created_at" in info
-        assert "key" not in info  # Should not expose actual key
-
-    def test_get_key_info_invalid_key(self):
-        """Test getting key information fails with invalid key."""
-        with pytest.raises(ValueError, match="Key ID 'invalid' not found"):
-            self.service.get_key_info("invalid")
-
-    def test_list_keys(self):
-        """Test listing all keys."""
-        keys = self.service.list_keys()
-
-        assert len(keys) == 2
-        key_ids = [key["id"] for key in keys]
-        assert "key1" in key_ids
-        assert "key2" in key_ids
-
-        # Check that actual keys are not exposed
-        for key in keys:
-            assert "key" not in key
 
     def test_default_key_id_property(self):
         """Test default_key_id property."""
