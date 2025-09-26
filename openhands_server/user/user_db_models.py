@@ -49,14 +49,14 @@ class StoredUser(Base):
             UserInfo: The Pydantic representation of the user
         """
         return UserInfo(
-            id=self.id,
-            name=self.name,
-            avatar_url=self.avatar_url,
-            language=self.language,
-            default_llm_model=self.default_llm_model,
-            email=self.email,
-            accepted_tos=self.accepted_tos,
-            user_scopes=self.user_scopes or [],
+            id=self.id,  # type: ignore[arg-type]
+            name=self.name,  # type: ignore[arg-type]
+            avatar_url=self.avatar_url,  # type: ignore[arg-type]
+            language=self.language,  # type: ignore[arg-type]
+            default_llm_model=self.default_llm_model,  # type: ignore[arg-type]
+            email=self.email,  # type: ignore[arg-type]
+            accepted_tos=self.accepted_tos,  # type: ignore[arg-type]
+            user_scopes=self.user_scopes or [],  # type: ignore[arg-type]
             created_at=self.created_at,  # type: ignore[arg-type]
             updated_at=self.updated_at,  # type: ignore[arg-type]
         )
