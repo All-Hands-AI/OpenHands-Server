@@ -111,7 +111,11 @@ def get_global_config() -> AppServerConfig:
             print("⚙️  Generating Default OpenHands App Server Config")
             _global_config = AppServerConfig()
 
-            # Save the comnfig because the master key is required between restarts
-            config_path.write_text(_global_config.model_dump_json())
+            # Save the config because the master key is required between restarts
+            # We need to explicitly include secret values for persistence
+            config_dict = _global_config.model_dump(mode='json')
+            # Manually include the secret value for the master key
+            config_dict['master_key'] = _global_config.master_key.get_secret_value()
+            config_path.write_text(json.dumps(config_dict, indent=2))
 
     return _global_config
