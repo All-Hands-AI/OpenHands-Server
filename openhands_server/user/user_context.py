@@ -51,7 +51,7 @@ class UserContext(ABC):
         scopes."""
 
     @abstractmethod
-    async def delete_user(self, request: CreateUserRequest) -> bool:
-        """Update a user if possilbe. Raise a PermissionsError if it is not - the
-        current user may not have permission to create users or grant the requested
-        scopes."""
+    async def delete_user(self, user_id: str) -> bool:
+        """Delete a user if possible. Raise a PermissionError if it is not - the
+        current user may not have permission to delete users. Returns True if the
+        user was deleted, False if the user was not found."""

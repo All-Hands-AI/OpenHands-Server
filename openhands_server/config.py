@@ -17,6 +17,7 @@ from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextReso
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContextResolver,
 )
+from openhands_server.user.sqlalchemy_user_context import SQLAlchemyUserContextResolver
 
 
 # Environment variable constants
@@ -77,6 +78,7 @@ class AppServerConfig(OpenHandsModel):
     sandbox: SandboxContextResolver | None = None
     sandbox_spec: SandboxSpecContextResolver | None = None
     sandboxed_conversation: SandboxedConversationContextResolver | None = None
+    user: SQLAlchemyUserContextResolver | None = None
     allow_cors_origins: list[str] = Field(
         default_factory=list,
         description=(
