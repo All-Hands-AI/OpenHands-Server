@@ -2,7 +2,7 @@ import secrets
 import socket
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import AsyncGenerator
+from typing import Callable
 from uuid import UUID, uuid4
 
 import docker
@@ -10,11 +10,11 @@ from docker.errors import APIError, NotFound
 from fastapi import Depends
 from pydantic import SecretStr
 
-from openhands_server.dependency import get_dependency_manager
+from openhands_server.dependency import get_dependency_resolver
 from openhands_server.sandbox.docker_sandbox_spec_context import get_docker_client
 from openhands_server.sandbox.sandbox_context import (
     SandboxContext,
-    SandboxContextFactory,
+    SandboxContextResolver,
 )
 from openhands_server.sandbox.sandbox_errors import SandboxError
 from openhands_server.sandbox.sandbox_models import (
@@ -321,11 +321,14 @@ class DockerSandboxContext(SandboxContext):
             return False
 
 
-class DockerSandboxContextFactory(SandboxContextFactory):
-    async def with_instance(
-        self,
-        sandbox_spec_context: SandboxSpecContext = Depends(
-            get_dependency_manager().sandbox.with_instance
-        ),
-    ) -> AsyncGenerator[SandboxContext, None]:
-        yield DockerSandboxContext(sandbox_spec_context=sandbox_spec_context)
+class DockerSandboxContextResolver(SandboxContextResolver):
+    def get_resolver(self) -> Callable:
+        sandbox_spec_resolver = get_dependency_resolver().sandbox_spec.get_resolver()
+
+        # Define inline to prevent circular lookup
+        def resolve(
+            sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_resolver),
+        ) -> SandboxContext:
+            return DockerSandboxContext(sandbox_spec_context=sandbox_spec_context)
+
+        return resolve

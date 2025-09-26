@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import AsyncGenerator
+from typing import Callable
 
 import docker
 from docker.errors import APIError, NotFound
 
 from openhands_server.sandbox.sandbox_spec_context import (
     SandboxSpecContext,
-    SandboxSpecContextFactory,
+    SandboxSpecContextResolver,
 )
 from openhands_server.sandbox.sandbox_spec_models import (
     SandboxSpecInfo,
@@ -120,6 +120,9 @@ class DockerSandboxSpecContext(SandboxSpecContext):
             return None
 
 
-class DockerSandboxSpecContextFactory(SandboxSpecContextFactory):
-    async def with_instance(self) -> AsyncGenerator["SandboxSpecContext", None]:
-        yield DockerSandboxSpecContext()
+class DockerSandboxSpecContextResolver(SandboxSpecContextResolver):
+    def get_resolver(self) -> Callable:
+        return self.resolve
+
+    def resolve(self) -> SandboxSpecContext:
+        return DockerSandboxSpecContext()

@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator
+from typing import Callable
 from uuid import UUID
 
 from openhands.sdk.utils.models import DiscriminatedUnionMixin
@@ -64,15 +64,9 @@ class SandboxedConversationContext(ABC):
         """Stop using this sandbox context"""
 
 
-class SandboxedConversationContextFactory(DiscriminatedUnionMixin, ABC):
+class SandboxedConversationContextResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    async def with_instance(
-        self, *args, **kwargs
-    ) -> AsyncGenerator["SandboxedConversationContext", None]:
+    def get_resolver(self) -> Callable:
         """
-        Get an instance of event callback result context. Parameters are not
-        specified so that they can be defined in the implementation classes and
-        overridden using FastAPI's dependency injection. This allows merging global
-        config with user / request specific variables.
+        Get a resolver which may be used to resolve an instance of sandbox spec context.
         """
-        yield SandboxedConversationContext()  # type: ignore

@@ -9,7 +9,7 @@ from openhands_server.config import get_global_config
 
 def main() -> None:
     """Main entry point for the OpenHands Server."""
-    parser = argparse.ArgumentParser(description="OpenHands Enterprise Server APP")
+    parser = argparse.ArgumentParser(description="OpenHands App Server")
     parser.add_argument(
         "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"
     )
@@ -26,7 +26,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    print(f"🚀 Starting OpenHands Enterprise Server on {args.host}:{args.port}")
+    print(f"🚀 Starting OpenHands App Server on {args.host}:{args.port}")
     print(f"📖 API docs will be available at http://{args.host}:{args.port}/docs")
     print(f"🔄 Auto-reload: {'enabled' if args.reload else 'disabled'}")
     get_global_config()

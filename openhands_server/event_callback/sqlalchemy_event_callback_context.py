@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import AsyncGenerator
+from typing import Callable
 from uuid import UUID
 
 from fastapi import Depends
@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from openhands_server.database import async_session_dependency
 from openhands_server.event_callback.event_callback_context import (
     EventCallbackContext,
-    EventCallbackContextFactory,
+    EventCallbackContextResolver,
 )
 from openhands_server.event_callback.event_callback_db_models import StoredEventCallback
 from openhands_server.event_callback.event_callback_models import (
@@ -145,23 +145,11 @@ class SQLAlchemyEventCallbackContext(EventCallbackContext):
         return EventCallbackPage(items=items, next_page_id=next_page_id)
 
 
-class SQLAlchemyEventCallbackContextFactory(EventCallbackContextFactory):
-    async def with_instance(
-        self,
-        session: AsyncSession = Depends(async_session_dependency),
-    ) -> AsyncGenerator[EventCallbackContext, None]:
-        """
-        Get an instance of SQLAlchemy event callback context.
+class SQLAlchemyEventCallbackContextResolver(EventCallbackContextResolver):
+    def get_resolver(self) -> Callable:
+        return self.resolve
 
-        Args:
-            session: The async SQLAlchemy session from dependency injection
-
-        Yields:
-            EventCallbackContext: The context instance
-        """
-        context = SQLAlchemyEventCallbackContext(session)
-        try:
-            yield context
-        finally:
-            # Session cleanup is handled by the dependency
-            pass
+    def resolve(
+        self, session: AsyncSession = Depends(async_session_dependency)
+    ) -> EventCallbackContext:
+        return SQLAlchemyEventCallbackContext(session)

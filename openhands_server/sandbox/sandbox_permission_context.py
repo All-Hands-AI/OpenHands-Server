@@ -1,7 +1,9 @@
 import asyncio
 from abc import ABC, abstractmethod
+from typing import Callable
 from uuid import UUID
 
+from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.sandbox.sandbox_permission_models import (
     SandboxPermission,
     SandboxPermissionPage,
@@ -48,3 +50,12 @@ class SandboxContext(ABC):
             ]
         )
         return results
+
+
+class SandboxPermissionContextResolver(DiscriminatedUnionMixin, ABC):
+    @abstractmethod
+    def get_resolver(self) -> Callable:
+        """
+        Get a resolver which may be used to resolve an instance of sandbox
+        permission context.
+        """

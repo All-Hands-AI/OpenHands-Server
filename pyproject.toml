@@ -6,7 +6,7 @@ requires = [ "hatchling" ]
 [project]
 name = "openhands-server"
 version = "0.1.0"
-description = "OpenHands Enterprise Server"
+description = "OpenHands App Server"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [ { name = "OpenHands Team", email = "contact@all-hands.dev" } ]

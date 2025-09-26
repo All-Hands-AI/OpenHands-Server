@@ -1,23 +1,19 @@
-import functools
 import logging
-from dataclasses import MISSING, dataclass
-from typing import Callable
+from dataclasses import dataclass
 from unittest.mock import MagicMock
 
-from fastapi import FastAPI
-
 from openhands_server.config import get_global_config
-from openhands_server.event.event_context import EventContextFactory
+from openhands_server.event.event_context import EventContextResolver
 from openhands_server.event_callback.event_callback_context import (
-    EventCallbackContextFactory,
+    EventCallbackContextResolver,
 )
 from openhands_server.event_callback.event_callback_result_context import (
-    EventCallbackResultContextFactory,
+    EventCallbackResultContextResolver,
 )
-from openhands_server.sandbox.sandbox_context import SandboxContextFactory
-from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextFactory
+from openhands_server.sandbox.sandbox_context import SandboxContextResolver
+from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextResolver
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
-    SandboxedConversationContextFactory,
+    SandboxedConversationContextResolver,
 )
 
 
@@ -25,34 +21,27 @@ _logger = logging.getLogger(__name__)
 
 
 @dataclass
-class DependencyManager:
-    """Object for exposing dependencies"""
+class DependencyResolver:
+    """Object for exposing dependencies and preventing circular imports and lookups"""
 
-    event: EventContextFactory
-    event_callback: EventCallbackContextFactory
-    event_callback_result: EventCallbackResultContextFactory
-    sandbox: SandboxContextFactory
-    sandbox_spec: SandboxSpecContextFactory
-    sandboxed_conversation: SandboxedConversationContextFactory
-
-    async def __aenter__(self, app: FastAPI):
-        _logger.info("🙌  Starting dependency manager...")
-        app.state.dependency_manager = self
-
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        _logger.info("🙌  Stopping dependency manager...")
+    event: EventContextResolver
+    event_callback: EventCallbackContextResolver
+    event_callback_result: EventCallbackResultContextResolver
+    sandbox: SandboxContextResolver
+    sandbox_spec: SandboxSpecContextResolver
+    sandboxed_conversation: SandboxedConversationContextResolver
 
 
-_dependency_manager: DependencyManager | None = None
+_dependency_resolver: DependencyResolver | None = None
 
 
-def get_dependency_manager():
+def get_dependency_resolver():
     """Get the dependency manager - lazily initializing it the first time
     it is requested"""
-    global _dependency_manager
-    if not _dependency_manager:
+    global _dependency_resolver
+    if not _dependency_resolver:
         config = get_global_config()
-        _dependency_manager = DependencyManager(
+        _dependency_resolver = DependencyResolver(
             event=config.event or _get_event_context_factory(),
             event_callback=config.event_callback
             or _get_event_callback_context_factory(),
@@ -63,51 +52,23 @@ def get_dependency_manager():
             sandboxed_conversation=config.sandboxed_conversation
             or _get_sandboxed_conversation_context_factory(),
         )
-    return _dependency_manager
-
-
-class _LazyProxy:
-    """
-    Proxy which wraps a function, pretends to be its return value and executes it
-    lazily only when an attribute of it is retrieved
-    """
-
-    def __init__(self, fn, *args, **kwargs):
-        self._fn = fn
-        self._args = args
-        self._kwargs = kwargs
-        self._resolved = MISSING
-
-    def __getattr__(self, name):
-        resolved = self._resolved
-        if resolved is MISSING:
-            resolved = self._fn(*self._args, **self._kwargs)
-            self._resolved = resolved
-        return getattr(resolved, name)
-
-
-def lazy_wrapper(fn: Callable):
-    @functools.wraps(fn)
-    def wrapper(*args, **kwargs):
-        return _LazyProxy(fn, args, kwargs)
-
-    return wrapper
+    return _dependency_resolver
 
 
 def _get_event_context_factory():
     from openhands_server.event.filesystem_event_context import (
-        FilesystemEventContextFactory,
+        FilesystemEventContextResolver,
     )
 
-    return FilesystemEventContextFactory()
+    return FilesystemEventContextResolver()
 
 
 def _get_event_callback_context_factory():
     from openhands_server.event_callback.sqlalchemy_event_callback_context import (
-        SQLAlchemyEventCallbackContextFactory,
+        SQLAlchemyEventCallbackContextResolver,
     )
 
-    return SQLAlchemyEventCallbackContextFactory()
+    return SQLAlchemyEventCallbackContextResolver()
 
 
 def _get_event_callback_result_context_factory():
@@ -115,7 +76,7 @@ def _get_event_callback_result_context_factory():
         sqlalchemy_event_callback_result_context as ctx,
     )
 
-    return ctx.SQLAlchemyEventCallbackResultContextFactory()
+    return ctx.SQLAlchemyEventCallbackResultContextResolver()
 
 
 def _get_sandbox_context_factory():
@@ -123,7 +84,7 @@ def _get_sandbox_context_factory():
         docker_sandbox_context as ctx,
     )
 
-    return ctx.DockerSandboxContextFactory()
+    return ctx.DockerSandboxContextResolver()
 
 
 def _get_sandbox_spec_context_factory():
@@ -131,7 +92,7 @@ def _get_sandbox_spec_context_factory():
         docker_sandbox_spec_context as ctx,
     )
 
-    return ctx.DockerSandboxSpecContextFactory()
+    return ctx.DockerSandboxSpecContextResolver()
 
 
 def _get_sandboxed_conversation_context_factory():

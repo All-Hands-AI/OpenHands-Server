@@ -29,7 +29,7 @@ async def _api_lifespan(api: FastAPI) -> AsyncIterator[None]:
 
 
 api = FastAPI(
-    title="OpenHands Enterprise Server",
+    title="OpenHands App Server",
     description=(
         "Management Server for multiple Sandboxed OpenHands Agent Server Instances"
     ),

@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands.sdk.event.types import EventID
-from openhands_server.dependency import get_dependency_manager
+from openhands_server.dependency import get_dependency_resolver
 from openhands_server.event_callback.event_callback_result_context import (
     EventCallbackResultContext,
 )
@@ -18,8 +18,8 @@ from openhands_server.event_callback.event_callback_result_models import (
 
 
 router = APIRouter(prefix="/event-callback-results", tags=["Event Callbacks"])
-resolve_event_callback_result_context = (
-    get_dependency_manager().event_callback_result.with_instance
+event_callback_result_context_dependency = Depends(
+    get_dependency_resolver().event_callback_result.get_resolver
 )
 
 
@@ -52,8 +52,8 @@ async def search_event_callback_results(
         int,
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
-    event_callback_result_context: EventCallbackResultContext = Depends(
-        resolve_event_callback_result_context
+    event_callback_result_context: EventCallbackResultContext = (
+        event_callback_result_context_dependency
     ),
 ) -> EventCallbackResultPage:
     """Search / List event callback results."""
@@ -72,8 +72,8 @@ async def search_event_callback_results(
 @router.get("/{id}", responses={404: {"description": "Item not found"}})
 async def get_event_callback_result(
     id: UUID,
-    event_callback_result_context: EventCallbackResultContext = Depends(
-        resolve_event_callback_result_context
+    event_callback_result_context: EventCallbackResultContext = (
+        event_callback_result_context_dependency
     ),
 ) -> EventCallbackResult:
     """Get a single event callback result given its id."""
@@ -86,8 +86,8 @@ async def get_event_callback_result(
 @router.get("/")
 async def batch_get_event_callback_results(
     ids: Annotated[list[UUID], Query()],
-    event_callback_result_context: EventCallbackResultContext = Depends(
-        resolve_event_callback_result_context
+    event_callback_result_context: EventCallbackResultContext = (
+        event_callback_result_context_dependency
     ),
 ) -> list[EventCallbackResult | None]:
     """Get a batch of event callback results given their ids, returning null for any
@@ -103,8 +103,8 @@ async def batch_get_event_callback_results(
 @router.delete("/{id}", responses={404: {"description": "Item not found"}})
 async def delete_event_callback_result(
     id: UUID,
-    event_callback_result_context: EventCallbackResultContext = Depends(
-        resolve_event_callback_result_context
+    event_callback_result_context: EventCallbackResultContext = (
+        event_callback_result_context_dependency
     ),
 ) -> dict[str, str]:
     """Delete an event callback result."""

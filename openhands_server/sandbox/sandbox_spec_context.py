@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator
+from typing import Callable
 
 from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.sandbox.sandbox_spec_models import (
@@ -55,15 +55,9 @@ class SandboxSpecContext(ABC):
         """Stop using this sandbox spec context"""
 
 
-class SandboxSpecContextFactory(DiscriminatedUnionMixin, ABC):
+class SandboxSpecContextResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    async def with_instance(
-        self, *args, **kwargs
-    ) -> AsyncGenerator["SandboxSpecContext", None]:
+    def get_resolver(self) -> Callable:
         """
-        Get an instance of sandbox spec context. Parameters are not specified
-        so that they can be defined in the implementation classes and overridden using
-        FastAPI's dependency injection. This allows merging global config with
-        user / request specific variables.
+        Get a resolver which may be used to resolve an instance of sandbox spec context.
         """
-        yield SandboxSpecContext()  # type: ignore

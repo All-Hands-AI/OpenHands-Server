@@ -8,13 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.sdk import EventBase
-from openhands_server.dependency import get_dependency_manager
+from openhands_server.dependency import get_dependency_resolver
 from openhands_server.event.event_context import EventContext
 from openhands_server.event_callback.event_callback_models import EventKind
 
 
 router = APIRouter(prefix="/events", tags=["Events"])
-resolve_event_context = get_dependency_manager().event.with_instance
+event_context_dependency = Depends(get_dependency_resolver().event.get_resolver())
 
 
 # Read methods
@@ -50,7 +50,7 @@ async def search_events(
         int,
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
-    event_context: EventContext = Depends(resolve_event_context),
+    event_context: EventContext = event_context_dependency,
 ) -> EventPage:
     """Search / List events."""
     assert limit > 0
@@ -88,7 +88,7 @@ async def count_events(
         EventSortOrder,
         Query(title="Sort order for results"),
     ] = EventSortOrder.TIMESTAMP,
-    event_context: EventContext = Depends(resolve_event_context),
+    event_context: EventContext = event_context_dependency,
 ) -> int:
     """Count events matching the given filters."""
     return await event_context.count_events(
@@ -103,7 +103,7 @@ async def count_events(
 @router.get("/{event_id}", responses={404: {"description": "Item not found"}})
 async def get_event(
     event_id: str,
-    event_context: EventContext = Depends(resolve_event_context),
+    event_context: EventContext = event_context_dependency,
 ) -> EventBase:
     """Get a single event given its id."""
     event = await event_context.get_event(event_id)
@@ -115,7 +115,7 @@ async def get_event(
 @router.get("/")
 async def batch_get_events(
     event_ids: Annotated[list[str], Query()],
-    event_context: EventContext = Depends(resolve_event_context),
+    event_context: EventContext = event_context_dependency,
 ) -> list[EventBase | None]:
     """Get a batch of events given their ids, returning null for any missing event."""
     assert len(event_ids) <= 100

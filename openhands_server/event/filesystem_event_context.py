@@ -4,12 +4,12 @@ import glob
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import Callable
 from uuid import UUID
 
 from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.sdk import EventBase
-from openhands_server.event.event_context import EventContext, EventContextFactory
+from openhands_server.event.event_context import EventContext, EventContextResolver
 from openhands_server.event_callback.event_callback_models import EventKind
 
 
@@ -231,9 +231,11 @@ class FilesystemEventContext(EventContext):
         self._save_event_to_file(conversation_id, event)
 
 
-class FilesystemEventContextFactory(EventContextFactory):
+class FilesystemEventContextResolver(EventContextResolver):
     events_dir: Path = Path("workspace/events")
 
-    async def with_instance(self) -> AsyncGenerator[EventContext, None]:
-        async with FilesystemEventContext(events_dir=self.events_dir) as context:
-            yield context
+    def get_resolver(self) -> Callable:
+        return self.resolve
+
+    def resolve(self) -> EventContext:
+        return FilesystemEventContext(events_dir=self.events_dir)

@@ -5,26 +5,26 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from openhands.sdk.utils.models import OpenHandsModel
-from openhands_server.event.event_context import EventContextFactory
+from openhands_server.event.event_context import EventContextResolver
 from openhands_server.event_callback.event_callback_context import (
-    EventCallbackContextFactory,
+    EventCallbackContextResolver,
 )
 from openhands_server.event_callback.event_callback_result_context import (
-    EventCallbackResultContextFactory,
+    EventCallbackResultContextResolver,
 )
-from openhands_server.sandbox.sandbox_context import SandboxContextFactory
-from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextFactory
+from openhands_server.sandbox.sandbox_context import SandboxContextResolver
+from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextResolver
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
-    SandboxedConversationContextFactory,
+    SandboxedConversationContextResolver,
 )
 
 
 # Environment variable constants
-CONFIG_FILE_PATH_ENV = "OPENHANDS_ENTERPRISE_SERVER_CONFIG_PATH"
+CONFIG_FILE_PATH_ENV = "OPENHANDS_APP_SERVER_CONFIG_PATH"
 GCP_REGION = os.environ.get("GCP_REGION")
 
 # Default config file location
-DEFAULT_CONFIG_FILE_PATH = "workspace/openhands_enterprise_server_config.json"
+DEFAULT_CONFIG_FILE_PATH = "workspace/openhands_app_server_config.json"
 
 
 def _get_db_url() -> str:
@@ -63,13 +63,13 @@ class DatabaseConfig(BaseModel):
     max_overflow: int = int(os.environ.get("DB_MAX_OVERFLOW", "10"))
 
 
-class OpenHandsServerConfig(OpenHandsModel):
-    event: EventContextFactory | None = None
-    event_callback: EventCallbackContextFactory | None = None
-    event_callback_result: EventCallbackResultContextFactory | None = None
-    sandbox: SandboxContextFactory | None = None
-    sandbox_spec: SandboxSpecContextFactory | None = None
-    sandboxed_conversation: SandboxedConversationContextFactory | None = None
+class AppServerConfig(OpenHandsModel):
+    event: EventContextResolver | None = None
+    event_callback: EventCallbackContextResolver | None = None
+    event_callback_result: EventCallbackResultContextResolver | None = None
+    sandbox: SandboxContextResolver | None = None
+    sandbox_spec: SandboxSpecContextResolver | None = None
+    sandboxed_conversation: SandboxedConversationContextResolver | None = None
     allow_cors_origins: list[str] = Field(
         default_factory=list,
         description=(
@@ -81,10 +81,10 @@ class OpenHandsServerConfig(OpenHandsModel):
     gcp: GCPConfig = Field(default_factory=GCPConfig)
 
 
-_global_config: OpenHandsServerConfig | None = None
+_global_config: AppServerConfig | None = None
 
 
-def get_global_config() -> OpenHandsServerConfig:
+def get_global_config() -> AppServerConfig:
     """Get the default local server config shared across the server"""
     global _global_config
     if _global_config is None:
@@ -94,12 +94,12 @@ def get_global_config() -> OpenHandsServerConfig:
 
         # Load configuration from JSON file
         if config_path.exists():
-            print(f"⚙️  Loading OpenHands Enterprise Server Config from {config_path}")
-            _global_config = OpenHandsServerConfig.model_validate_json(
+            print(f"⚙️  Loading OpenHands App Server Config from {config_path}")
+            _global_config = AppServerConfig.model_validate_json(
                 json.loads(config_path.read_text())
             )
         else:
-            print("⚙️  Using Default OpenHands Enterprise Server Config")
-            _global_config = OpenHandsServerConfig()
+            print("⚙️  Using Default OpenHands App Server Config")
+            _global_config = AppServerConfig()
 
     return _global_config

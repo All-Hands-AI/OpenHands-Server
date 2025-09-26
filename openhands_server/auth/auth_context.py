@@ -35,7 +35,7 @@ class AuthContext(ABC):
         """Stop using this service"""
 
 
-class AuthContextFactory(DiscriminatedUnionMixin, ABC):
+class AuthContextResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
     async def with_instance(
         self, *args, **kwargs

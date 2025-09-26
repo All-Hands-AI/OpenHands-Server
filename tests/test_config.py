@@ -4,7 +4,7 @@ and JSON configuration loading with environment variable overrides.
 """
 
 from openhands_server.config import (
-    OpenHandsServerConfig,
+    AppServerConfig,
     get_global_config,
 )
 
@@ -15,4 +15,4 @@ class TestConfig:
     def test_get_global_config(self):
         """Test that Config is immutable (frozen)."""
         config = get_global_config()
-        assert isinstance(config, OpenHandsServerConfig)
+        assert isinstance(config, AppServerConfig)
