@@ -6,13 +6,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.event_callback.event_callback_service import (
-    EventCallbackService,
-)
 from openhands_server.event_callback.event_callback_models import (
     EventCallback,
     EventCallbackPage,
     EventKind,
+)
+from openhands_server.event_callback.event_callback_service import (
+    EventCallbackService,
 )
 
 

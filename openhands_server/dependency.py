@@ -4,11 +4,11 @@ from unittest.mock import MagicMock
 
 from openhands_server.config import get_global_config
 from openhands_server.event.event_context import EventContextResolver
-from openhands_server.event_callback.event_callback_service import (
-    EventCallbackServiceResolver,
-)
 from openhands_server.event_callback.event_callback_result_service import (
     EventCallbackResultServiceResolver,
+)
+from openhands_server.event_callback.event_callback_service import (
+    EventCallbackServiceResolver,
 )
 from openhands_server.sandbox.sandbox_service import SandboxServiceResolver
 from openhands_server.sandbox.sandbox_spec_service import SandboxSpecServiceResolver

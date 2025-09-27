@@ -11,16 +11,16 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.event_callback.event_callback_service import (
-    EventCallbackService,
-    EventCallbackServiceResolver,
-)
 from openhands_server.event_callback.event_callback_db_models import StoredEventCallback
 from openhands_server.event_callback.event_callback_models import (
     CreateEventCallbackRequest,
     EventCallback,
     EventCallbackPage,
     EventKind,
+)
+from openhands_server.event_callback.event_callback_service import (
+    EventCallbackService,
+    EventCallbackServiceResolver,
 )
 
 
@@ -155,7 +155,8 @@ class SQLAlchemyEventCallbackServiceResolver(EventCallbackServiceResolver):
 
     def get_resolver_for_user(self) -> Callable:
         _logger.warning(
-            "Using secured EventCallbackService resolver - returning unsecured resolver for now"
+            "Using secured EventCallbackService resolver - "
+            "returning unsecured resolver for now"
         )
         return self.resolve
 

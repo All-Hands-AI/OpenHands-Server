@@ -7,13 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands.sdk.event.types import EventID
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.event_callback.event_callback_result_service import (
-    EventCallbackResultService,
-)
 from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultPage,
     EventCallbackResultSortOrder,
+)
+from openhands_server.event_callback.event_callback_result_service import (
+    EventCallbackResultService,
 )
 
 

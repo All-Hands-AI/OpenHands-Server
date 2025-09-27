@@ -75,12 +75,13 @@ class EventCallbackServiceResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
     def get_unsecured_resolver(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of event callback service.
+        Get a resolver which may be used to resolve an instance of event callback
+        service.
         """
 
     @abstractmethod
     def get_resolver_for_user(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of event callback service
-        limited to the current user.
+        Get a resolver which may be used to resolve an instance of event callback
+        service limited to the current user.
         """

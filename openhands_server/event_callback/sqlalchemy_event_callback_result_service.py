@@ -10,10 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands.sdk.event.types import EventID
 from openhands_server.database import async_session_dependency
-from openhands_server.event_callback.event_callback_result_service import (
-    EventCallbackResultService,
-    EventCallbackResultServiceResolver,
-)
 from openhands_server.event_callback.event_callback_result_db_models import (
     StoredEventCallbackResult,
 )
@@ -21,6 +17,10 @@ from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultPage,
     EventCallbackResultSortOrder,
+)
+from openhands_server.event_callback.event_callback_result_service import (
+    EventCallbackResultService,
+    EventCallbackResultServiceResolver,
 )
 
 
@@ -177,7 +177,8 @@ class SQLAlchemyEventCallbackResultServiceResolver(EventCallbackResultServiceRes
 
     def get_resolver_for_user(self) -> Callable:
         _logger.warning(
-            "Using secured EventCallbackResultService resolver - returning unsecured resolver for now"
+            "Using secured EventCallbackResultService resolver - "
+            "returning unsecured resolver for now"
         )
         return self.resolve
 
