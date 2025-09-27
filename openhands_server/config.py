@@ -54,11 +54,16 @@ def _get_db_url() -> SecretStr:
 
 
 def _get_default_workspace_dir() -> Path:
+    # Recheck env because this function is also used to generate other defaults
     workspace_dir = os.getenv("OH_WORKSPACE_DIR")
+
     if not workspace_dir:
         # TODO: I suppose Could also default this to ~home/.openhands
         workspace_dir = "workspace"
-    return Path(workspace_dir)
+
+    result = Path(workspace_dir)
+    result.mkdir(parents=True, exist_ok=True)
+    return result
 
 
 class EncryptionKey(BaseModel):
@@ -142,6 +147,10 @@ class AppServerConfig(OpenHandsModel):
         default_factory=_get_default_encryption_keys
     )
     workspace_dir: Path = Field(default_factory=_get_default_workspace_dir)
+    web_url: str = Field(
+        default="http://localhost:3000",
+        description="The URL where OpenHands is running (e.g., http://localhost:3000)",
+    )
     event: EventContextResolver | None = None
     event_callback: EventCallbackContextResolver | None = None
     event_callback_result: EventCallbackResultContextResolver | None = None

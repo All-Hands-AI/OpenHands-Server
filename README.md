@@ -37,6 +37,16 @@ export OPENAI_API_KEY=...
 export LITELLM_API_KEY=...
 ```
 
+### Configuration
+
+The server can be configured using environment variables with the `OH_` prefix:
+
+```bash
+# Set the web URL where OpenHands is running (used for callbacks, webhooks, etc.)
+export OH_WEB_URL=https://my-openhands.example.com
+# Defaults to http://localhost:3000 if not set
+```
+
 ### Build a standalone executable
 
 ```
