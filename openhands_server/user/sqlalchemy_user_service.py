@@ -15,6 +15,7 @@ Key components:
 
 from __future__ import annotations
 
+import logging
 from typing import Callable
 
 import base62
@@ -33,6 +34,9 @@ from openhands_server.user.user_models import (
 )
 from openhands_server.user.user_service import UserService, UserServiceResolver
 from openhands_server.utils.date_utils import utc_now
+
+
+logger = logging.getLogger(__name__)
 
 
 class SQLAlchemyUserService(UserService):
@@ -289,6 +293,9 @@ class SQLAlchemyUserServiceResolver(UserServiceResolver):
     current_user_id: str | None = None
 
     def get_unsecured_resolver(self) -> Callable:
+        logger.warning(
+            "Using unsecured user service resolver - returning unsecured resolver"
+        )
         return self.resolve
 
     def get_resolver_for_user(self) -> Callable:

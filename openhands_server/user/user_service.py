@@ -63,12 +63,12 @@ class UserServiceResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
     def get_unsecured_resolver(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of sandbox spec service.
+        Get a resolver which may be used to resolve an instance of user service.
         """
 
     @abstractmethod
     def get_resolver_for_user(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of sandbox spec service
+        Get a resolver which may be used to resolve an instance of user service
         limited to the current user.
         """
