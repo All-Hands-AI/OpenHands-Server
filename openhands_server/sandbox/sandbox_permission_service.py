@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from typing import Callable
 from uuid import UUID
@@ -10,9 +11,12 @@ from openhands_server.sandbox.sandbox_permission_models import (
 )
 
 
-class SandboxPermissionContext(ABC):
+_logger = logging.getLogger(__name__)
+
+
+class SandboxPermissionService(ABC):
     """
-    Context for accessing sandbox permissions available to the current user.
+    Service for accessing sandbox permissions.
     """
 
     @abstractmethod
@@ -52,10 +56,17 @@ class SandboxPermissionContext(ABC):
         return results
 
 
-class SandboxPermissionContextResolver(DiscriminatedUnionMixin, ABC):
+class SandboxPermissionServiceResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    def get_resolver(self) -> Callable:
+    def get_unsecured_resolver(self) -> Callable:
         """
         Get a resolver which may be used to resolve an instance of sandbox
-        permission context.
+        permission service.
+        """
+
+    @abstractmethod
+    def get_resolver_for_user(self) -> Callable:
+        """
+        Get a resolver which may be used to resolve an instance of sandbox
+        permission service limited to the current user.
         """
