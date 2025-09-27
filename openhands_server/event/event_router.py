@@ -9,12 +9,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.sdk import EventBase
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.event.event_context import EventContext
+from openhands_server.event.event_service import EventService
 from openhands_server.event_callback.event_callback_models import EventKind
 
 
 router = APIRouter(prefix="/events", tags=["Events"])
-event_context_dependency = Depends(get_dependency_resolver().event.get_resolver())
+event_service_dependency = Depends(
+    get_dependency_resolver().event.get_resolver_for_user()
+)
 
 
 # Read methods
@@ -50,12 +52,12 @@ async def search_events(
         int,
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
-    event_context: EventContext = event_context_dependency,
+    event_service: EventService = event_service_dependency,
 ) -> EventPage:
     """Search / List events."""
     assert limit > 0
     assert limit <= 100
-    return await event_context.search_events(
+    return await event_service.search_events(
         conversation_id__eq=conversation_id__eq,
         kind__eq=kind__eq,
         timestamp__gte=timestamp__gte,
@@ -88,10 +90,10 @@ async def count_events(
         EventSortOrder,
         Query(title="Sort order for results"),
     ] = EventSortOrder.TIMESTAMP,
-    event_context: EventContext = event_context_dependency,
+    event_service: EventService = event_service_dependency,
 ) -> int:
     """Count events matching the given filters."""
-    return await event_context.count_events(
+    return await event_service.count_events(
         conversation_id__eq=conversation_id__eq,
         kind__eq=kind__eq,
         timestamp__gte=timestamp__gte,
@@ -103,10 +105,10 @@ async def count_events(
 @router.get("/{event_id}", responses={404: {"description": "Item not found"}})
 async def get_event(
     event_id: str,
-    event_context: EventContext = event_context_dependency,
+    event_service: EventService = event_service_dependency,
 ) -> EventBase:
     """Get a single event given its id."""
-    event = await event_context.get_event(event_id)
+    event = await event_service.get_event(event_id)
     if event is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return event
@@ -115,9 +117,9 @@ async def get_event(
 @router.get("/")
 async def batch_get_events(
     event_ids: Annotated[list[str], Query()],
-    event_context: EventContext = event_context_dependency,
+    event_service: EventService = event_service_dependency,
 ) -> list[EventBase | None]:
     """Get a batch of events given their ids, returning null for any missing event."""
     assert len(event_ids) <= 100
-    events = await event_context.batch_get_events(event_ids)
+    events = await event_service.batch_get_events(event_ids)
     return events

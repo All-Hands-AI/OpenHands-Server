@@ -1,7 +1,8 @@
-"""Filesystem-based EventContext implementation."""
+"""Filesystem-based EventService implementation."""
 
 import glob
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
@@ -9,13 +10,16 @@ from uuid import UUID
 
 from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.sdk import EventBase
-from openhands_server.event.event_context import EventContext, EventContextResolver
+from openhands_server.event.event_service import EventService, EventServiceResolver
 from openhands_server.event_callback.event_callback_models import EventKind
 
 
-class FilesystemEventContext(EventContext):
+_logger = logging.getLogger(__name__)
+
+
+class FilesystemEventService(EventService):
     """
-    Filesystem-based implementation of EventContext.
+    Filesystem-based implementation of EventService.
 
     Events are stored in files with the naming format:
     {conversation_id}/{YYYYMMDDHHMMSS}_{kind}_{id.hex}
@@ -231,12 +235,19 @@ class FilesystemEventContext(EventContext):
         self._save_event_to_file(conversation_id, event)
 
 
-class FilesystemEventContextResolver(EventContextResolver):
-    def get_resolver(self) -> Callable:
+class FilesystemEventServiceResolver(EventServiceResolver):
+    def get_unsecured_resolver(self) -> Callable:
         return self.resolve
 
-    def resolve(self) -> EventContext:
+    def get_resolver_for_user(self) -> Callable:
+        _logger.warning(
+            "Using secured event service resolver - "
+            "returning unsecured resolver for now"
+        )
+        return self.resolve
+
+    def resolve(self) -> EventService:
         from openhands_server.config import get_global_config
 
         config = get_global_config()
-        return FilesystemEventContext(events_dir=config.workspace_dir / "events")
+        return FilesystemEventService(events_dir=config.workspace_dir / "events")

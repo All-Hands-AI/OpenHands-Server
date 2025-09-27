@@ -15,7 +15,7 @@ from pydantic import (
 
 from openhands.agent_server.env_parser import from_env
 from openhands.sdk.utils.models import OpenHandsModel
-from openhands_server.event.event_context import EventContextResolver
+from openhands_server.event.event_service import EventServiceResolver
 from openhands_server.event_callback.event_callback_context import (
     EventCallbackContextResolver,
 )
@@ -151,7 +151,7 @@ class AppServerConfig(OpenHandsModel):
         default="http://localhost:3000",
         description="The URL where OpenHands is running (e.g., http://localhost:3000)",
     )
-    event: EventContextResolver | None = None
+    event: EventServiceResolver | None = None
     event_callback: EventCallbackContextResolver | None = None
     event_callback_result: EventCallbackResultContextResolver | None = None
     sandbox: SandboxServiceResolver | None = None
