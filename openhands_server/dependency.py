@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock
 
 from openhands_server.config import get_global_config
-from openhands_server.event.event_context import EventContextResolver
+from openhands_server.event.event_service import EventServiceResolver
 from openhands_server.event_callback.event_callback_result_service import (
     EventCallbackResultServiceResolver,
 )
@@ -25,7 +25,7 @@ _logger = logging.getLogger(__name__)
 class DependencyResolver:
     """Object for exposing dependencies and preventing circular imports and lookups"""
 
-    event: EventContextResolver
+    event: EventServiceResolver
     event_callback: EventCallbackServiceResolver
     event_callback_result: EventCallbackResultServiceResolver
     sandbox: SandboxServiceResolver
@@ -44,7 +44,7 @@ def get_dependency_resolver():
     if not _dependency_resolver:
         config = get_global_config()
         _dependency_resolver = DependencyResolver(
-            event=config.event or _get_event_context_factory(),
+            event=config.event or _get_event_service_factory(),
             event_callback=config.event_callback
             or _get_event_callback_context_factory(),
             event_callback_result=config.event_callback_result
@@ -58,12 +58,12 @@ def get_dependency_resolver():
     return _dependency_resolver
 
 
-def _get_event_context_factory():
-    from openhands_server.event.filesystem_event_context import (
-        FilesystemEventContextResolver,
+def _get_event_service_factory():
+    from openhands_server.event.filesystem_event_service import (
+        FilesystemEventServiceResolver,
     )
 
-    return FilesystemEventContextResolver()
+    return FilesystemEventServiceResolver()
 
 
 def _get_event_callback_context_factory():
