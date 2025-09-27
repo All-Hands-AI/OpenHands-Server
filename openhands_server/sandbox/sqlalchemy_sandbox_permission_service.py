@@ -1,7 +1,8 @@
-"""SQLAlchemy implementation of SandboxPermissionContext."""
+"""SQLAlchemy implementation of SandboxPermissionService."""
 
 from __future__ import annotations
 
+import logging
 from typing import Callable
 from uuid import UUID
 
@@ -10,8 +11,9 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.sandbox.sandbox_permission_context import (
-    SandboxPermissionContext,
+from openhands_server.sandbox.sandbox_permission_service import (
+    SandboxPermissionService,
+    SandboxPermissionServiceResolver,
 )
 from openhands_server.sandbox.sandbox_permission_db_models import (
     StoredSandboxPermission,
@@ -22,12 +24,15 @@ from openhands_server.sandbox.sandbox_permission_models import (
 )
 
 
-class SQLAlchemySandboxPermissionContext(SandboxPermissionContext):
-    """SQLAlchemy implementation of SandboxPermissionContext."""
+_logger = logging.getLogger(__name__)
+
+
+class SQLAlchemySandboxPermissionService(SandboxPermissionService):
+    """SQLAlchemy implementation of SandboxPermissionService."""
 
     def __init__(self, session: AsyncSession, current_user_id: str | None = None):
         """
-        Initialize the SQLAlchemy sandbox permission context.
+        Initialize the SQLAlchemy sandbox permission service.
 
         Args:
             session: The async SQLAlchemy session
@@ -224,8 +229,8 @@ class SQLAlchemySandboxPermissionContext(SandboxPermissionContext):
         ]
 
 
-class SQLAlchemySandboxPermissionContextResolver:
-    """Resolver for SQLAlchemy-based sandbox permission context."""
+class SQLAlchemySandboxPermissionServiceResolver(SandboxPermissionServiceResolver):
+    """Resolver for SQLAlchemy-based sandbox permission service."""
 
     def __init__(self, current_user_id: str | None = None):
         """
@@ -236,10 +241,26 @@ class SQLAlchemySandboxPermissionContextResolver:
         """
         self.current_user_id = current_user_id
 
-    def get_resolver(self) -> Callable:
-        return self.resolve
+    def get_unsecured_resolver(self) -> Callable:
+        """Get a resolver for unsecured access (no user filtering)."""
+        return self._resolve_unsecured
 
-    def resolve(
+    def get_resolver_for_user(self) -> Callable:
+        """Get a resolver for user-specific access with security filtering."""
+        _logger.warning(
+            "Using secured sandbox permission service resolver. "
+            "For the moment, this returns the unsecured resolver."
+        )
+        return self._resolve_unsecured
+
+    def _resolve_unsecured(
         self, session: AsyncSession = Depends(async_session_dependency)
-    ) -> SandboxPermissionContext:
-        return SQLAlchemySandboxPermissionContext(session, self.current_user_id)
+    ) -> SandboxPermissionService:
+        """Resolve an unsecured sandbox permission service."""
+        return SQLAlchemySandboxPermissionService(session, None)
+
+    def _resolve_secured(
+        self, session: AsyncSession = Depends(async_session_dependency)
+    ) -> SandboxPermissionService:
+        """Resolve a secured sandbox permission service (for future use)."""
+        return SQLAlchemySandboxPermissionService(session, self.current_user_id)
