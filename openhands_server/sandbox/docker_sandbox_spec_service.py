@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable
@@ -5,18 +6,19 @@ from typing import Callable
 import docker
 from docker.errors import APIError, NotFound
 
-from openhands_server.sandbox.sandbox_spec_context import (
-    SandboxSpecContext,
-    SandboxSpecContextResolver,
-)
 from openhands_server.sandbox.sandbox_spec_models import (
     SandboxSpecInfo,
     SandboxSpecInfoPage,
+)
+from openhands_server.sandbox.sandbox_spec_service import (
+    SandboxSpecService,
+    SandboxSpecServiceResolver,
 )
 from openhands_server.utils.date_utils import utc_now
 
 
 _global_docker_client: docker.DockerClient | None = None
+_logger = logging.getLogger(__name__)
 
 
 def get_docker_client() -> docker.DockerClient:
@@ -27,9 +29,9 @@ def get_docker_client() -> docker.DockerClient:
 
 
 @dataclass
-class DockerSandboxSpecContext(SandboxSpecContext):
+class DockerSandboxSpecService(SandboxSpecService):
     """
-    Sandbox spec context for docker images. By default, all images with the
+    Sandbox spec service for docker images. By default, all images with the
     repository given are loaded and returned (They may have different tag) The
     combination of the repository and tag is treated as the id in the resulting image.
     """
@@ -115,19 +117,24 @@ class DockerSandboxSpecContext(SandboxSpecContext):
             # Return empty page if there's an API error
             return SandboxSpecInfoPage(items=[], next_page_id=None)
 
-    async def get_sandbox_spec(self, id: str) -> SandboxSpecInfo | None:
+    async def get_sandbox_spec(self, sandbox_spec_id: str) -> SandboxSpecInfo | None:
         """Get a single runtime image info by ID"""
         try:
             # Try to get the image by ID (which should be repository:tag)
-            image = self.docker_client.images.get(id)
+            image = self.docker_client.images.get(sandbox_spec_id)
             return self._docker_image_to_sandbox_specs(image)
         except (NotFound, APIError):
             return None
 
 
-class DockerSandboxSpecContextResolver(SandboxSpecContextResolver):
-    def get_resolver(self) -> Callable:
+class DockerSandboxSpecServiceResolver(SandboxSpecServiceResolver):
+    def get_unsecured_resolver(self) -> Callable:
         return self.resolve
 
-    def resolve(self) -> SandboxSpecContext:
-        return DockerSandboxSpecContext()
+    def get_resolver_for_user(self) -> Callable:
+        # Docker sandboxes are designed for a single user and
+        # don't have security constraints
+        return self.resolve
+
+    def resolve(self) -> SandboxSpecService:
+        return DockerSandboxSpecService()

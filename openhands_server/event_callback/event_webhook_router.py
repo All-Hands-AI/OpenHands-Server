@@ -29,7 +29,7 @@ async def on_conversation_update(
 
     # Check that the session api key is valid for the sandbox
     sandbox_info = await sandbox_context.get_sandbox(sandbox_id)
-    if sandbox_info.session_api_key != session_api_key:
+    if sandbox_info is None or sandbox_info.session_api_key != session_api_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
 
     # TODO: Make sure that we have an entry saved for the conversation info.
@@ -50,7 +50,7 @@ async def on_event(
 
     # Check that the session api key is valid for the sandbox
     sandbox_info = await sandbox_context.get_sandbox(sandbox_id)
-    if sandbox_info.session_api_key != session_api_key:
+    if sandbox_info is None or sandbox_info.session_api_key != session_api_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
 
     # TODO: Load the sandbox and make sure that the session api key matches

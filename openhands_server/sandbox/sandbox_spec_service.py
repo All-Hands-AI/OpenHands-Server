@@ -9,11 +9,11 @@ from openhands_server.sandbox.sandbox_spec_models import (
 )
 
 
-class SandboxSpecContext(ABC):
+class SandboxSpecService(ABC):
     """
-    Sandbox specs available to the current user. At present this is read only. The
+    Service for managing Sandbox specs. At present this is read only. The
     plan is that later this class will allow building and deleting sandbox specs and
-    limiting access of images by user and group. It would also be nice to be able to
+    limiting access by user and group. It would also be nice to be able to
     set the desired number of warm sandboxes for a spec and scale this up and down.
     """
 
@@ -24,7 +24,7 @@ class SandboxSpecContext(ABC):
         """Search for sandbox specs"""
 
     @abstractmethod
-    async def get_sandbox_spec(self, id: str) -> SandboxSpecInfo | None:
+    async def get_sandbox_spec(self, sandbox_spec_id: str) -> SandboxSpecInfo | None:
         """Get a single sandbox spec, returning None if not found."""
 
     async def get_default_sandbox_spec(self) -> SandboxSpecInfo:
@@ -48,16 +48,23 @@ class SandboxSpecContext(ABC):
     # Lifecycle methods
 
     async def __aenter__(self):
-        """Start using this sandbox spec context"""
+        """Start using this sandbox spec service"""
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
-        """Stop using this sandbox spec context"""
+        """Stop using this sandbox spec service"""
 
 
-class SandboxSpecContextResolver(DiscriminatedUnionMixin, ABC):
+class SandboxSpecServiceResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    def get_resolver(self) -> Callable:
+    def get_unsecured_resolver(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of sandbox spec context.
+        Get a resolver which may be used to resolve an instance of sandbox spec service.
+        """
+
+    @abstractmethod
+    def get_resolver_for_user(self) -> Callable:
+        """
+        Get a resolver which may be used to resolve an instance of sandbox spec service
+        limited to the current user.
         """
