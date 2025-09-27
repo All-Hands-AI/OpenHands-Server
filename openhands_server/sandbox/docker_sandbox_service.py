@@ -31,6 +31,8 @@ WEBHOOK_CALLBACK_VARIABLE = "OH_WEBHOOKS_0_BASE_URL"
 
 
 class VolumeMount(BaseModel):
+    """Mounted volume within the container"""
+
     host_path: str
     container_path: str
     mode: str = "rw"
