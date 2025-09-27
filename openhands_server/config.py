@@ -61,7 +61,6 @@ def _get_default_workspace_dir() -> Path:
     return Path(workspace_dir)
 
 
-
 class EncryptionKey(BaseModel):
     """Configuration for an encryption key."""
 
@@ -145,7 +144,7 @@ class AppServerConfig(OpenHandsModel):
     workspace_dir: Path = Field(default_factory=_get_default_workspace_dir)
     web_url: str = Field(
         default="http://localhost:3000",
-        description="The URL where OpenHands is running (e.g., http://localhost:3000)"
+        description="The URL where OpenHands is running (e.g., http://localhost:3000)",
     )
     event: EventContextResolver | None = None
     event_callback: EventCallbackContextResolver | None = None
