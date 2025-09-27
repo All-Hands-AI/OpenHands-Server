@@ -1636,7 +1636,7 @@ wheels = [
 [[package]]
 name = "openhands-agent-server"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=3a1eb8d04aa820541041566add29ecc52331ae64#3a1eb8d04aa820541041566add29ecc52331ae64" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=f68681249d52297754ed6bd714c0c9102b834b39#f68681249d52297754ed6bd714c0c9102b834b39" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "alembic" },
@@ -1651,7 +1651,7 @@ dependencies = [
 [[package]]
 name = "openhands-sdk"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=3a1eb8d04aa820541041566add29ecc52331ae64#3a1eb8d04aa820541041566add29ecc52331ae64" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=f68681249d52297754ed6bd714c0c9102b834b39#f68681249d52297754ed6bd714c0c9102b834b39" }
 dependencies = [
     { name = "fastmcp" },
     { name = "litellm" },
@@ -1680,6 +1680,7 @@ dependencies = [
     { name = "openhands-agent-server" },
     { name = "openhands-sdk" },
     { name = "openhands-tools" },
+    { name = "pybase62" },
     { name = "pydantic" },
     { name = "pyjwt" },
     { name = "python-jose", extra = ["cryptography"] },
@@ -1720,7 +1721,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.13" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=23" },
     { name = "cloud-sql-python-connector", specifier = ">=1.18.4" },
-    { name = "cryptography", specifier = ">=41.0.0" },
+    { name = "cryptography", specifier = ">=41" },
     { name = "docker", specifier = ">=7.1,<8" },
     { name = "fastapi", specifier = ">=0.104" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=6" },
@@ -1731,15 +1732,16 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.25" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1" },
-    { name = "openhands-agent-server", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=3a1eb8d04aa820541041566add29ecc52331ae64" },
-    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=3a1eb8d04aa820541041566add29ecc52331ae64" },
-    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=3a1eb8d04aa820541041566add29ecc52331ae64" },
+    { name = "openhands-agent-server", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=f68681249d52297754ed6bd714c0c9102b834b39" },
+    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=f68681249d52297754ed6bd714c0c9102b834b39" },
+    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=f68681249d52297754ed6bd714c0c9102b834b39" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
+    { name = "pybase62", specifier = ">=1.0.0" },
     { name = "pydantic", specifier = ">=2" },
-    { name = "pyjwt", specifier = ">=2.8.0" },
+    { name = "pyjwt", specifier = ">=2.8" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21" },
-    { name = "python-jose", extras = ["cryptography"], specifier = ">=3.3.0" },
+    { name = "python-jose", extras = ["cryptography"], specifier = ">=3.3" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11.8" },
     { name = "sqlalchemy", specifier = ">=2" },
     { name = "uvicorn", specifier = ">=0.31.1" },
@@ -1763,7 +1765,7 @@ dev = [
 [[package]]
 name = "openhands-tools"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=3a1eb8d04aa820541041566add29ecc52331ae64#3a1eb8d04aa820541041566add29ecc52331ae64" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=f68681249d52297754ed6bd714c0c9102b834b39#f68681249d52297754ed6bd714c0c9102b834b39" }
 dependencies = [
     { name = "bashlex" },
     { name = "binaryornot" },
@@ -2066,6 +2068,14 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e9/e6/78ebbb10a8c8e4b61a59249394a4a594c1a7af95593dc933a349c8d00964/pyasn1_modules-0.4.2.tar.gz", hash = "sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6", size = 307892, upload-time = "2025-03-28T02:41:22.17Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/47/8d/d529b5d697919ba8c11ad626e835d4039be708a35b0d22de83a269a6682c/pyasn1_modules-0.4.2-py3-none-any.whl", hash = "sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a", size = 181259, upload-time = "2025-03-28T02:41:19.028Z" },
+]
+
+[[package]]
+name = "pybase62"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/07/8fe498201daece90af1725cf48d5de9d1a87ea8d457df52c986ef926ff33/pybase62-1.0.0-py3-none-any.whl", hash = "sha256:60539ad956ec9e9de091bc7ae88c9550bc2fa17f503050cf34d021b75e73cb27", size = 4913, upload-time = "2023-05-29T08:43:05.677Z" },
 ]
 
 [[package]]

@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Callable
 from uuid import UUID, uuid4
 
+import base62
 import docker
 from docker.errors import APIError, NotFound
 from fastapi import Depends
@@ -71,7 +72,7 @@ class DockerSandboxContext(SandboxContext):
 
     def _container_name_from_id(self, container_id: UUID) -> str:
         """Generate container name from UUID"""
-        return f"{self.container_name_prefix}{container_id.hex}"
+        return f"{self.container_name_prefix}{base62.encodebytes(container_id.bytes)}"
 
     def _sandbox_id_from_container_name(self, container_name: str) -> UUID | None:
         """Extract runtime ID from container name"""
@@ -80,7 +81,7 @@ class DockerSandboxContext(SandboxContext):
 
         uuid_str = container_name[len(self.container_name_prefix) :]
         try:
-            return UUID(uuid_str)
+            return UUID(int=base62.decode(uuid_str))
         except ValueError:
             return None
 
@@ -237,7 +238,7 @@ class DockerSandboxContext(SandboxContext):
         # Prepare environment variables
         env_vars = sandbox_spec.initial_env.copy()
 
-        session_api_key = os.urandom(32).hex()
+        session_api_key = base62.encodebytes(os.urandom(32))
         env_vars[SESSION_API_KEY_VARIABLE] = session_api_key
 
         # Prepare port mappings and add port environment variables

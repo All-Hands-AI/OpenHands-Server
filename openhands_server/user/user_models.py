@@ -1,7 +1,8 @@
+import os
 from datetime import datetime
 from enum import Enum
-from uuid import uuid4
 
+import base62
 from pydantic import BaseModel, Field
 
 from openhands_server.utils.date_utils import utc_now
@@ -25,7 +26,7 @@ class CreateUserRequest(BaseModel):
 
 
 class UpdateUserRequest(CreateUserRequest):
-    id: str = Field(default_factory=lambda: uuid4().hex)
+    id: str = Field(default_factory=lambda: base62.encodebytes(os.urandom(16)))
 
 
 class UserInfo(UpdateUserRequest):

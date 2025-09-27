@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import Callable
 
+import base62
 from fastapi import Depends
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -170,7 +171,7 @@ class SQLAlchemyUserContext(UserContext):
         from uuid import uuid4
 
         user_info = UserInfo(
-            id=uuid4().hex,
+            id=base62.encodebytes(uuid4().bytes),
             name=request.name,
             avatar_url=request.avatar_url,
             language=request.language,

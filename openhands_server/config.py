@@ -1,11 +1,19 @@
-import json
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, SecretStr
+import base62
+from pydantic import (
+    BaseModel,
+    Field,
+    SecretStr,
+    TypeAdapter,
+    field_serializer,
+)
 
+from openhands.agent_server.env_parser import from_env
 from openhands.sdk.utils.models import OpenHandsModel
 from openhands_server.event.event_context import EventContextResolver
 from openhands_server.event_callback.event_callback_context import (
@@ -20,20 +28,17 @@ from openhands_server.sandboxed_conversation.sandboxed_conversation_context impo
     SandboxedConversationContextResolver,
 )
 from openhands_server.user.user_context import UserContextResolver
+from openhands_server.utils.date_utils import utc_now
 
 
 # Environment variable constants
-CONFIG_FILE_PATH_ENV = "OPENHANDS_APP_SERVER_CONFIG_PATH"
 GCP_REGION = os.environ.get("GCP_REGION")
 
-# Default config file location
-DEFAULT_CONFIG_FILE_PATH = "workspace/openhands_app_server_config.json"
 
-
-def _get_db_url() -> str:
+def _get_db_url() -> SecretStr:
     url = os.environ.get("DB_URL")
     if url:
-        return url
+        return SecretStr(url)
 
     # Legacy fallback
     host = os.getenv("DB_HOST")
@@ -42,10 +47,18 @@ def _get_db_url() -> str:
     user = os.getenv("DB_USER", "postgres")
     password = os.getenv("DB_PASS", "postgres")
     if host:
-        return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{name}"
+        return SecretStr(f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{name}")
 
     # Default to sqlite
-    return "sqlite+aiosqlite:///./openhands.db"
+    return SecretStr("sqlite+aiosqlite:///./openhands.db")
+
+
+def _get_default_workspace_dir() -> Path:
+    workspace_dir = os.getenv("OH_WORKSPACE_DIR")
+    if not workspace_dir:
+        # TODO: I suppose Could also default this to ~home/.openhands
+        workspace_dir = "workspace"
+    return Path(workspace_dir)
 
 
 class EncryptionKey(BaseModel):
@@ -55,21 +68,46 @@ class EncryptionKey(BaseModel):
     key: SecretStr
     active: bool = True
     notes: str | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=utc_now)
+
+    @field_serializer("key")
+    def serialize_key(self, key: SecretStr, info: Any):
+        """Conditionally serialize the key based on context."""
+        if info.context and info.context.get("reveal_secrets"):
+            return key.get_secret_value()
+        return str(key)  # Returns '**********' by default
 
 
 def _get_default_encryption_keys() -> list[EncryptionKey]:
     """Generate default encryption keys."""
-    master_key = (
-        os.getenv("JWT_SECRET") or os.getenv("MASTER_KEY") or os.urandom(32).hex()
-    )
-    return [
+    master_key = os.getenv("JWT_SECRET")
+    if master_key:
+        return [
+            EncryptionKey(
+                key=SecretStr(master_key),
+                active=True,
+                notes="jwt secret master key",
+            )
+        ]
+
+    key_file = _get_default_workspace_dir() / ".keys"
+    type_adapter = TypeAdapter(list[EncryptionKey])
+    if key_file.exists():
+        encryption_keys = type_adapter.validate_json(key_file.read_text())
+        return encryption_keys
+
+    encryption_keys = [
         EncryptionKey(
-            key=SecretStr(master_key),
+            key=SecretStr(base62.encodebytes(os.urandom(32))),
             active=True,
-            notes="Default master key",
+            notes="generated master key",
         )
     ]
+    json_data = type_adapter.dump_json(
+        encryption_keys, context={"expose_secrets": True}
+    )
+    key_file.write_bytes(json_data)
+    return encryption_keys
 
 
 class GCPConfig(BaseModel):
@@ -80,20 +118,30 @@ class GCPConfig(BaseModel):
 class DatabaseConfig(BaseModel):
     """Configuration specific to the database"""
 
-    url: str = _get_db_url()
+    url: SecretStr = _get_db_url()
     name: str | None = os.getenv("DB_NAME")
     user: str | None = os.getenv("DB_USER")
-    password: str | None = os.getenv("DB_PASSWORD")
+    password: SecretStr | None = (
+        SecretStr(os.environ["DB_PASSWORD"]) if os.getenv("DB_PASSWORD") else None
+    )
     echo: bool = False
     gcp_db_instance: str | None = os.getenv("GCP_DB_INSTANCE")
     pool_size: int = int(os.environ.get("DB_POOL_SIZE", "25"))
     max_overflow: int = int(os.environ.get("DB_MAX_OVERFLOW", "10"))
+
+    @field_serializer("url", "password")
+    def serialize_key(self, value: SecretStr, info: Any):
+        """Conditionally serialize the key based on context."""
+        if info.context and info.context.get("reveal_secrets"):
+            return value.get_secret_value()
+        return str(value)  # Returns '**********' by default
 
 
 class AppServerConfig(OpenHandsModel):
     encryption_keys: list[EncryptionKey] = Field(
         default_factory=_get_default_encryption_keys
     )
+    workspace_dir: Path = Field(default_factory=_get_default_workspace_dir)
     event: EventContextResolver | None = None
     event_callback: EventCallbackContextResolver | None = None
     event_callback_result: EventCallbackResultContextResolver | None = None
@@ -119,35 +167,7 @@ def get_global_config() -> AppServerConfig:
     """Get the default local server config shared across the server"""
     global _global_config
     if _global_config is None:
-        # Get config file path from environment variable or use default
-        config_file_path = os.getenv(CONFIG_FILE_PATH_ENV, DEFAULT_CONFIG_FILE_PATH)
-        config_path = Path(config_file_path)
+        # Load configuration from environment...
+        _global_config = from_env(AppServerConfig, "OH")  # type: ignore
 
-        # Load configuration from JSON file
-        try:
-            if config_path.exists():
-                print(f"⚙️  Loading OpenHands App Server Config from {config_path}")
-                _global_config = AppServerConfig.model_validate_json(
-                    config_path.read_text()
-                )
-                return _global_config
-        except Exception as exc:
-            print(f"⚠️  Error OpenHands App Server Config: {exc}")
-
-        print("⚙️  Generating Default OpenHands App Server Config")
-        _global_config = AppServerConfig()
-
-        # Save the config because the encryption keys are required between restarts
-        # We need to explicitly include secret values for persistence
-        config_dict = _global_config.model_dump(mode="json", exclude_defaults=True)
-        # Manually include the secret values for the encryption keys
-        config_dict["encryption_keys"] = [
-            {**key_dict, "key": key.key.get_secret_value()}
-            for key, key_dict in zip(
-                _global_config.encryption_keys, config_dict["encryption_keys"]
-            )
-        ]
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        config_path.write_text(json.dumps(config_dict, indent=2))
-
-    return _global_config
+    return _global_config  # type: ignore

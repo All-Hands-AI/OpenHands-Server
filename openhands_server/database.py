@@ -23,11 +23,12 @@ async def async_creator():
     config = get_global_config()
     loop = asyncio.get_running_loop()
     async with Connector(loop=loop) as connector:
+        password = config.database.password
         conn = await connector.connect_async(
             f"{config.gcp.project}:{config.gcp.region}:{config.database.gcp_db_instance}",
             "asyncpg",
             user=config.database.user,
-            password=config.database.password,
+            password=password.get_secret_value() if password else None,
             db=config.database.name,
         )
         return conn
@@ -42,11 +43,12 @@ def _create_async_db_engine():
             connector = Connector()
             gcp = config.gcp
             instance_string = f"{gcp.project}:{gcp.region}:{database.gcp_db_instance}"
+            password = database.password
             return connector.connect(
                 instance_string,
                 "pg8000",
                 user=database.user,
-                password=database.password,
+                password=password.get_secret_value() if password else None,
                 db=database.name,
             )
 
@@ -80,7 +82,7 @@ def _create_async_db_engine():
         )
     else:
         return create_async_engine(
-            database.url,
+            database.url.get_secret_value(),
             pool_size=database.pool_size,
             max_overflow=database.max_overflow,
             pool_pre_ping=True,

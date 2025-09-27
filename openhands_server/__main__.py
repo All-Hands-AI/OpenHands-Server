@@ -26,7 +26,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    print(f"🚀 Starting OpenHands App Server on {args.host}:{args.port}")
+    print(f"🙌 Starting OpenHands App Server on {args.host}:{args.port}")
     print(f"📖 API docs will be available at http://{args.host}:{args.port}/docs")
     print(f"🔄 Auto-reload: {'enabled' if args.reload else 'disabled'}")
     get_global_config()

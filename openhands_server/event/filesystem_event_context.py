@@ -232,10 +232,11 @@ class FilesystemEventContext(EventContext):
 
 
 class FilesystemEventContextResolver(EventContextResolver):
-    events_dir: Path = Path("workspace/events")
-
     def get_resolver(self) -> Callable:
         return self.resolve
 
     def resolve(self) -> EventContext:
-        return FilesystemEventContext(events_dir=self.events_dir)
+        from openhands_server.config import get_global_config
+
+        config = get_global_config()
+        return FilesystemEventContext(events_dir=config.workspace_dir / "events")
