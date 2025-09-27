@@ -22,7 +22,7 @@ from openhands_server.event_callback.event_callback_context import (
 from openhands_server.event_callback.event_callback_result_context import (
     EventCallbackResultContextResolver,
 )
-from openhands_server.sandbox.sandbox_context import SandboxContextResolver
+from openhands_server.sandbox.sandbox_service import SandboxServiceResolver
 from openhands_server.sandbox.sandbox_spec_service import SandboxSpecServiceResolver
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContextResolver,
@@ -154,7 +154,7 @@ class AppServerConfig(OpenHandsModel):
     event: EventContextResolver | None = None
     event_callback: EventCallbackContextResolver | None = None
     event_callback_result: EventCallbackResultContextResolver | None = None
-    sandbox: SandboxContextResolver | None = None
+    sandbox: SandboxServiceResolver | None = None
     sandbox_spec: SandboxSpecServiceResolver | None = None
     sandboxed_conversation: SandboxedConversationContextResolver | None = None
     user: UserContextResolver | None = None
