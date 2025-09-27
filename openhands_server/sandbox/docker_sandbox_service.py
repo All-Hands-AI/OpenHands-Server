@@ -12,15 +12,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from openhands_server.dependency import get_dependency_resolver
 from openhands_server.sandbox.docker_sandbox_spec_service import get_docker_client
-from openhands_server.sandbox.sandbox_service import (
-    SandboxService,
-    SandboxServiceResolver,
-)
 from openhands_server.sandbox.sandbox_errors import SandboxError
 from openhands_server.sandbox.sandbox_models import (
     SandboxInfo,
     SandboxPage,
     SandboxStatus,
+)
+from openhands_server.sandbox.sandbox_service import (
+    SandboxService,
+    SandboxServiceResolver,
 )
 from openhands_server.sandbox.sandbox_spec_service import SandboxSpecService
 from openhands_server.utils.date_utils import utc_now
@@ -31,6 +31,8 @@ WEBHOOK_CALLBACK_VARIABLE = "OH_WEBHOOKS_0_BASE_URL"
 
 
 class VolumeMount(BaseModel):
+    """Mounted volume within the container"""
+
     host_path: str
     container_path: str
     mode: str = "rw"
