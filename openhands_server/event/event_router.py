@@ -14,7 +14,9 @@ from openhands_server.event_callback.event_callback_models import EventKind
 
 
 router = APIRouter(prefix="/events", tags=["Events"])
-event_service_dependency = Depends(get_dependency_resolver().event.get_resolver_for_user())
+event_service_dependency = Depends(
+    get_dependency_resolver().event.get_resolver_for_user()
+)
 
 
 # Read methods
