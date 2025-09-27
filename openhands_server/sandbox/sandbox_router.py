@@ -6,14 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands.agent_server.models import Success
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.sandbox.sandbox_context import (
-    SandboxContext,
+from openhands_server.sandbox.sandbox_service import (
+    SandboxService,
 )
 from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
 
 
 router = APIRouter(prefix="/sandboxes", tags=["Sandbox"])
-sandbox_context_dependency = Depends(get_dependency_resolver().sandbox.get_resolver())
+sandbox_service_dependency = Depends(get_dependency_resolver().sandbox.get_resolver_for_user())
 
 # Read methods
 
@@ -32,12 +32,12 @@ async def search_sandboxes(
         int,
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
-    sandbox_context: SandboxContext = sandbox_context_dependency,
+    sandbox_service: SandboxService = sandbox_service_dependency,
 ) -> SandboxPage:
     """Search / list sandboxes owned by the current user."""
     assert limit > 0
     assert limit <= 100
-    return await sandbox_context.search_sandboxes(
+    return await sandbox_service.search_sandboxes(
         created_by_user_id__eq=created_by_user_id__eq, page_id=page_id, limit=limit
     )
 
@@ -45,10 +45,10 @@ async def search_sandboxes(
 @router.get("/{sandbox_id}", responses={404: {"description": "Item not found"}})
 async def get_sandbox(
     id: str,
-    sandbox_context: SandboxContext = sandbox_context_dependency,
+    sandbox_service: SandboxService = sandbox_service_dependency,
 ) -> SandboxInfo:
     """Get a single sandbox given an id"""
-    sandbox = await sandbox_context.get_sandbox(id)
+    sandbox = await sandbox_service.get_sandbox(id)
     if sandbox is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return sandbox
@@ -57,12 +57,12 @@ async def get_sandbox(
 @router.get("/")
 async def batch_get_sandboxes(
     sandbox_ids: Annotated[list[str], Query()],
-    sandbox_context: SandboxContext = sandbox_context_dependency,
+    sandbox_service: SandboxService = sandbox_service_dependency,
 ) -> list[SandboxInfo | None]:
     """Get a batch of sandboxes given their ids, returning null for any missing
     sandbox."""
     assert len(sandbox_ids) < 100
-    sandboxes = await sandbox_context.batch_get_sandboxes(sandbox_ids)
+    sandboxes = await sandbox_service.batch_get_sandboxes(sandbox_ids)
     return sandboxes
 
 
@@ -72,18 +72,18 @@ async def batch_get_sandboxes(
 @router.post("/")
 async def start_sandbox(
     sandbox_spec_id: str | None = None,
-    sandbox_context: SandboxContext = sandbox_context_dependency,
+    sandbox_service: SandboxService = sandbox_service_dependency,
 ) -> SandboxInfo:
-    info = await sandbox_context.start_sandbox(sandbox_spec_id)
+    info = await sandbox_service.start_sandbox(sandbox_spec_id)
     return info
 
 
 @router.post("/{id}/pause", responses={404: {"description": "Item not found"}})
 async def pause_sandbox(
     sandbox_id: str,
-    sandbox_context: SandboxContext = sandbox_context_dependency,
+    sandbox_service: SandboxService = sandbox_service_dependency,
 ) -> Success:
-    exists = await sandbox_context.pause_sandbox(sandbox_id)
+    exists = await sandbox_service.pause_sandbox(sandbox_id)
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return Success()
@@ -92,9 +92,9 @@ async def pause_sandbox(
 @router.post("/{id}/resume", responses={404: {"description": "Item not found"}})
 async def resume_sandbox(
     sandbox_id: str,
-    sandbox_context: SandboxContext = sandbox_context_dependency,
+    sandbox_service: SandboxService = sandbox_service_dependency,
 ) -> Success:
-    exists = await sandbox_context.resume_sandbox(sandbox_id)
+    exists = await sandbox_service.resume_sandbox(sandbox_id)
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return Success()
@@ -103,9 +103,9 @@ async def resume_sandbox(
 @router.delete("/{id}", responses={404: {"description": "Item not found"}})
 async def delete_sandbox(
     sandbox_id: str,
-    sandbox_context: SandboxContext = sandbox_context_dependency,
+    sandbox_service: SandboxService = sandbox_service_dependency,
 ) -> Success:
-    exists = await sandbox_context.delete_sandbox(sandbox_id)
+    exists = await sandbox_service.delete_sandbox(sandbox_id)
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return Success()
