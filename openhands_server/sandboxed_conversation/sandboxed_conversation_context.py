@@ -68,5 +68,6 @@ class SandboxedConversationContextResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
     def get_resolver(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of sandboxed conversation context.
+        Get a resolver which may be used to resolve an instance of
+        sandboxed conversation context.
         """
