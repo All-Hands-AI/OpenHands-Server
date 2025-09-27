@@ -240,9 +240,7 @@ class FilesystemEventServiceResolver(EventServiceResolver):
         return self.resolve
 
     def get_resolver_for_user(self) -> Callable:
-        _logger.warning(
-            "Using secured event service resolver - returning unsecured resolver for now"
-        )
+        _logger.warning("Using secured event service resolver")
         return self.resolve
 
     def resolve(self) -> EventService:
