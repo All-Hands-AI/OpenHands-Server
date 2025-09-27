@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Callable
@@ -10,8 +11,11 @@ from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.event_callback.event_callback_models import EventKind
 
 
-class EventContext(ABC):
-    """Event Context for getting events"""
+_logger = logging.getLogger(__name__)
+
+
+class EventService(ABC):
+    """Event Service for getting events"""
 
     @abstractmethod
     async def get_event(self, event_id: str) -> EventBase | None:
@@ -50,7 +54,7 @@ class EventContext(ABC):
             *[self.get_event(event_id) for event_id in event_ids]
         )
 
-    async def __aenter__(self) -> "EventContext":
+    async def __aenter__(self) -> "EventService":
         """Start using this service"""
         return self
 
@@ -58,9 +62,16 @@ class EventContext(ABC):
         """Stop using this service"""
 
 
-class EventContextResolver(DiscriminatedUnionMixin, ABC):
+class EventServiceResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    def get_resolver(self) -> Callable:
+    def get_unsecured_resolver(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of event context.
+        Get a resolver which may be used to resolve an instance of event service.
+        """
+
+    @abstractmethod
+    def get_resolver_for_user(self) -> Callable:
+        """
+        Get a resolver which may be used to resolve an instance of event service
+        limited to the current user.
         """
