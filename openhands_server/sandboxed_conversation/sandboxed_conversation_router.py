@@ -6,19 +6,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
-    SandboxedConversationContext,
-)
 from openhands_server.sandboxed_conversation.sandboxed_conversation_models import (
     SandboxedConversationInfo,
     SandboxedConversationPage,
     StartSandboxedConversationRequest,
 )
+from openhands_server.sandboxed_conversation.sandboxed_conversation_service import (
+    SandboxedConversationService,
+)
 
 
 router = APIRouter(prefix="/sandboxed-conversations")
-sandboxed_conversation_context_dependency = Depends(
-    get_dependency_resolver().sandboxed_conversation.get_resolver()
+sandboxed_conversation_service_dependency = Depends(
+    get_dependency_resolver().sandboxed_conversation.get_resolver_for_user()
 )
 
 # Read methods
@@ -36,14 +36,14 @@ async def search_sandboxed_conversations(
             title="The max number of results in the page", gt=0, lte=100, default=100
         ),
     ] = 100,
-    sandboxed_conversation_context: SandboxedConversationContext = (
-        sandboxed_conversation_context_dependency
+    sandboxed_conversation_service: SandboxedConversationService = (
+        sandboxed_conversation_service_dependency
     ),
 ) -> SandboxedConversationPage:
     """Search / List sandboxed conversations"""
     assert limit > 0
     assert limit <= 100
-    return await sandboxed_conversation_context.search_sandboxed_conversations(
+    return await sandboxed_conversation_service.search_sandboxed_conversations(
         page_id, limit
     )
 
@@ -51,13 +51,13 @@ async def search_sandboxed_conversations(
 @router.get("/{id}", responses={404: {"description": "Item not found"}})
 async def get_sandboxed_conversation(
     id: UUID,
-    sandboxed_conversation_context: SandboxedConversationContext = (
-        sandboxed_conversation_context_dependency
+    sandboxed_conversation_service: SandboxedConversationService = (
+        sandboxed_conversation_service_dependency
     ),
 ) -> SandboxedConversationInfo:
     """Get a sandboxed conversation given an id"""
     sandboxed_conversation = (
-        await sandboxed_conversation_context.get_sandboxed_conversation(id)
+        await sandboxed_conversation_service.get_sandboxed_conversation(id)
     )
     if sandboxed_conversation is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
@@ -67,15 +67,15 @@ async def get_sandboxed_conversation(
 @router.get("/")
 async def batch_get_sandboxed_conversations(
     ids: Annotated[list[UUID], Query()],
-    sandboxed_conversation_context: SandboxedConversationContext = (
-        sandboxed_conversation_context_dependency
+    sandboxed_conversation_service: SandboxedConversationService = (
+        sandboxed_conversation_service_dependency
     ),
 ) -> list[SandboxedConversationInfo | None]:
     """Get a batch of sandboxed conversations given their ids, returning null for
     any missing spec."""
     assert len(ids) < 100
     sandboxed_conversations = (
-        await sandboxed_conversation_context.batch_get_sandboxed_conversations(ids)
+        await sandboxed_conversation_service.batch_get_sandboxed_conversations(ids)
     )
     return sandboxed_conversations
 
@@ -83,8 +83,8 @@ async def batch_get_sandboxed_conversations(
 @router.post("/")
 async def start_sandboxed_conversation(
     request: StartSandboxedConversationRequest,
-    sandboxed_conversation_context: SandboxedConversationContext = (
-        sandboxed_conversation_context_dependency
+    sandboxed_conversation_service: SandboxedConversationService = (
+        sandboxed_conversation_service_dependency
     ),
 ) -> SandboxedConversationInfo:
-    return await sandboxed_conversation_context.start_sandboxed_conversation(request)
+    return await sandboxed_conversation_service.start_sandboxed_conversation(request)

@@ -1,4 +1,4 @@
-"""SQLAlchemy implementation of UserContext.
+"""SQLAlchemy implementation of UserService.
 
 This implementation provides CRUD operations for users with the following features:
 - Permission-based access control (regular users can only see/modify themselves)
@@ -8,8 +8,8 @@ This implementation provides CRUD operations for users with the following featur
 - Full async/await support using SQLAlchemy async sessions
 
 Key components:
-- SQLAlchemyUserContext: Main context class implementing all CRUD operations
-- SQLAlchemyUserContextResolver: Dependency injection resolver for FastAPI
+- SQLAlchemyUserService: Main service class implementing all CRUD operations
+- SQLAlchemyUserServiceResolver: Dependency injection resolver for FastAPI
 - StoredUser: Database model with proper Pydantic conversion methods
 """
 
@@ -23,7 +23,6 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.user.user_context import UserContext, UserContextResolver
 from openhands_server.user.user_db_models import StoredUser
 from openhands_server.user.user_models import (
     CreateUserRequest,
@@ -32,15 +31,16 @@ from openhands_server.user.user_models import (
     UserInfoPage,
     UserScope,
 )
+from openhands_server.user.user_service import UserService, UserServiceResolver
 from openhands_server.utils.date_utils import utc_now
 
 
-class SQLAlchemyUserContext(UserContext):
-    """SQLAlchemy implementation of UserContext."""
+class SQLAlchemyUserService(UserService):
+    """SQLAlchemy implementation of UserService."""
 
     def __init__(self, session: AsyncSession, current_user_id: str | None = None):
         """
-        Initialize the SQLAlchemy user context.
+        Initialize the SQLAlchemy user service.
 
         Args:
             session: The async SQLAlchemy session
@@ -285,13 +285,16 @@ class SQLAlchemyUserContext(UserContext):
         return result.scalar_one_or_none()
 
 
-class SQLAlchemyUserContextResolver(UserContextResolver):
+class SQLAlchemyUserServiceResolver(UserServiceResolver):
     current_user_id: str | None = None
 
-    def get_resolver(self) -> Callable:
+    def get_unsecured_resolver(self) -> Callable:
+        return self.resolve
+
+    def get_resolver_for_user(self) -> Callable:
         return self.resolve
 
     def resolve(
         self, session: AsyncSession = Depends(async_session_dependency)
-    ) -> UserContext:
-        return SQLAlchemyUserContext(session, self.current_user_id)
+    ) -> UserService:
+        return SQLAlchemyUserService(session, self.current_user_id)

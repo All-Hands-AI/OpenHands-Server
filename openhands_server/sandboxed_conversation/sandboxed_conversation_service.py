@@ -11,9 +11,9 @@ from openhands_server.sandboxed_conversation.sandboxed_conversation_models impor
 )
 
 
-class SandboxedConversationContext(ABC):
+class SandboxedConversationService(ABC):
     """
-    Context for accessing conversations running in sandboxes to which the user has
+    Service for accessing conversations running in sandboxes to which the user has
     access
     """
 
@@ -64,10 +64,16 @@ class SandboxedConversationContext(ABC):
         """Stop using this sandbox context"""
 
 
-class SandboxedConversationContextResolver(DiscriminatedUnionMixin, ABC):
+class SandboxedConversationServiceResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    def get_resolver(self) -> Callable:
+    def get_unsecured_resolver(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of
-        sandboxed conversation context.
+        Get a resolver which may be used to resolve an instance of sandbox spec service.
+        """
+
+    @abstractmethod
+    def get_resolver_for_user(self) -> Callable:
+        """
+        Get a resolver which may be used to resolve an instance of sandbox spec service
+        limited to the current user.
         """
