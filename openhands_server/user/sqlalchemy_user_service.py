@@ -23,7 +23,6 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.user.user_service import UserService, UserServiceResolver
 from openhands_server.user.user_db_models import StoredUser
 from openhands_server.user.user_models import (
     CreateUserRequest,
@@ -32,6 +31,7 @@ from openhands_server.user.user_models import (
     UserInfoPage,
     UserScope,
 )
+from openhands_server.user.user_service import UserService, UserServiceResolver
 from openhands_server.utils.date_utils import utc_now
 
 
@@ -290,8 +290,11 @@ class SQLAlchemyUserServiceResolver(UserServiceResolver):
 
     def get_unsecured_resolver(self) -> Callable:
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.warning("Using unsecured user service resolver - returning unsecured resolver")
+        logger.warning(
+            "Using unsecured user service resolver - returning unsecured resolver"
+        )
         return self.resolve
 
     def get_resolver_for_user(self) -> Callable:

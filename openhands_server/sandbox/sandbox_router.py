@@ -6,14 +6,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands.agent_server.models import Success
 from openhands_server.dependency import get_dependency_resolver
+from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
 from openhands_server.sandbox.sandbox_service import (
     SandboxService,
 )
-from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
 
 
 router = APIRouter(prefix="/sandboxes", tags=["Sandbox"])
-sandbox_service_dependency = Depends(get_dependency_resolver().sandbox.get_resolver_for_user())
+sandbox_service_dependency = Depends(
+    get_dependency_resolver().sandbox.get_resolver_for_user()
+)
 
 # Read methods
 

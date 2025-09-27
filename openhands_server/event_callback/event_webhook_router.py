@@ -10,7 +10,9 @@ from openhands_server.sandbox.sandbox_service import SandboxService
 
 
 router = APIRouter(prefix="/event-webhooks", tags=["Event Callbacks"])
-sandbox_service_dependency = Depends(get_dependency_resolver().sandbox.get_unsecured_resolver())
+sandbox_service_dependency = Depends(
+    get_dependency_resolver().sandbox.get_unsecured_resolver()
+)
 
 # TODO: I think we need a sandbox service (outside the context of the user)
 #       where we can just load what we need

@@ -6,17 +6,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands_server.dependency import get_dependency_resolver
 from openhands_server.user.models import Success
-from openhands_server.user.user_service import UserService
 from openhands_server.user.user_models import (
     CreateUserRequest,
     UpdateUserRequest,
     UserInfo,
     UserInfoPage,
 )
+from openhands_server.user.user_service import UserService
 
 
 router = APIRouter(prefix="/users", tags=["User"])
-user_service_dependency = Depends(get_dependency_resolver().user.get_resolver_for_user())
+user_service_dependency = Depends(
+    get_dependency_resolver().user.get_resolver_for_user()
+)
 
 # Read methods
 
