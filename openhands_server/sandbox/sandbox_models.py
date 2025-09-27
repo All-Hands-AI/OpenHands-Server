@@ -21,6 +21,11 @@ class ExposedUrl(BaseModel):
     url: str
 
 
+# Standard names
+AGENT_SERVER = "AGENT_SERVER"
+VSCODE = "VSCODE"
+
+
 class SandboxInfo(BaseModel):
     """Information about a sandbox"""
 
@@ -28,12 +33,6 @@ class SandboxInfo(BaseModel):
     created_by_user_id: str
     sandbox_spec_id: str
     status: SandboxStatus
-    url: str | None = Field(
-        description=(
-            "URL to access sandbox. Sandboxes with a status STARTING / PAUSED / "
-            "DELETED / ERROR will not have a url"
-        )
-    )
     session_api_key: str | None = Field(
         description=(
             "Key to access sandbox, to be added as an `X-Session-API-Key` header "
@@ -42,9 +41,13 @@ class SandboxInfo(BaseModel):
             "the session_api_key will be None."
         )
     )
-    exposed_urls: list[ExposedUrl] = Field(
+    exposed_urls: list[ExposedUrl] | None = Field(
         default_factory=list,
-        description="URLs exposed by the sandbox (App server, Vscode, etc...)",
+        description=(
+            "URLs exposed by the sandbox (App server, Vscode, etc...)"
+            "Sandboxes with a status STARTING / PAUSED / DELETED / ERROR may "
+            "not return urls."
+        ),
     )
     created_at: datetime = Field(default_factory=utc_now)
 

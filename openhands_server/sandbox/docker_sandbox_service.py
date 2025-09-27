@@ -14,6 +14,9 @@ from openhands_server.dependency import get_dependency_resolver
 from openhands_server.sandbox.docker_sandbox_spec_service import get_docker_client
 from openhands_server.sandbox.sandbox_errors import SandboxError
 from openhands_server.sandbox.sandbox_models import (
+    AGENT_SERVER,
+    VSCODE,
+    ExposedUrl,
     SandboxInfo,
     SandboxPage,
     SandboxStatus,
@@ -116,18 +119,35 @@ class DockerSandboxService(SandboxService):
             created_at = utc_now()
 
         # Get URL and session key for running containers
-        url = None
+        exposed_urls = None
         session_api_key = None
 
         if status == SandboxStatus.RUNNING:
             # Get the first exposed port mapping
+            exposed_urls = []
             port_bindings = container.attrs.get("NetworkSettings", {}).get("Ports", {})
             if port_bindings:
                 for container_port, host_bindings in port_bindings.items():
                     if host_bindings:
                         host_port = host_bindings[0]["HostPort"]
-                        url = self.container_url_pattern.format(port=host_port)
-                        break
+                        exposed_port = next(
+                            (
+                                exposed_port
+                                for exposed_port in self.exposed_ports
+                                if container_port
+                                == f"{exposed_port.container_port}/tcp"
+                            ),
+                            None,
+                        )
+                        if exposed_port:
+                            exposed_urls.append(
+                                ExposedUrl(
+                                    name=exposed_port.name,
+                                    url=self.container_url_pattern.format(
+                                        port=host_port
+                                    ),
+                                )
+                            )
 
             # Get session API key
             env = self._get_container_env_vars(container)
@@ -138,8 +158,8 @@ class DockerSandboxService(SandboxService):
             created_by_user_id=created_by_user_id,
             sandbox_spec_id=sandbox_spec_id,
             status=status,
-            url=url,
             session_api_key=session_api_key,
+            exposed_urls=exposed_urls,
             created_at=created_at,
         )
 
@@ -339,14 +359,14 @@ class DockerSandboxServiceResolver(SandboxServiceResolver):
     exposed_ports: list[ExposedPort] = Field(
         default_factory=lambda: [
             ExposedPort(
-                name="AGENT_SERVER_PORT",
+                name=AGENT_SERVER,
                 description=(
                     "The port on which the agent server runs within the container"
                 ),
                 container_port=8000,
             ),
             ExposedPort(
-                name="VSCODE_PORT",
+                name=VSCODE,
                 description=(
                     "The port on which the VSCode server runs within the container"
                 ),
@@ -355,15 +375,12 @@ class DockerSandboxServiceResolver(SandboxServiceResolver):
         ]
     )
 
-    def get_unsecured_resolver(self) -> Callable:
-        return self.resolve
-
     def get_resolver_for_user(self) -> Callable:
         # Docker sandboxes are designed for a single user and
         # don't have security constraints
-        return self.resolve
+        return self.get_unsecured_resolver()
 
-    def resolve(self) -> Callable:
+    def get_unsecured_resolver(self) -> Callable:
         sandbox_spec_resolver = (
             get_dependency_resolver().sandbox_spec.get_unsecured_resolver()
         )
