@@ -10,7 +10,7 @@ from openhands_server.event_callback.event_callback_context import (
 from openhands_server.event_callback.event_callback_result_context import (
     EventCallbackResultContextResolver,
 )
-from openhands_server.sandbox.sandbox_context import SandboxContextResolver
+from openhands_server.sandbox.sandbox_service import SandboxServiceResolver
 from openhands_server.sandbox.sandbox_spec_service import SandboxSpecServiceResolver
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContextResolver,
@@ -28,7 +28,7 @@ class DependencyResolver:
     event: EventContextResolver
     event_callback: EventCallbackContextResolver
     event_callback_result: EventCallbackResultContextResolver
-    sandbox: SandboxContextResolver
+    sandbox: SandboxServiceResolver
     sandbox_spec: SandboxSpecServiceResolver
     sandboxed_conversation: SandboxedConversationContextResolver
     user: UserContextResolver
@@ -49,7 +49,7 @@ def get_dependency_resolver():
             or _get_event_callback_context_factory(),
             event_callback_result=config.event_callback_result
             or _get_event_callback_result_context_factory(),
-            sandbox=config.sandbox or _get_sandbox_context_factory(),
+            sandbox=config.sandbox or _get_sandbox_service_factory(),
             sandbox_spec=config.sandbox_spec or _get_sandbox_spec_service_factory(),
             sandboxed_conversation=config.sandboxed_conversation
             or _get_sandboxed_conversation_context_factory(),
@@ -82,12 +82,12 @@ def _get_event_callback_result_context_factory():
     return ctx.SQLAlchemyEventCallbackResultContextResolver()
 
 
-def _get_sandbox_context_factory():
+def _get_sandbox_service_factory():
     from openhands_server.sandbox import (
-        docker_sandbox_context as ctx,
+        docker_sandbox_service as ctx,
     )
 
-    return ctx.DockerSandboxContextResolver()
+    return ctx.DockerSandboxServiceResolver()
 
 
 def _get_sandbox_spec_service_factory():

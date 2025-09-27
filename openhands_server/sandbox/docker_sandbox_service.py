@@ -12,9 +12,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from openhands_server.dependency import get_dependency_resolver
 from openhands_server.sandbox.docker_sandbox_spec_service import get_docker_client
-from openhands_server.sandbox.sandbox_context import (
-    SandboxContext,
-    SandboxContextResolver,
+from openhands_server.sandbox.sandbox_service import (
+    SandboxService,
+    SandboxServiceResolver,
 )
 from openhands_server.sandbox.sandbox_errors import SandboxError
 from openhands_server.sandbox.sandbox_models import (
@@ -50,7 +50,7 @@ class ExposedPort(BaseModel):
 
 
 @dataclass
-class DockerSandboxContext(SandboxContext):
+class DockerSandboxService(SandboxService):
     sandbox_spec_service: SandboxSpecService
     container_name_prefix: str
     host_port: int
@@ -327,8 +327,8 @@ class DockerSandboxContext(SandboxContext):
             return False
 
 
-class DockerSandboxContextResolver(SandboxContextResolver):
-    """Resolver / Configuration for docker sandbox contexts"""
+class DockerSandboxServiceResolver(SandboxServiceResolver):
+    """Resolver / Configuration for docker sandbox services"""
 
     container_url_pattern: str = "http://localhost:{port}"
     host_port: int = 3000
@@ -353,16 +353,24 @@ class DockerSandboxContextResolver(SandboxContextResolver):
         ]
     )
 
-    def get_resolver(self) -> Callable:
+    def get_unsecured_resolver(self) -> Callable:
+        return self.resolve
+
+    def get_resolver_for_user(self) -> Callable:
+        # Docker sandboxes are designed for a single user and
+        # don't have security constraints
+        return self.resolve
+
+    def resolve(self) -> Callable:
         sandbox_spec_resolver = (
             get_dependency_resolver().sandbox_spec.get_unsecured_resolver()
         )
 
         # Define inline to prevent circular lookup
-        def resolve(
+        def resolve_sandbox_service(
             sandbox_spec_service: SandboxSpecService = Depends(sandbox_spec_resolver),
-        ) -> SandboxContext:
-            return DockerSandboxContext(
+        ) -> SandboxService:
+            return DockerSandboxService(
                 sandbox_spec_service=sandbox_spec_service,
                 container_name_prefix=self.container_name_prefix,
                 host_port=self.host_port,
@@ -371,4 +379,4 @@ class DockerSandboxContextResolver(SandboxContextResolver):
                 exposed_ports=self.exposed_ports,
             )
 
-        return resolve
+        return resolve_sandbox_service

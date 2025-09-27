@@ -6,9 +6,9 @@ from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
 
 
-class SandboxContext(ABC):
+class SandboxService(ABC):
     """
-    Context for accessing sandboxes available to the current user in which
+    Service for accessing sandboxes available to the current user in which
     conversations may be run.
     """
 
@@ -59,16 +59,23 @@ class SandboxContext(ABC):
     # Lifecycle methods
 
     async def __aenter__(self):
-        """Start using this sandbox context"""
+        """Start using this sandbox service"""
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
-        """Stop using this sandbox context"""
+        """Stop using this sandbox service"""
 
 
-class SandboxContextResolver(DiscriminatedUnionMixin, ABC):
+class SandboxServiceResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    def get_resolver(self) -> Callable:
+    def get_unsecured_resolver(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of sandbox context.
+        Get a resolver which may be used to resolve an instance of sandbox service.
+        """
+
+    @abstractmethod
+    def get_resolver_for_user(self) -> Callable:
+        """
+        Get a resolver which may be used to resolve an instance of sandbox service
+        limited to the current user.
         """

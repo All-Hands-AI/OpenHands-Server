@@ -6,11 +6,11 @@ from fastapi.security import APIKeyHeader
 from openhands.agent_server.models import ConversationInfo
 from openhands.sdk import EventBase
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.sandbox.sandbox_context import SandboxContext
+from openhands_server.sandbox.sandbox_service import SandboxService
 
 
 router = APIRouter(prefix="/event-webhooks", tags=["Event Callbacks"])
-sandbox_context_dependency = Depends(get_dependency_resolver().sandbox.get_resolver())
+sandbox_service_dependency = Depends(get_dependency_resolver().sandbox.get_unsecured_resolver())
 
 # TODO: I think we need a sandbox service (outside the context of the user)
 #       where we can just load what we need
@@ -23,12 +23,12 @@ async def on_conversation_update(
     session_api_key: str = Depends(
         APIKeyHeader(name="X-Session-API-Key", auto_error=False)
     ),
-    sandbox_context: SandboxContext = sandbox_context_dependency,
+    sandbox_service: SandboxService = sandbox_service_dependency,
 ):
     """Webhook callback for when a conversation starts, pauses, resumes, or deletes"""
 
     # Check that the session api key is valid for the sandbox
-    sandbox_info = await sandbox_context.get_sandbox(sandbox_id)
+    sandbox_info = await sandbox_service.get_sandbox(sandbox_id)
     if sandbox_info is None or sandbox_info.session_api_key != session_api_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
 
@@ -44,12 +44,12 @@ async def on_event(
     session_api_key: str = Depends(
         APIKeyHeader(name="X-Session-API-Key", auto_error=False)
     ),
-    sandbox_context: SandboxContext = sandbox_context_dependency,
+    sandbox_service: SandboxService = sandbox_service_dependency,
 ):
     """Webhook callback for when event stream events occur"""
 
     # Check that the session api key is valid for the sandbox
-    sandbox_info = await sandbox_context.get_sandbox(sandbox_id)
+    sandbox_info = await sandbox_service.get_sandbox(sandbox_id)
     if sandbox_info is None or sandbox_info.session_api_key != session_api_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED)
 
