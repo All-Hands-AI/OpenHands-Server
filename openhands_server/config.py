@@ -54,11 +54,16 @@ def _get_db_url() -> SecretStr:
 
 
 def _get_default_workspace_dir() -> Path:
+    # Recheck env because this function is also used to generate other defaults
     workspace_dir = os.getenv("OH_WORKSPACE_DIR")
+
     if not workspace_dir:
         # TODO: I suppose Could also default this to ~home/.openhands
         workspace_dir = "workspace"
-    return Path(workspace_dir)
+
+    result = Path(workspace_dir)
+    result.mkdir(parents=True, exist_ok=True)
+    return result
 
 
 class EncryptionKey(BaseModel):
