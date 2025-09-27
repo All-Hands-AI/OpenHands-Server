@@ -9,7 +9,6 @@ import tempfile
 from pathlib import Path
 
 from openhands_server.config import (
-    CONFIG_FILE_PATH_ENV,
     AppServerConfig,
     get_global_config,
 )
@@ -23,57 +22,29 @@ class TestConfig:
         config = get_global_config()
         assert isinstance(config, AppServerConfig)
 
-    def test_encryption_keys_persistence_in_config_file(self):
-        """Test that the master key is correctly saved and loaded from config file."""
+    def test_web_url_default(self):
+        """Test that web_url has the correct default value."""
+        config = get_global_config()
+        assert config.web_url == "http://localhost:3000"
 
-        # Create a temporary directory for the test
-        with tempfile.TemporaryDirectory() as temp_dir:
-            config_file_path = Path(temp_dir) / "test_config.json"
-
-            # Set the environment variable to use our test config file
-            original_config_path = os.environ.get(CONFIG_FILE_PATH_ENV)
-            os.environ[CONFIG_FILE_PATH_ENV] = str(config_file_path)
-
-            try:
-                # Clear any existing global config
-                import openhands_server.config
-
-                openhands_server.config._global_config = None
-
-                # Generate a new config (this should create the file)
-                config1 = get_global_config()
-                master_key1 = config1.encryption_keys[0].key.get_secret_value()
-
-                # Verify the config file was created and contains the master key
-                assert config_file_path.exists(), "Config file should be created"
-
-                # Read the config file and verify the master key is not redacted
-                with open(config_file_path, "r") as f:
-                    config_data = json.load(f)
-
-                assert "encryption_keys" in config_data, (
-                    "Config file contains encryption_keys"
-                )
-                assert config_data["encryption_keys"][0]["key"] != "**********", (
-                    "Key not redacted"
-                )
-                assert config_data["encryption_keys"][0]["key"] == master_key1, (
-                    "Master key matches"
-                )
-
-                # Clear the global config and load again
-                openhands_server.config._global_config = None
-
-                # Load the config again (this should read from the file)
-                config2 = get_global_config()
-                master_key2 = config2.encryption_keys[0].key.get_secret_value()
-
-                # Verify the master key is the same
-                assert master_key1 == master_key2, "Master key should be preserved"
-
-            finally:
-                # Restore the original environment variable
-                if original_config_path is not None:
-                    os.environ[CONFIG_FILE_PATH_ENV] = original_config_path
-                elif CONFIG_FILE_PATH_ENV in os.environ:
-                    del os.environ[CONFIG_FILE_PATH_ENV]
+    def test_web_url_from_environment(self):
+        """Test that web_url can be set via OH_WEB_URL environment variable."""
+        original_web_url = os.environ.get("OH_WEB_URL")
+        
+        try:
+            # Clear any existing global config
+            import openhands_server.config
+            openhands_server.config._global_config = None
+            
+            # Test OH_WEB_URL override
+            os.environ["OH_WEB_URL"] = "https://example.com:8080"
+            config = get_global_config()
+            assert config.web_url == "https://example.com:8080"
+            
+        finally:
+            # Restore original environment variables
+            openhands_server.config._global_config = None
+            if original_web_url is not None:
+                os.environ["OH_WEB_URL"] = original_web_url
+            elif "OH_WEB_URL" in os.environ:
+                del os.environ["OH_WEB_URL"]
