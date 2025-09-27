@@ -16,7 +16,7 @@ _logger = logging.getLogger(__name__)
 
 class SandboxPermissionService(ABC):
     """
-    Service for accessing sandbox permissions available to the current user.
+    Service for accessing sandbox permissions.
     """
 
     @abstractmethod
