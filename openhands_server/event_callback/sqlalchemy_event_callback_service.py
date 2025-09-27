@@ -1,7 +1,8 @@
-"""SQLAlchemy implementation of EventCallbackContext."""
+"""SQLAlchemy implementation of EventCallbackService."""
 
 from __future__ import annotations
 
+import logging
 from typing import Callable
 from uuid import UUID
 
@@ -10,9 +11,9 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.event_callback.event_callback_context import (
-    EventCallbackContext,
-    EventCallbackContextResolver,
+from openhands_server.event_callback.event_callback_service import (
+    EventCallbackService,
+    EventCallbackServiceResolver,
 )
 from openhands_server.event_callback.event_callback_db_models import StoredEventCallback
 from openhands_server.event_callback.event_callback_models import (
@@ -23,12 +24,15 @@ from openhands_server.event_callback.event_callback_models import (
 )
 
 
-class SQLAlchemyEventCallbackContext(EventCallbackContext):
-    """SQLAlchemy implementation of EventCallbackContext."""
+_logger = logging.getLogger(__name__)
+
+
+class SQLAlchemyEventCallbackService(EventCallbackService):
+    """SQLAlchemy implementation of EventCallbackService."""
 
     def __init__(self, session: AsyncSession):
         """
-        Initialize the SQLAlchemy event callback context.
+        Initialize the SQLAlchemy event callback service.
 
         Args:
             session: The async SQLAlchemy session
@@ -145,11 +149,17 @@ class SQLAlchemyEventCallbackContext(EventCallbackContext):
         return EventCallbackPage(items=items, next_page_id=next_page_id)
 
 
-class SQLAlchemyEventCallbackContextResolver(EventCallbackContextResolver):
-    def get_resolver(self) -> Callable:
+class SQLAlchemyEventCallbackServiceResolver(EventCallbackServiceResolver):
+    def get_unsecured_resolver(self) -> Callable:
+        return self.resolve
+
+    def get_resolver_for_user(self) -> Callable:
+        _logger.warning(
+            "Using secured EventCallbackService resolver - returning unsecured resolver for now"
+        )
         return self.resolve
 
     def resolve(
         self, session: AsyncSession = Depends(async_session_dependency)
-    ) -> EventCallbackContext:
-        return SQLAlchemyEventCallbackContext(session)
+    ) -> EventCallbackService:
+        return SQLAlchemyEventCallbackService(session)
