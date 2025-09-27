@@ -8,7 +8,6 @@ from uuid import UUID, uuid4
 import docker
 from docker.errors import APIError, NotFound
 from fastapi import Depends
-from pydantic import SecretStr
 
 from openhands_server.dependency import get_dependency_resolver
 from openhands_server.sandbox.docker_sandbox_spec_context import get_docker_client
@@ -151,9 +150,7 @@ class DockerSandboxContext(SandboxContext):
 
             # Get session API key
             env = self._get_container_env_vars(container)
-            session_api_key_str = env[SESSION_API_KEY_VARIABLE]
-            assert session_api_key_str is not None
-            session_api_key = SecretStr(session_api_key_str)
+            session_api_key = env[SESSION_API_KEY_VARIABLE]
 
         return SandboxInfo(
             id=sandbox_id,

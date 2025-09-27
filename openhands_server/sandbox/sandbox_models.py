@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field
 
 from openhands_server.utils.date_utils import utc_now
 
@@ -35,7 +35,7 @@ class SandboxInfo(BaseModel):
             "DELETED / ERROR will not have a url"
         )
     )
-    session_api_key: SecretStr | None = Field(
+    session_api_key: str | None = Field(
         description=(
             "Key to access sandbox, to be added as an `X-Session-API-Key` header "
             "in each request. In cases where the sandbox statues is STARTING, "
