@@ -6,19 +6,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.event_callback.event_callback_context import (
-    EventCallbackContext,
-)
 from openhands_server.event_callback.event_callback_models import (
     EventCallback,
     EventCallbackPage,
     EventKind,
 )
+from openhands_server.event_callback.event_callback_service import (
+    EventCallbackService,
+)
 
 
 router = APIRouter(prefix="/event-callbacks", tags=["Event Callbacks"])
-event_callback_context_dependency = Depends(
-    get_dependency_resolver().event_callback.get_resolver
+event_callback_service_dependency = Depends(
+    get_dependency_resolver().event_callback.get_resolver_for_user()
 )
 
 # Read methods
@@ -46,12 +46,12 @@ async def search_event_callbacks(
         int,
         Query(title="The max number of results in the page", gt=0, lte=100),
     ] = 100,
-    event_callback_context: EventCallbackContext = (event_callback_context_dependency),
+    event_callback_service: EventCallbackService = (event_callback_service_dependency),
 ) -> EventCallbackPage:
     """Search / List event callbacks."""
     assert limit > 0
     assert limit <= 100
-    return await event_callback_context.search_event_callbacks(
+    return await event_callback_service.search_event_callbacks(
         conversation_id__eq=conversation_id__eq,
         event_kind__eq=event_kind__eq,
         event_id__eq=event_id__eq,
@@ -63,10 +63,10 @@ async def search_event_callbacks(
 @router.get("/{id}", responses={404: {"description": "Item not found"}})
 async def get_event_callback(
     id: UUID,
-    event_callback_context: EventCallbackContext = (event_callback_context_dependency),
+    event_callback_service: EventCallbackService = (event_callback_service_dependency),
 ) -> EventCallback:
     """Get a single event callback given its id."""
-    callback = await event_callback_context.get_event_callback(id)
+    callback = await event_callback_service.get_event_callback(id)
     if callback is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return callback
@@ -75,12 +75,12 @@ async def get_event_callback(
 @router.get("/")
 async def batch_get_event_callbacks(
     ids: Annotated[list[UUID], Query()],
-    event_callback_context: EventCallbackContext = (event_callback_context_dependency),
+    event_callback_service: EventCallbackService = (event_callback_service_dependency),
 ) -> list[EventCallback | None]:
     """Get a batch of event callbacks given their ids, returning null for any missing
     callback."""
     assert len(ids) <= 100
-    callbacks = await event_callback_context.batch_get_event_callbacks(ids)
+    callbacks = await event_callback_service.batch_get_event_callbacks(ids)
     return callbacks
 
 
@@ -90,19 +90,19 @@ async def batch_get_event_callbacks(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_event_callback(
     callback: EventCallback,
-    event_callback_context: EventCallbackContext = (event_callback_context_dependency),
+    event_callback_service: EventCallbackService = (event_callback_service_dependency),
 ) -> EventCallback:
     """Create a new event callback."""
-    return await event_callback_context.create_event_callback(callback)
+    return await event_callback_service.create_event_callback(callback)
 
 
 @router.delete("/{id}", responses={404: {"description": "Item not found"}})
 async def delete_event_callback(
     id: UUID,
-    event_callback_context: EventCallbackContext = (event_callback_context_dependency),
+    event_callback_service: EventCallbackService = (event_callback_service_dependency),
 ) -> dict[str, str]:
     """Delete a event callback."""
-    deleted = await event_callback_context.delete_event_callback(id)
+    deleted = await event_callback_service.delete_event_callback(id)
     if not deleted:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return {"message": "Event callback deleted successfully"}

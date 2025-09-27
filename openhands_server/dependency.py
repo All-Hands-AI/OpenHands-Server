@@ -4,11 +4,11 @@ from unittest.mock import MagicMock
 
 from openhands_server.config import get_global_config
 from openhands_server.event.event_service import EventServiceResolver
-from openhands_server.event_callback.event_callback_context import (
-    EventCallbackContextResolver,
+from openhands_server.event_callback.event_callback_result_service import (
+    EventCallbackResultServiceResolver,
 )
-from openhands_server.event_callback.event_callback_result_context import (
-    EventCallbackResultContextResolver,
+from openhands_server.event_callback.event_callback_service import (
+    EventCallbackServiceResolver,
 )
 from openhands_server.sandbox.sandbox_service import SandboxServiceResolver
 from openhands_server.sandbox.sandbox_spec_service import SandboxSpecServiceResolver
@@ -26,8 +26,8 @@ class DependencyResolver:
     """Object for exposing dependencies and preventing circular imports and lookups"""
 
     event: EventServiceResolver
-    event_callback: EventCallbackContextResolver
-    event_callback_result: EventCallbackResultContextResolver
+    event_callback: EventCallbackServiceResolver
+    event_callback_result: EventCallbackResultServiceResolver
     sandbox: SandboxServiceResolver
     sandbox_spec: SandboxSpecServiceResolver
     sandboxed_conversation: SandboxedConversationContextResolver
@@ -67,19 +67,19 @@ def _get_event_service_factory():
 
 
 def _get_event_callback_context_factory():
-    from openhands_server.event_callback.sqlalchemy_event_callback_context import (
-        SQLAlchemyEventCallbackContextResolver,
+    from openhands_server.event_callback.sqlalchemy_event_callback_service import (
+        SQLAlchemyEventCallbackServiceResolver,
     )
 
-    return SQLAlchemyEventCallbackContextResolver()
+    return SQLAlchemyEventCallbackServiceResolver()
 
 
 def _get_event_callback_result_context_factory():
     from openhands_server.event_callback import (
-        sqlalchemy_event_callback_result_context as ctx,
+        sqlalchemy_event_callback_result_service as ctx,
     )
 
-    return ctx.SQLAlchemyEventCallbackResultContextResolver()
+    return ctx.SQLAlchemyEventCallbackResultServiceResolver()
 
 
 def _get_sandbox_service_factory():
