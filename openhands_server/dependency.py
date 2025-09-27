@@ -11,7 +11,7 @@ from openhands_server.event_callback.event_callback_result_context import (
     EventCallbackResultContextResolver,
 )
 from openhands_server.sandbox.sandbox_context import SandboxContextResolver
-from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContextResolver
+from openhands_server.sandbox.sandbox_spec_service import SandboxSpecServiceResolver
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContextResolver,
 )
@@ -29,7 +29,7 @@ class DependencyResolver:
     event_callback: EventCallbackContextResolver
     event_callback_result: EventCallbackResultContextResolver
     sandbox: SandboxContextResolver
-    sandbox_spec: SandboxSpecContextResolver
+    sandbox_spec: SandboxSpecServiceResolver
     sandboxed_conversation: SandboxedConversationContextResolver
     user: UserContextResolver
 
@@ -50,7 +50,7 @@ def get_dependency_resolver():
             event_callback_result=config.event_callback_result
             or _get_event_callback_result_context_factory(),
             sandbox=config.sandbox or _get_sandbox_context_factory(),
-            sandbox_spec=config.sandbox_spec or _get_sandbox_spec_context_factory(),
+            sandbox_spec=config.sandbox_spec or _get_sandbox_spec_service_factory(),
             sandboxed_conversation=config.sandboxed_conversation
             or _get_sandboxed_conversation_context_factory(),
             user=config.user or _get_user_context_factory(),
@@ -90,12 +90,12 @@ def _get_sandbox_context_factory():
     return ctx.DockerSandboxContextResolver()
 
 
-def _get_sandbox_spec_context_factory():
+def _get_sandbox_spec_service_factory():
     from openhands_server.sandbox import (
-        docker_sandbox_spec_context as ctx,
+        docker_sandbox_spec_service as ctx,
     )
 
-    return ctx.DockerSandboxSpecContextResolver()
+    return ctx.DockerSandboxSpecServiceResolver()
 
 
 def _get_sandboxed_conversation_context_factory():

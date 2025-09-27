@@ -11,7 +11,7 @@ from fastapi import Depends
 from pydantic import BaseModel, ConfigDict, Field
 
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.sandbox.docker_sandbox_spec_context import get_docker_client
+from openhands_server.sandbox.docker_sandbox_spec_service import get_docker_client
 from openhands_server.sandbox.sandbox_context import (
     SandboxContext,
     SandboxContextResolver,
@@ -22,7 +22,7 @@ from openhands_server.sandbox.sandbox_models import (
     SandboxPage,
     SandboxStatus,
 )
-from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContext
+from openhands_server.sandbox.sandbox_spec_service import SandboxSpecService
 from openhands_server.utils.date_utils import utc_now
 
 
@@ -51,7 +51,7 @@ class ExposedPort(BaseModel):
 
 @dataclass
 class DockerSandboxContext(SandboxContext):
-    sandbox_spec_context: SandboxSpecContext
+    sandbox_spec_service: SandboxSpecService
     container_name_prefix: str
     host_port: int
     container_url_pattern: str
@@ -201,9 +201,9 @@ class DockerSandboxContext(SandboxContext):
     async def start_sandbox(self, sandbox_spec_id: str | None = None) -> SandboxInfo:
         """Start a new sandbox"""
         if sandbox_spec_id is None:
-            sandbox_spec = await self.sandbox_spec_context.get_default_sandbox_spec()
+            sandbox_spec = await self.sandbox_spec_service.get_default_sandbox_spec()
         else:
-            sandbox_spec = await self.sandbox_spec_context.get_sandbox_spec(
+            sandbox_spec = await self.sandbox_spec_service.get_sandbox_spec(
                 sandbox_spec_id
             )
 
@@ -354,14 +354,16 @@ class DockerSandboxContextResolver(SandboxContextResolver):
     )
 
     def get_resolver(self) -> Callable:
-        sandbox_spec_resolver = get_dependency_resolver().sandbox_spec.get_resolver()
+        sandbox_spec_resolver = (
+            get_dependency_resolver().sandbox_spec.get_unsecured_resolver()
+        )
 
         # Define inline to prevent circular lookup
         def resolve(
-            sandbox_spec_context: SandboxSpecContext = Depends(sandbox_spec_resolver),
+            sandbox_spec_service: SandboxSpecService = Depends(sandbox_spec_resolver),
         ) -> SandboxContext:
             return DockerSandboxContext(
-                sandbox_spec_context=sandbox_spec_context,
+                sandbox_spec_service=sandbox_spec_service,
                 container_name_prefix=self.container_name_prefix,
                 host_port=self.host_port,
                 container_url_pattern=self.container_url_pattern,
