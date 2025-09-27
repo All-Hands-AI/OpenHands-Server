@@ -1,4 +1,4 @@
-import secrets
+import os
 import socket
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -24,6 +24,9 @@ from openhands_server.sandbox.sandbox_models import (
 )
 from openhands_server.sandbox.sandbox_spec_context import SandboxSpecContext
 from openhands_server.utils.date_utils import utc_now
+
+
+SESSION_API_KEY_VARIABLE = "OH_SESSION_API_KEYS_0"
 
 
 @dataclass
@@ -69,7 +72,7 @@ class DockerSandboxContext(SandboxContext):
 
     def _container_name_from_id(self, container_id: UUID) -> str:
         """Generate container name from UUID"""
-        return f"{self.container_name_prefix}{container_id}"
+        return f"{self.container_name_prefix}{container_id.hex}"
 
     def _sandbox_id_from_container_name(self, container_name: str) -> UUID | None:
         """Extract runtime ID from container name"""
@@ -94,6 +97,18 @@ class DockerSandboxContext(SandboxContext):
             "dead": SandboxStatus.ERROR,
         }
         return status_mapping.get(docker_status.lower(), SandboxStatus.ERROR)
+
+    def _get_container_env_vars(self, container) -> dict[str, str | None]:
+        env_vars_list = container.attrs["Config"]["Env"]
+        result = {}
+        for env_var in env_vars_list:
+            if "=" in env_var:
+                key, value = env_var.split("=", 1)
+                result[key] = value
+            else:
+                # Handle cases where an environment variable might not have a value
+                result[env_var] = None
+        return result
 
     def _container_to_sandbox_info(self, container) -> SandboxInfo | None:
         """Convert Docker container to SandboxInfo"""
@@ -120,7 +135,7 @@ class DockerSandboxContext(SandboxContext):
         except (ValueError, AttributeError):
             created_at = utc_now()
 
-        # Generate URL and session key for running containers
+        # Get URL and session key for running containers
         url = None
         session_api_key = None
 
@@ -134,8 +149,11 @@ class DockerSandboxContext(SandboxContext):
                         url = self.exposed_url_pattern.format(port=host_port)
                         break
 
-            # Generate session API key
-            session_api_key = SecretStr(secrets.token_urlsafe(32))
+            # Get session API key
+            env = self._get_container_env_vars(container)
+            session_api_key_str = env[SESSION_API_KEY_VARIABLE]
+            assert session_api_key_str is not None
+            session_api_key = SecretStr(session_api_key_str)
 
         return SandboxInfo(
             id=sandbox_id,
@@ -222,7 +240,8 @@ class DockerSandboxContext(SandboxContext):
         # Prepare environment variables
         env_vars = sandbox_spec.initial_env.copy()
 
-        # TODO: We need a session api key for the sandbox here...
+        session_api_key = os.urandom(32).hex()
+        env_vars[SESSION_API_KEY_VARIABLE] = session_api_key
 
         # Prepare port mappings and add port environment variables
         port_mappings = {}
@@ -252,7 +271,7 @@ class DockerSandboxContext(SandboxContext):
                 image=sandbox_spec.id,
                 # command=sandbox_spec.command,  # TODO: Re-enable this later
                 name=container_name,
-                # environment=env_vars,  # TODO: Re-enable this later
+                environment=env_vars,  # TODO: Re-enable this later
                 ports=port_mappings,
                 volumes=volumes,
                 working_dir=sandbox_spec.working_dir,
