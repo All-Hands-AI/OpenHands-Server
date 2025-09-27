@@ -27,7 +27,7 @@ from openhands_server.sandbox.sandbox_spec_service import SandboxSpecServiceReso
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContextResolver,
 )
-from openhands_server.user.user_context import UserContextResolver
+from openhands_server.user.user_service import UserServiceResolver
 from openhands_server.utils.date_utils import utc_now
 
 
@@ -157,7 +157,7 @@ class AppServerConfig(OpenHandsModel):
     sandbox: SandboxServiceResolver | None = None
     sandbox_spec: SandboxSpecServiceResolver | None = None
     sandboxed_conversation: SandboxedConversationContextResolver | None = None
-    user: UserContextResolver | None = None
+    user: UserServiceResolver | None = None
     allow_cors_origins: list[str] = Field(
         default_factory=list,
         description=(

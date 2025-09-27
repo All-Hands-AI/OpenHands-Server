@@ -15,7 +15,7 @@ from openhands_server.sandbox.sandbox_spec_service import SandboxSpecServiceReso
 from openhands_server.sandboxed_conversation.sandboxed_conversation_context import (
     SandboxedConversationContextResolver,
 )
-from openhands_server.user.user_context import UserContextResolver
+from openhands_server.user.user_service import UserServiceResolver
 
 
 _logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class DependencyResolver:
     sandbox: SandboxServiceResolver
     sandbox_spec: SandboxSpecServiceResolver
     sandboxed_conversation: SandboxedConversationContextResolver
-    user: UserContextResolver
+    user: UserServiceResolver
 
 
 _dependency_resolver: DependencyResolver | None = None
@@ -53,7 +53,7 @@ def get_dependency_resolver():
             sandbox_spec=config.sandbox_spec or _get_sandbox_spec_service_factory(),
             sandboxed_conversation=config.sandboxed_conversation
             or _get_sandboxed_conversation_context_factory(),
-            user=config.user or _get_user_context_factory(),
+            user=config.user or _get_user_service_factory(),
         )
     return _dependency_resolver
 
@@ -102,9 +102,9 @@ def _get_sandboxed_conversation_context_factory():
     return MagicMock()  # TODO: Replace with real implementation!
 
 
-def _get_user_context_factory():
-    from openhands_server.user.sqlalchemy_user_context import (
-        SQLAlchemyUserContextResolver,
+def _get_user_service_factory():
+    from openhands_server.user.sqlalchemy_user_service import (
+        SQLAlchemyUserServiceResolver,
     )
 
-    return SQLAlchemyUserContextResolver()
+    return SQLAlchemyUserServiceResolver()

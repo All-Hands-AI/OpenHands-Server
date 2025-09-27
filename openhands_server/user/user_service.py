@@ -11,7 +11,7 @@ from openhands_server.user.user_models import (
 )
 
 
-class UserContext(ABC):
+class UserService(ABC):
     # Read methods
 
     @abstractmethod
@@ -59,9 +59,16 @@ class UserContext(ABC):
         user was deleted, False if the user was not found."""
 
 
-class UserContextResolver(DiscriminatedUnionMixin, ABC):
+class UserServiceResolver(DiscriminatedUnionMixin, ABC):
     @abstractmethod
-    def get_resolver(self) -> Callable:
+    def get_unsecured_resolver(self) -> Callable:
         """
-        Get a resolver which may be used to resolve an instance of user context.
+        Get a resolver which may be used to resolve an instance of user service.
+        """
+
+    @abstractmethod
+    def get_resolver_for_user(self) -> Callable:
+        """
+        Get a resolver which may be used to resolve an instance of user service
+        limited to the current user.
         """
