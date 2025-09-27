@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -25,7 +24,7 @@ class ExposedUrl(BaseModel):
 class SandboxInfo(BaseModel):
     """Information about a sandbox"""
 
-    id: UUID
+    id: str
     created_by_user_id: str
     sandbox_spec_id: str
     status: SandboxStatus

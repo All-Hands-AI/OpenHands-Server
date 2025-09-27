@@ -1,7 +1,6 @@
 """Runtime Containers router for OpenHands Server."""
 
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -43,9 +42,9 @@ async def search_sandboxes(
     )
 
 
-@router.get("/{id}", responses={404: {"description": "Item not found"}})
+@router.get("/{sandbox_id}", responses={404: {"description": "Item not found"}})
 async def get_sandbox(
-    id: UUID,
+    id: str,
     sandbox_context: SandboxContext = sandbox_context_dependency,
 ) -> SandboxInfo:
     """Get a single sandbox given an id"""
@@ -57,13 +56,13 @@ async def get_sandbox(
 
 @router.get("/")
 async def batch_get_sandboxes(
-    ids: Annotated[list[UUID], Query()],
+    sandbox_ids: Annotated[list[str], Query()],
     sandbox_context: SandboxContext = sandbox_context_dependency,
 ) -> list[SandboxInfo | None]:
     """Get a batch of sandboxes given their ids, returning null for any missing
     sandbox."""
-    assert len(ids) < 100
-    sandboxes = await sandbox_context.batch_get_sandboxes(ids)
+    assert len(sandbox_ids) < 100
+    sandboxes = await sandbox_context.batch_get_sandboxes(sandbox_ids)
     return sandboxes
 
 
@@ -81,10 +80,10 @@ async def start_sandbox(
 
 @router.post("/{id}/pause", responses={404: {"description": "Item not found"}})
 async def pause_sandbox(
-    id: UUID,
+    sandbox_id: str,
     sandbox_context: SandboxContext = sandbox_context_dependency,
 ) -> Success:
-    exists = await sandbox_context.pause_sandbox(id)
+    exists = await sandbox_context.pause_sandbox(sandbox_id)
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return Success()
@@ -92,10 +91,10 @@ async def pause_sandbox(
 
 @router.post("/{id}/resume", responses={404: {"description": "Item not found"}})
 async def resume_sandbox(
-    id: UUID,
+    sandbox_id: str,
     sandbox_context: SandboxContext = sandbox_context_dependency,
 ) -> Success:
-    exists = await sandbox_context.resume_sandbox(id)
+    exists = await sandbox_context.resume_sandbox(sandbox_id)
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return Success()
@@ -103,10 +102,10 @@ async def resume_sandbox(
 
 @router.delete("/{id}", responses={404: {"description": "Item not found"}})
 async def delete_sandbox(
-    id: UUID,
+    sandbox_id: str,
     sandbox_context: SandboxContext = sandbox_context_dependency,
 ) -> Success:
-    exists = await sandbox_context.delete_sandbox(id)
+    exists = await sandbox_context.delete_sandbox(sandbox_id)
     if not exists:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return Success()

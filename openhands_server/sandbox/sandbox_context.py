@@ -1,7 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
 from typing import Callable
-from uuid import UUID
 
 from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.sandbox.sandbox_models import SandboxInfo, SandboxPage
@@ -23,11 +22,11 @@ class SandboxContext(ABC):
         """Search for sandboxes"""
 
     @abstractmethod
-    async def get_sandbox(self, id: UUID) -> SandboxInfo | None:
+    async def get_sandbox(self, sandbox_id: str) -> SandboxInfo | None:
         """Get a single sandbox. Return None if the sandbox was not found."""
 
     async def batch_get_sandboxes(
-        self, sandbox_ids: list[UUID]
+        self, sandbox_ids: list[str]
     ) -> list[SandboxInfo | None]:
         """Get a batch of sandboxes, returning None for any which were not found."""
         results = await asyncio.gather(
@@ -41,19 +40,19 @@ class SandboxContext(ABC):
         sandbox. If no spec is selected, use the default."""
 
     @abstractmethod
-    async def resume_sandbox(self, id: UUID) -> bool:
+    async def resume_sandbox(self, sandbox_id: str) -> bool:
         """Begin the process of resuming a sandbox. Return True if the sandbox exists
         and is being resumed or is already running. Return False if the sandbox did
         not exist"""
 
     @abstractmethod
-    async def pause_sandbox(self, id: UUID) -> bool:
+    async def pause_sandbox(self, sandbox_id: str) -> bool:
         """Begin the process of deleting a sandbox. Return True if the sandbox exists
         and is being paused or is already paused. Return False if the sandbox did
         not exist"""
 
     @abstractmethod
-    async def delete_sandbox(self, id: UUID) -> bool:
+    async def delete_sandbox(self, sandbox_id: str) -> bool:
         """Begin the process of deleting a sandbox (self, Which may involve stopping
         it first). Return False if the sandbox did not exist"""
 
