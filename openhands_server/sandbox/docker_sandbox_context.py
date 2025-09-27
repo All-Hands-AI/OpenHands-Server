@@ -240,6 +240,7 @@ class DockerSandboxContext(SandboxContext):
 
         session_api_key = base62.encodebytes(os.urandom(32))
         env_vars[SESSION_API_KEY_VARIABLE] = session_api_key
+        # env_vars[WEBHOOK_CALLBACK_VARIABLE] =
 
         # Prepare port mappings and add port environment variables
         port_mappings = {}

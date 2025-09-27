@@ -27,18 +27,18 @@ jobs:
     - name: Install dependencies
       run: uv sync --extra dev
     
-    - name: Build binary
-      run: |
-        uv add --dev pyinstaller
-        uv run python build.py
-      env:
-        LITELLM_API_KEY: "dummy-key-for-testing"
-        LITELLM_MODEL: "gpt-3.5-turbo"
+    #- name: Build binary
+    #  run: |
+    #    uv add --dev pyinstaller
+    #    uv run python build.py
+    #  env:
+    #    LITELLM_API_KEY: "dummy-key-for-testing"
+    #    LITELLM_MODEL: "gpt-3.5-turbo"
     
-    - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: openhands-server-${{ matrix.os }}
-        path: |
-          dist/openhands-server*
-        retention-days: 7
+    #- name: Upload binary artifact
+    #  uses: actions/upload-artifact@v4
+    #  with:
+    #    name: openhands-server-${{ matrix.os }}
+    #    path: |
+    #      dist/openhands-server*
+    #    retention-days: 7
