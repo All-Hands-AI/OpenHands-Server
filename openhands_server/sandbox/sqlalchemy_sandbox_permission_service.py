@@ -11,16 +11,16 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.sandbox.sandbox_permission_service import (
-    SandboxPermissionService,
-    SandboxPermissionServiceResolver,
-)
 from openhands_server.sandbox.sandbox_permission_db_models import (
     StoredSandboxPermission,
 )
 from openhands_server.sandbox.sandbox_permission_models import (
     SandboxPermission,
     SandboxPermissionPage,
+)
+from openhands_server.sandbox.sandbox_permission_service import (
+    SandboxPermissionService,
+    SandboxPermissionServiceResolver,
 )
 
 
