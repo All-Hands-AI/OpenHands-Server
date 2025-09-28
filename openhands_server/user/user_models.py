@@ -50,8 +50,8 @@ class UserSortOrder(Enum):
     NAME_DESC = "NAME_DESC"
     CREATED_AT = "CREATED_AT"
     CREATED_AT_DESC = "CREATED_AT_DESC"
-    UPDATED_AT = "CREATED_AT"
-    UPDATED_AT_DESC = "CREATED_AT_DESC"
+    UPDATED_AT = "UPDATED_AT"
+    UPDATED_AT_DESC = "UPDATED_AT_DESC"
 
 
 class UserInfoPage(BaseModel):

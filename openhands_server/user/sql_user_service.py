@@ -21,7 +21,7 @@ from typing import Callable
 
 import base62
 from fastapi import Depends
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
@@ -65,13 +65,16 @@ class SQLUserService(UserService):
         # Apply filters
         conditions = []
         if name__contains is not None:
-            conditions.append(UserInfo.name.like(name__contains))
+            conditions.append(UserInfo.name.like(f"%{name__contains}%"))
 
         if email__contains is not None:
-            conditions.append(UserInfo.email.like(email__contains))
+            conditions.append(UserInfo.email.like(f"%{email__contains}%"))
 
         if user_scopes__contains is not None:
-            conditions.append(UserInfo.user_scopes.contains(user_scopes__contains))
+            conditions.append(UserInfo.user_scopes.contains([user_scopes__contains]))
+
+        if conditions:
+            query = query.where(*conditions)
 
         # Apply pagination
         if page_id is not None:
@@ -84,11 +87,26 @@ class SQLUserService(UserService):
         else:
             offset = 0
 
+        # Apply sorting
+        if sort_order == UserSortOrder.EMAIL:
+            query = query.order_by(UserInfo.email.asc())
+        elif sort_order == UserSortOrder.EMAIL_DESC:
+            query = query.order_by(UserInfo.email.desc())
+        elif sort_order == UserSortOrder.NAME:
+            query = query.order_by(UserInfo.name.asc())
+        elif sort_order == UserSortOrder.NAME_DESC:
+            query = query.order_by(UserInfo.name.desc())
+        elif sort_order == UserSortOrder.CREATED_AT:
+            query = query.order_by(UserInfo.created_at.asc())
+        elif sort_order == UserSortOrder.CREATED_AT_DESC:
+            query = query.order_by(UserInfo.created_at.desc())
+        elif sort_order == UserSortOrder.UPDATED_AT:
+            query = query.order_by(UserInfo.updated_at.asc())
+        elif sort_order == UserSortOrder.UPDATED_AT_DESC:
+            query = query.order_by(UserInfo.updated_at.desc())
+
         # Apply limit and get one extra to check if there are more results
         query = query.limit(limit + 1)
-
-        if sort_order:
-            raise NotImplementedError()
 
         result = await self.session.execute(query)
         stored_users = list(result.scalars().all())
@@ -111,8 +129,26 @@ class SQLUserService(UserService):
         email__contains: str | None = None,
         user_scopes__contains: UserScope | None = None,
     ) -> int:
-        """Count users"""
-        raise NotImplementedError()
+        """Count users matching the given filters."""
+        query = select(func.count(UserInfo.id))
+
+        # Apply the same filters as search_users
+        conditions = []
+        if name__contains is not None:
+            conditions.append(UserInfo.name.like(f"%{name__contains}%"))
+
+        if email__contains is not None:
+            conditions.append(UserInfo.email.like(f"%{email__contains}%"))
+
+        if user_scopes__contains is not None:
+            conditions.append(UserInfo.user_scopes.contains([user_scopes__contains]))
+
+        if conditions:
+            query = query.where(*conditions)
+
+        result = await self.session.execute(query)
+        count = result.scalar()
+        return count or 0
 
     async def get_user(self, id: str) -> UserInfo | None:
         """Get a single user. Return None if the user was not found."""
