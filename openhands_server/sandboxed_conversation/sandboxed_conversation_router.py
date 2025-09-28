@@ -1,5 +1,6 @@
 """Sandboxed Conversation router for OpenHands Server."""
 
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -26,6 +27,26 @@ sandboxed_conversation_service_dependency = Depends(
 
 @router.get("/search")
 async def search_sandboxed_conversations(
+    title__contains: Annotated[
+        str | None,
+        Query(title="Filter by title containing this string"),
+    ] = None,
+    created_at__gte: Annotated[
+        datetime | None,
+        Query(title="Filter by created_at greater than or equal to this datetime"),
+    ] = None,
+    created_at__lt: Annotated[
+        datetime | None,
+        Query(title="Filter by created_at less than this datetime"),
+    ] = None,
+    updated_at__gte: Annotated[
+        datetime | None,
+        Query(title="Filter by updated_at greater than or equal to this datetime"),
+    ] = None,
+    updated_at__lt: Annotated[
+        datetime | None,
+        Query(title="Filter by updated_at less than this datetime"),
+    ] = None,
     page_id: Annotated[
         str | None,
         Query(title="Optional next_page_id from the previously returned page"),
@@ -44,7 +65,49 @@ async def search_sandboxed_conversations(
     assert limit > 0
     assert limit <= 100
     return await sandboxed_conversation_service.search_sandboxed_conversations(
-        page_id=page_id, limit=limit
+        title__contains=title__contains,
+        created_at__gte=created_at__gte,
+        created_at__lt=created_at__lt,
+        updated_at__gte=updated_at__gte,
+        updated_at__lt=updated_at__lt,
+        page_id=page_id,
+        limit=limit,
+    )
+
+
+@router.get("/count")
+async def count_sandboxed_conversations(
+    title__contains: Annotated[
+        str | None,
+        Query(title="Filter by title containing this string"),
+    ] = None,
+    created_at__gte: Annotated[
+        datetime | None,
+        Query(title="Filter by created_at greater than or equal to this datetime"),
+    ] = None,
+    created_at__lt: Annotated[
+        datetime | None,
+        Query(title="Filter by created_at less than this datetime"),
+    ] = None,
+    updated_at__gte: Annotated[
+        datetime | None,
+        Query(title="Filter by updated_at greater than or equal to this datetime"),
+    ] = None,
+    updated_at__lt: Annotated[
+        datetime | None,
+        Query(title="Filter by updated_at less than this datetime"),
+    ] = None,
+    sandboxed_conversation_service: SandboxedConversationService = (
+        sandboxed_conversation_service_dependency
+    ),
+) -> int:
+    """Count sandboxed conversations matching the given filters"""
+    return await sandboxed_conversation_service.count_sandboxed_conversations(
+        title__contains=title__contains,
+        created_at__gte=created_at__gte,
+        created_at__lt=created_at__lt,
+        updated_at__gte=updated_at__gte,
+        updated_at__lt=updated_at__lt,
     )
 
 
