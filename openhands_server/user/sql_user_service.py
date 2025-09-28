@@ -1,15 +1,15 @@
-"""SQLAlchemy implementation of UserService.
+"""SQL implementation of UserService.
 
 This implementation provides CRUD operations for users with the following features:
 - Permission-based access control (regular users can only see/modify themselves)
 - Super admin users can manage all users and create other users
 - Proper validation of user scopes and permissions
 - Pagination support for user search
-- Full async/await support using SQLAlchemy async sessions
+- Full async/await support using SQL async sessions
 
 Key components:
-- SQLAlchemyUserService: Main service class implementing all CRUD operations
-- SQLAlchemyUserServiceResolver: Dependency injection resolver for FastAPI
+- SQLUserService: Main service class implementing all CRUD operations
+- SQLUserServiceResolver: Dependency injection resolver for FastAPI
 - StoredUser: Database model with proper Pydantic conversion methods
 """
 
@@ -39,15 +39,15 @@ from openhands_server.utils.date_utils import utc_now
 logger = logging.getLogger(__name__)
 
 
-class SQLAlchemyUserService(UserService):
-    """SQLAlchemy implementation of UserService."""
+class SQLUserService(UserService):
+    """SQL implementation of UserService."""
 
     def __init__(self, session: AsyncSession, current_user_id: str | None = None):
         """
-        Initialize the SQLAlchemy user service.
+        Initialize the SQL user service.
 
         Args:
-            session: The async SQLAlchemy session
+            session: The async SQL session
             current_user_id: The ID of the current user (for permission checks)
         """
         self.session = session
@@ -289,7 +289,7 @@ class SQLAlchemyUserService(UserService):
         return result.scalar_one_or_none()
 
 
-class SQLAlchemyUserServiceResolver(UserServiceResolver):
+class SQLUserServiceResolver(UserServiceResolver):
     current_user_id: str | None = None
 
     def get_unsecured_resolver(self) -> Callable:
@@ -304,4 +304,4 @@ class SQLAlchemyUserServiceResolver(UserServiceResolver):
     def resolve(
         self, session: AsyncSession = Depends(async_session_dependency)
     ) -> UserService:
-        return SQLAlchemyUserService(session, self.current_user_id)
+        return SQLUserService(session, self.current_user_id)

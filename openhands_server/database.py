@@ -123,7 +123,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     and ensures it's properly closed after use.
 
     Yields:
-        AsyncSession: An async SQLAlchemy session
+        AsyncSession: An async SQL session
     """
     async with get_async_session_local()() as session:
         try:
@@ -147,7 +147,7 @@ async def async_session_dependency(
         request: The FastAPI request object
 
     Yields:
-        AsyncSession: An async SQLAlchemy session stored in request state
+        AsyncSession: An async SQL session stored in request state
     """
     # Check if a session already exists in the request state
     if hasattr(request.state, "db_session"):

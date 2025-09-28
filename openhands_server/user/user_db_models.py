@@ -1,4 +1,4 @@
-"""SQLAlchemy database models for users."""
+"""SQL database models for users."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from openhands_server.utils.date_utils import utc_now
 
 
 class StoredUser(Base):
-    """SQLAlchemy model for storing users."""
+    """SQL model for storing users."""
 
     __tablename__ = "users"
 
@@ -42,7 +42,7 @@ class StoredUser(Base):
 
     def to_pydantic(self) -> UserInfo:
         """
-        Convert the SQLAlchemy model to a Pydantic model.
+        Convert the SQL model to a Pydantic model.
 
         Returns:
             UserInfo: The Pydantic representation of the user
@@ -63,13 +63,13 @@ class StoredUser(Base):
     @classmethod
     def from_pydantic(cls, user_info: UserInfo) -> "StoredUser":
         """
-        Create a SQLAlchemy model from a Pydantic model.
+        Create a SQL model from a Pydantic model.
 
         Args:
             user_info: The Pydantic user info model
 
         Returns:
-            StoredUser: The SQLAlchemy representation
+            StoredUser: The SQL representation
         """
         return cls(
             id=user_info.id,

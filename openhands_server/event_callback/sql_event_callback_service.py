@@ -1,5 +1,5 @@
 # pyright: reportArgumentType=false
-"""SQLAlchemy implementation of EventCallbackService."""
+"""SQL implementation of EventCallbackService."""
 
 from __future__ import annotations
 
@@ -33,15 +33,15 @@ from openhands_server.event_callback.event_callback_service import (
 _logger = logging.getLogger(__name__)
 
 
-class SQLAlchemyEventCallbackService(EventCallbackService):
-    """SQLAlchemy implementation of EventCallbackService."""
+class SQLEventCallbackService(EventCallbackService):
+    """SQL implementation of EventCallbackService."""
 
     def __init__(self, session: AsyncSession):
         """
-        Initialize the SQLAlchemy event callback service.
+        Initialize the SQL event callback service.
 
         Args:
-            session: The async SQLAlchemy session
+            session: The async SQL session
         """
         self.session = session
 
@@ -182,7 +182,7 @@ class SQLAlchemyEventCallbackService(EventCallbackService):
         await self.session.commit()
 
 
-class SQLAlchemyEventCallbackServiceResolver(EventCallbackServiceResolver):
+class SQLEventCallbackServiceResolver(EventCallbackServiceResolver):
     def get_unsecured_resolver(self) -> Callable:
         return self.resolve
 
@@ -196,4 +196,4 @@ class SQLAlchemyEventCallbackServiceResolver(EventCallbackServiceResolver):
     def resolve(
         self, session: AsyncSession = Depends(async_session_dependency)
     ) -> EventCallbackService:
-        return SQLAlchemyEventCallbackService(session)
+        return SQLEventCallbackService(session)

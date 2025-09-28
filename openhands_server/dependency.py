@@ -67,19 +67,19 @@ def _get_event_service_factory():
 
 
 def _get_event_callback_service_factory():
-    from openhands_server.event_callback.sqlalchemy_event_callback_service import (
-        SQLAlchemyEventCallbackServiceResolver,
+    from openhands_server.event_callback.sql_event_callback_service import (
+        SQLEventCallbackServiceResolver,
     )
 
-    return SQLAlchemyEventCallbackServiceResolver()
+    return SQLEventCallbackServiceResolver()
 
 
 def _get_event_callback_result_service_factory():
     from openhands_server.event_callback import (
-        sqlalchemy_event_callback_result_service as ctx,
+        sql_event_callback_result_service as ctx,
     )
 
-    return ctx.SQLAlchemyEventCallbackResultServiceResolver()
+    return ctx.SQLEventCallbackResultServiceResolver()
 
 
 def _get_sandbox_service_factory():
@@ -103,8 +103,8 @@ def _get_sandboxed_conversation_service_factory():
 
 
 def _get_user_service_factory():
-    from openhands_server.user.sqlalchemy_user_service import (
-        SQLAlchemyUserServiceResolver,
+    from openhands_server.user.sql_user_service import (
+        SQLUserServiceResolver,
     )
 
-    return SQLAlchemyUserServiceResolver()
+    return SQLUserServiceResolver()

@@ -1,6 +1,6 @@
 # pyright: reportArgumentType=false
 # Disable for this file because SQLModel confuses pyright
-"""SQLAlchemy implementation of EventCallbackResultService."""
+"""SQL implementation of EventCallbackResultService."""
 
 import logging
 from typing import Callable
@@ -26,15 +26,15 @@ from openhands_server.event_callback.event_callback_result_service import (
 _logger = logging.getLogger(__name__)
 
 
-class SQLAlchemyEventCallbackResultService(EventCallbackResultService):
-    """SQLAlchemy implementation of EventCallbackResultService."""
+class SQLEventCallbackResultService(EventCallbackResultService):
+    """SQL implementation of EventCallbackResultService."""
 
     def __init__(self, session: AsyncSession):
         """
         Initialize the service with a database session.
 
         Args:
-            session: The SQLAlchemy async session
+            session: The SQL async session
         """
         self.session = session
 
@@ -158,7 +158,7 @@ class SQLAlchemyEventCallbackResultService(EventCallbackResultService):
         return True
 
 
-class SQLAlchemyEventCallbackResultServiceResolver(EventCallbackResultServiceResolver):
+class SQLEventCallbackResultServiceResolver(EventCallbackResultServiceResolver):
     def get_unsecured_resolver(self) -> Callable:
         return self.resolve
 
@@ -172,4 +172,4 @@ class SQLAlchemyEventCallbackResultServiceResolver(EventCallbackResultServiceRes
     def resolve(
         self, session: AsyncSession = Depends(async_session_dependency)
     ) -> EventCallbackResultService:
-        return SQLAlchemyEventCallbackResultService(session)
+        return SQLEventCallbackResultService(session)

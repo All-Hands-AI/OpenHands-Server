@@ -1,6 +1,6 @@
 # pyright: reportArgumentType=false, reportAttributeAccessIssue=false
 # Disable for this file because SQLModel confuses pyright
-"""SQLAlchemy implementation of SandboxPermissionService."""
+"""SQL implementation of SandboxPermissionService."""
 
 from __future__ import annotations
 
@@ -26,15 +26,15 @@ from openhands_server.sandbox.sandbox_permission_service import (
 _logger = logging.getLogger(__name__)
 
 
-class SQLAlchemySandboxPermissionService(SandboxPermissionService):
-    """SQLAlchemy implementation of SandboxPermissionService."""
+class SQLSandboxPermissionService(SandboxPermissionService):
+    """SQL implementation of SandboxPermissionService."""
 
     def __init__(self, session: AsyncSession, current_user_id: str | None = None):
         """
-        Initialize the SQLAlchemy sandbox permission service.
+        Initialize the SQL sandbox permission service.
 
         Args:
-            session: The async SQLAlchemy session
+            session: The async SQL session
             current_user_id: The ID of the current user (for permission checks)
         """
         self.session = session
@@ -214,8 +214,8 @@ class SQLAlchemySandboxPermissionService(SandboxPermissionService):
         return [permission_map.get(perm_id) for perm_id in sandbox_permission_ids]
 
 
-class SQLAlchemySandboxPermissionServiceResolver(SandboxPermissionServiceResolver):
-    """Resolver for SQLAlchemy-based sandbox permission service."""
+class SQLSandboxPermissionServiceResolver(SandboxPermissionServiceResolver):
+    """Resolver for SQL-based sandbox permission service."""
 
     def __init__(self, current_user_id: str | None = None):
         """
@@ -242,10 +242,10 @@ class SQLAlchemySandboxPermissionServiceResolver(SandboxPermissionServiceResolve
         self, session: AsyncSession = Depends(async_session_dependency)
     ) -> SandboxPermissionService:
         """Resolve an unsecured sandbox permission service."""
-        return SQLAlchemySandboxPermissionService(session, None)
+        return SQLSandboxPermissionService(session, None)
 
     def _resolve_secured(
         self, session: AsyncSession = Depends(async_session_dependency)
     ) -> SandboxPermissionService:
         """Resolve a secured sandbox permission service (for future use)."""
-        return SQLAlchemySandboxPermissionService(session, self.current_user_id)
+        return SQLSandboxPermissionService(session, self.current_user_id)
