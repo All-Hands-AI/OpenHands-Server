@@ -1,3 +1,5 @@
+# pyright: reportIncompatibleMethodOverride=false
+# Disable for this file because SQLModel confuses pyright
 import os
 from datetime import datetime
 from enum import Enum
@@ -6,7 +8,7 @@ from uuid import uuid4
 import base62
 from pydantic import BaseModel, Field
 from sqlalchemy import JSON, Column
-from sqlmodel import Field as SQLField
+from sqlmodel import Field as SQLField, SQLModel
 
 from openhands_server.utils.date_utils import utc_now
 
@@ -30,7 +32,7 @@ class CreateUserRequest(BaseModel):
     )
 
 
-class UserInfo(CreateUserRequest, table=True):
+class UserInfo(SQLModel, CreateUserRequest, table=True):
     """SQL model for storing users."""
 
     id: str = SQLField(default=lambda: uuid4().hex, primary_key=True)

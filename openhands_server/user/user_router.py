@@ -4,8 +4,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from openhands.agent_server.models import Success
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.user.models import Success
 from openhands_server.user.user_models import (
     CreateUserRequest,
     UpdateUserRequest,
@@ -83,7 +83,8 @@ async def count_users(
     ] = None,
     user_service: UserService = user_service_dependency,
 ) -> int:
-    """Count users matching the given filters. Regular users can only count themselves, super admins can count all users."""
+    """Count users. Regular users can only see themselves, super admins can
+    see all users."""
     return await user_service.count_users(
         name__contains=name__contains,
         email__contains=email__contains,
