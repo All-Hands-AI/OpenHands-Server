@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 from sqlmodel import Field as SQLField, SQLModel
 
-from openhands.sdk.conversation.state import AgentExecutionStatus
+from openhands.core.schema import AgentState
 from openhands_server.event_callback.event_callback_models import EventCallbackProcessor
 from openhands_server.sandbox.sandbox_models import SandboxStatus
 from openhands_server.utils.date_utils import utc_now
@@ -25,7 +25,7 @@ class StoredConversationInfo(SQLModel):
 
 class SandboxedConversationResponse(StoredConversationInfo):
     sandbox_status: SandboxStatus
-    agent_status: AgentExecutionStatus
+    agent_status: AgentState | None
 
 
 class SandboxedConversationResponseSortOrder(Enum):

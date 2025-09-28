@@ -99,7 +99,11 @@ def _get_sandbox_spec_service_factory():
 
 
 def _get_sandboxed_conversation_service_factory():
-    return MagicMock()  # TODO: Replace with real implementation!
+    from openhands_server.sandboxed_conversation.sql_sandboxed_conversation_service import (
+        SQLSandboxedConversationServiceResolver,
+    )
+
+    return SQLSandboxedConversationServiceResolver()
 
 
 def _get_user_service_factory():
