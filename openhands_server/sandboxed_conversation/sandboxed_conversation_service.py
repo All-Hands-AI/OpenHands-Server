@@ -1,5 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Callable
 from uuid import UUID
 
@@ -20,10 +21,26 @@ class SandboxedConversationService(ABC):
     @abstractmethod
     async def search_sandboxed_conversations(
         self,
+        title__contains: str | None = None,
+        created_at__gte: datetime | None = None,
+        created_at__lt: datetime | None = None,
+        updated_at__gte: datetime | None = None,
+        updated_at__lt: datetime | None = None,
         page_id: str | None = None,
         limit: int = 100,
     ) -> SandboxedConversationResponsePage:
         """Search for sandboxed conversations."""
+
+    @abstractmethod
+    async def count_sandboxed_conversations(
+        self,
+        title__contains: str | None = None,
+        created_at__gte: datetime | None = None,
+        created_at__lt: datetime | None = None,
+        updated_at__gte: datetime | None = None,
+        updated_at__lt: datetime | None = None,
+    ) -> int:
+        """Count sandboxed conversations."""
 
     @abstractmethod
     async def get_sandboxed_conversation(

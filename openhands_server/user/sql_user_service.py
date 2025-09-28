@@ -21,7 +21,7 @@ from typing import Callable
 
 import base62
 from fastapi import Depends
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
