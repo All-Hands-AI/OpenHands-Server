@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -25,6 +26,15 @@ class StoredConversationInfo(SQLModel):
 class SandboxedConversationResponse(StoredConversationInfo):
     sandbox_status: SandboxStatus
     agent_status: AgentExecutionStatus
+
+
+class SandboxedConversationResponseSortOrder(Enum):
+    CREATED_AT = "CREATED_AT"
+    CREATED_AT_DESC = "CREATED_AT_DESC"
+    UPDATED_AT = "UPDATED_AT"
+    UPDATED_AT_DESC = "UPDATED_AT_DESC"
+    TITLE = "TITLE"
+    TITLE_DESC = "TITLE_DESC"
 
 
 class SandboxedConversationResponsePage(BaseModel):

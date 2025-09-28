@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from openhands_server.dependency import get_dependency_resolver
 from openhands_server.sandboxed_conversation.sandboxed_conversation_models import (
-    SandboxedConversationInfo,
-    SandboxedConversationPage,
+    SandboxedConversationResponse,
+    SandboxedConversationResponsePage,
     StartSandboxedConversationRequest,
 )
 from openhands_server.sandboxed_conversation.sandboxed_conversation_service import (
@@ -39,12 +39,12 @@ async def search_sandboxed_conversations(
     sandboxed_conversation_service: SandboxedConversationService = (
         sandboxed_conversation_service_dependency
     ),
-) -> SandboxedConversationPage:
+) -> SandboxedConversationResponsePage:
     """Search / List sandboxed conversations"""
     assert limit > 0
     assert limit <= 100
     return await sandboxed_conversation_service.search_sandboxed_conversations(
-        page_id, limit
+        page_id=page_id, limit=limit
     )
 
 
@@ -54,7 +54,7 @@ async def get_sandboxed_conversation(
     sandboxed_conversation_service: SandboxedConversationService = (
         sandboxed_conversation_service_dependency
     ),
-) -> SandboxedConversationInfo:
+) -> SandboxedConversationResponse:
     """Get a sandboxed conversation given an id"""
     sandboxed_conversation = (
         await sandboxed_conversation_service.get_sandboxed_conversation(id)
@@ -70,7 +70,7 @@ async def batch_get_sandboxed_conversations(
     sandboxed_conversation_service: SandboxedConversationService = (
         sandboxed_conversation_service_dependency
     ),
-) -> list[SandboxedConversationInfo | None]:
+) -> list[SandboxedConversationResponse | None]:
     """Get a batch of sandboxed conversations given their ids, returning null for
     any missing spec."""
     assert len(ids) < 100
@@ -86,5 +86,5 @@ async def start_sandboxed_conversation(
     sandboxed_conversation_service: SandboxedConversationService = (
         sandboxed_conversation_service_dependency
     ),
-) -> SandboxedConversationInfo:
+) -> SandboxedConversationResponse:
     return await sandboxed_conversation_service.start_sandboxed_conversation(request)

@@ -1,12 +1,13 @@
 import asyncio
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Callable
 from uuid import UUID
 
 from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.sandboxed_conversation.sandboxed_conversation_models import (
-    SandboxedConversationInfo,
-    SandboxedConversationPage,
+    SandboxedConversationResponse,
+    SandboxedConversationResponsePage,
     StartSandboxedConversationRequest,
 )
 
@@ -20,21 +21,37 @@ class SandboxedConversationService(ABC):
     @abstractmethod
     async def search_sandboxed_conversations(
         self,
+        title__contains: str | None = None,
+        created_at__gte: datetime | None = None,
+        created_at__lt: datetime | None = None,
+        updated_at__gte: datetime | None = None,
+        updated_at__lt: datetime | None = None,
         page_id: str | None = None,
         limit: int = 100,
-    ) -> SandboxedConversationPage:
+    ) -> SandboxedConversationResponsePage:
         """Search for sandboxed conversations."""
+
+    @abstractmethod
+    async def count_sandboxed_conversations(
+        self,
+        title__contains: str | None = None,
+        created_at__gte: datetime | None = None,
+        created_at__lt: datetime | None = None,
+        updated_at__gte: datetime | None = None,
+        updated_at__lt: datetime | None = None,
+    ) -> int:
+        """Count sandboxed conversations."""
 
     @abstractmethod
     async def get_sandboxed_conversation(
         self, conversation_id: UUID
-    ) -> SandboxedConversationInfo | None:
+    ) -> SandboxedConversationResponse | None:
         """Get a single sandboxed conversation info. Return None if the conversation
         was not found."""
 
     async def batch_get_sandboxed_conversations(
         self, conversation_ids: list[UUID]
-    ) -> list[SandboxedConversationInfo | None]:
+    ) -> list[SandboxedConversationResponse | None]:
         """Get a batch of sandboxed conversations. Return None for any conversation
         which was not found."""
         return await asyncio.gather(
@@ -47,7 +64,7 @@ class SandboxedConversationService(ABC):
     @abstractmethod
     async def start_sandboxed_conversation(
         self, request: StartSandboxedConversationRequest
-    ) -> SandboxedConversationInfo:
+    ) -> SandboxedConversationResponse:
         """Start a conversation, optionally specifying a sandbox in which to start. If
         no sandbox is specified a default may be used or started. This is a convenience
         method - the same effect should be achievable by creating / getting a sandbox

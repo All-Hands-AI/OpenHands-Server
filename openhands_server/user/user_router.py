@@ -4,13 +4,15 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from openhands.agent_server.models import Success
 from openhands_server.dependency import get_dependency_resolver
-from openhands_server.user.models import Success
 from openhands_server.user.user_models import (
     CreateUserRequest,
     UpdateUserRequest,
     UserInfo,
     UserInfoPage,
+    UserScope,
+    UserSortOrder,
 )
 from openhands_server.user.user_service import UserService
 
@@ -25,10 +27,22 @@ user_service_dependency = Depends(
 
 @router.get("/search")
 async def search_users(
-    created_by_user_id__eq: Annotated[
+    name__contains: Annotated[
         str | None,
-        Query(title="Optional id of the user who created the user"),
+        Query(title="Optional filter to search users by name containing this string"),
     ] = None,
+    email__contains: Annotated[
+        str | None,
+        Query(title="Optional filter to search users by email containing this string"),
+    ] = None,
+    user_scopes__contains: Annotated[
+        UserScope | None,
+        Query(title="Optional filter to search users having this scope"),
+    ] = None,
+    sort_order: Annotated[
+        UserSortOrder,
+        Query(title="Sort order for the results"),
+    ] = UserSortOrder.EMAIL,
     page_id: Annotated[
         str | None,
         Query(title="Optional next_page_id from the previously returned page"),
@@ -44,7 +58,37 @@ async def search_users(
     assert limit > 0
     assert limit <= 100
     return await user_service.search_users(
-        created_by_user_id__eq=created_by_user_id__eq, page_id=page_id, limit=limit
+        name__contains=name__contains,
+        email__contains=email__contains,
+        user_scopes__contains=user_scopes__contains,
+        sort_order=sort_order,
+        page_id=page_id,
+        limit=limit,
+    )
+
+
+@router.get("/count")
+async def count_users(
+    name__contains: Annotated[
+        str | None,
+        Query(title="Optional filter to count users by name containing this string"),
+    ] = None,
+    email__contains: Annotated[
+        str | None,
+        Query(title="Optional filter to count users by email containing this string"),
+    ] = None,
+    user_scopes__contains: Annotated[
+        UserScope | None,
+        Query(title="Optional filter to count users having this scope"),
+    ] = None,
+    user_service: UserService = user_service_dependency,
+) -> int:
+    """Count users. Regular users can only see themselves, super admins can
+    see all users."""
+    return await user_service.count_users(
+        name__contains=name__contains,
+        email__contains=email__contains,
+        user_scopes__contains=user_scopes__contains,
     )
 
 
