@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false
 """SQL implementation of UserService.
 
 This implementation provides CRUD operations for users with the following features:
@@ -24,7 +25,6 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.user.user_db_models import StoredUser
 from openhands_server.user.user_models import (
     CreateUserRequest,
     UpdateUserRequest,
@@ -84,7 +84,7 @@ class SQLUserService(UserService):
             return UserInfoPage(items=[user], next_page_id=None)
 
         # Super admin can search all users
-        query = select(StoredUser)
+        query = select(UserInfo)
 
         # Apply filters
         conditions = []
@@ -108,25 +108,22 @@ class SQLUserService(UserService):
             offset = 0
 
         # Apply limit and get one extra to check if there are more results
-        query = query.limit(limit + 1).order_by(StoredUser.created_at.desc())
+        query = query.limit(limit + 1).order_by(UserInfo.created_at.desc())
 
         result = await self.session.execute(query)
-        stored_users = result.scalars().all()
+        stored_users = list(result.scalars().all())
 
         # Check if there are more results
         has_more = len(stored_users) > limit
         if has_more:
             stored_users = stored_users[:limit]
 
-        # Convert to Pydantic models
-        items = [user.to_pydantic() for user in stored_users]
-
         # Calculate next page ID
         next_page_id = None
         if has_more:
             next_page_id = str(offset + limit)
 
-        return UserInfoPage(items=items, next_page_id=next_page_id)
+        return UserInfoPage(items=stored_users, next_page_id=next_page_id)
 
     async def get_user(self, id: str) -> UserInfo | None:
         """Get a single user. Return None if the user was not found."""
@@ -139,14 +136,10 @@ class SQLUserService(UserService):
         ):
             return None
 
-        query = select(StoredUser).where(StoredUser.id == id)
+        query = select(UserInfo).where(UserInfo.id == id)
         result = await self.session.execute(query)
         stored_user = result.scalar_one_or_none()
-
-        if stored_user is None:
-            return None
-
-        return stored_user.to_pydantic()
+        return stored_user
 
     async def create_user(self, request: CreateUserRequest) -> UserInfo:
         """
@@ -187,16 +180,12 @@ class SQLUserService(UserService):
             updated_at=utc_now(),
         )
 
-        # Convert to database model
-        stored_user = StoredUser.from_pydantic(user_info)
-
         # Add to session and commit
-        self.session.add(stored_user)
+        self.session.add(user_info)
         await self.session.commit()
-        await self.session.refresh(stored_user)
+        await self.session.refresh(user_info)
 
-        # Return the Pydantic model
-        return stored_user.to_pydantic()
+        return user_info
 
     async def update_user(self, request: UpdateUserRequest) -> UserInfo:
         """
@@ -230,19 +219,16 @@ class SQLUserService(UserService):
                 )
 
         # Update the user
-        existing_user.name = request.name  # type: ignore
-        existing_user.avatar_url = request.avatar_url  # type: ignore
-        existing_user.language = request.language  # type: ignore
-        existing_user.default_llm_model = request.default_llm_model  # type: ignore
-        existing_user.email = request.email  # type: ignore
-        existing_user.accepted_tos = request.accepted_tos  # type: ignore
-        existing_user.user_scopes = [scope.value for scope in request.user_scopes]  # type: ignore
-        existing_user.updated_at = utc_now()  # type: ignore
+        for name in UpdateUserRequest.model_fields:
+            new_value = getattr(request, name)
+            if new_value is not None:
+                setattr(existing_user, name, new_value)
+        existing_user.updated_at = utc_now()
 
         await self.session.commit()
         await self.session.refresh(existing_user)
 
-        return existing_user.to_pydantic()
+        return existing_user
 
     async def delete_user(self, user_id: str) -> bool:
         """
@@ -273,18 +259,14 @@ class SQLUserService(UserService):
         if self.current_user_id is None:
             return None
 
-        query = select(StoredUser).where(StoredUser.id == self.current_user_id)
+        query = select(UserInfo).where(UserInfo.id == self.current_user_id)
         result = await self.session.execute(query)
         stored_user = result.scalar_one_or_none()
+        return stored_user
 
-        if stored_user is None:
-            return None
-
-        return stored_user.to_pydantic()
-
-    async def _get_user_by_id_direct(self, user_id: str) -> StoredUser | None:
+    async def _get_user_by_id_direct(self, user_id: str) -> UserInfo | None:
         """Get user by ID directly without permission checks."""
-        query = select(StoredUser).where(StoredUser.id == user_id)
+        query = select(UserInfo).where(UserInfo.id == user_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
@@ -293,12 +275,12 @@ class SQLUserServiceResolver(UserServiceResolver):
     current_user_id: str | None = None
 
     def get_unsecured_resolver(self) -> Callable:
-        logger.warning(
-            "Using unsecured user service resolver - returning unsecured resolver"
-        )
         return self.resolve
 
     def get_resolver_for_user(self) -> Callable:
+        logger.warning(
+            "Using unsecured user service resolver - returning unsecured resolver"
+        )
         return self.resolve
 
     def resolve(
