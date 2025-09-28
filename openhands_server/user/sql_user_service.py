@@ -1,4 +1,4 @@
-# pyright: reportArgumentType=false, reportAttributeAccessIssue=false
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false, reportOptionalMemberAccess=false
 """SQL implementation of UserService.
 
 This implementation provides CRUD operations for users focused purely on SQL operations:
@@ -16,21 +16,22 @@ Key components:
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Callable
 
 import base62
 from fastapi import Depends
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.user.constrained_user_service import ConstrainedUserService
 from openhands_server.user.user_models import (
     CreateUserRequest,
     UpdateUserRequest,
     UserInfo,
     UserInfoPage,
     UserScope,
+    UserSortOrder,
 )
 from openhands_server.user.user_service import UserService, UserServiceResolver
 from openhands_server.utils.date_utils import utc_now
@@ -39,30 +40,22 @@ from openhands_server.utils.date_utils import utc_now
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class SQLUserService(UserService):
     """SQL implementation of UserService focused on database operations."""
 
-    def __init__(self, session: AsyncSession, current_user_id: str | None = None):
-        """
-        Initialize the SQL user service.
-
-        Args:
-            session: The async SQL session
-            current_user_id: The ID of the current user (stored for compatibility)
-        """
-        self.session = session
-        self.current_user_id = current_user_id
+    session: AsyncSession
 
     async def get_current_user(self) -> UserInfo | None:
         """Get the current user."""
-        if self.current_user_id is None:
-            return None
-
-        return await self.get_user(self.current_user_id)
+        return None
 
     async def search_users(
         self,
-        created_by_user_id__eq: str | None = None,
+        name__contains: str | None = None,
+        email__contains: str | None = None,
+        user_scopes__contains: UserScope | None = None,
+        sort_order: UserSortOrder = UserSortOrder.EMAIL,
         page_id: str | None = None,
         limit: int = 100,
     ) -> UserInfoPage:
@@ -71,13 +64,14 @@ class SQLUserService(UserService):
 
         # Apply filters
         conditions = []
-        if created_by_user_id__eq is not None:
-            # Note: We don't have a created_by_user_id field in the user model
-            # This filter is included for API compatibility but won't filter anything
-            pass
+        if name__contains is not None:
+            conditions.append(UserInfo.name.like(name__contains))
 
-        if conditions:
-            query = query.where(and_(*conditions))
+        if email__contains is not None:
+            conditions.append(UserInfo.email.like(email__contains))
+
+        if user_scopes__contains is not None:
+            conditions.append(UserInfo.user_scopes.contains(user_scopes__contains))
 
         # Apply pagination
         if page_id is not None:
@@ -91,7 +85,10 @@ class SQLUserService(UserService):
             offset = 0
 
         # Apply limit and get one extra to check if there are more results
-        query = query.limit(limit + 1).order_by(UserInfo.created_at.desc())
+        query = query.limit(limit + 1)
+
+        if sort_order:
+            raise NotImplementedError()
 
         result = await self.session.execute(query)
         stored_users = list(result.scalars().all())
@@ -107,6 +104,15 @@ class SQLUserService(UserService):
             next_page_id = str(offset + limit)
 
         return UserInfoPage(items=stored_users, next_page_id=next_page_id)
+
+    async def count_users(
+        self,
+        name__contains: str | None = None,
+        email__contains: str | None = None,
+        user_scopes__contains: UserScope | None = None,
+    ) -> int:
+        """Count users"""
+        raise NotImplementedError()
 
     async def get_user(self, id: str) -> UserInfo | None:
         """Get a single user. Return None if the user was not found."""
@@ -173,28 +179,25 @@ class SQLUserService(UserService):
         return True
 
 
-
-
 class SQLUserServiceResolver(UserServiceResolver):
-    current_user_id: str | None = None
-
     def get_unsecured_resolver(self) -> Callable:
-        """Get resolver that returns SQLUserService without security constraints."""
         return self._resolve_unsecured
 
     def get_resolver_for_user(self) -> Callable:
-        """Get resolver that returns ConstrainedUserService with security constraints."""
         return self._resolve_constrained
 
     def _resolve_unsecured(
         self, session: AsyncSession = Depends(async_session_dependency)
     ) -> UserService:
         """Resolve to SQLUserService without security wrapper."""
-        return SQLUserService(session, self.current_user_id)
+        return SQLUserService(session)
 
     def _resolve_constrained(
         self, session: AsyncSession = Depends(async_session_dependency)
     ) -> UserService:
         """Resolve to ConstrainedUserService wrapping SQLUserService."""
-        sql_service = SQLUserService(session, self.current_user_id)
-        return ConstrainedUserService(sql_service, self.current_user_id)
+        service = SQLUserService(session)
+        # TODO: Add auth and fix
+        logger.warning("⚠️ Using Unsecured UserService!!!")
+        # service = ConstrainedUserService(service, self.current_user_id)
+        return service

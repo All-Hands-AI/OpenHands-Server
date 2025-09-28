@@ -8,6 +8,8 @@ from openhands_server.user.user_models import (
     UpdateUserRequest,
     UserInfo,
     UserInfoPage,
+    UserScope,
+    UserSortOrder,
 )
 
 
@@ -21,11 +23,23 @@ class UserService(ABC):
     @abstractmethod
     async def search_users(
         self,
-        created_by_user_id__eq: str | None = None,
+        name__contains: str | None = None,
+        email__contains: str | None = None,
+        user_scopes__contains: UserScope | None = None,
+        sort_order: UserSortOrder = UserSortOrder.EMAIL,
         page_id: str | None = None,
         limit: int = 100,
     ) -> UserInfoPage:
         """Search for users"""
+
+    @abstractmethod
+    async def count_users(
+        self,
+        name__contains: str | None = None,
+        email__contains: str | None = None,
+        user_scopes__contains: UserScope | None = None,
+    ) -> int:
+        """Count users"""
 
     @abstractmethod
     async def get_user(self, id: str) -> UserInfo | None:

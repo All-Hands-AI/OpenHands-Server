@@ -6,7 +6,7 @@ the core data access logic, allowing the underlying service to focus purely on
 data operations while this wrapper handles:
 
 - SUPER_ADMIN scope validation
-- Self-access restrictions for regular users  
+- Self-access restrictions for regular users
 - Permission checks for user creation, updates, and deletion
 - Scope assignment validation
 
@@ -17,16 +17,20 @@ reusable across different data storage backends.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from openhands_server.errors import AuthError
 from openhands_server.user.user_models import (
     CreateUserRequest,
     UpdateUserRequest,
     UserInfo,
     UserInfoPage,
     UserScope,
+    UserSortOrder,
 )
 from openhands_server.user.user_service import UserService
+
 
 if TYPE_CHECKING:
     pass
@@ -34,63 +38,90 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class ConstrainedUserService(UserService):
     """Security wrapper for UserService implementations.
-    
+
     This class wraps any UserService implementation and enforces security
     constraints and permission checks. It implements the same UserService
     interface, making it a drop-in replacement that adds security.
     """
 
-    def __init__(self, wrapped_service: UserService, current_user_id: str | None = None):
-        """
-        Initialize the constrained user service.
-
-        Args:
-            wrapped_service: The UserService implementation to wrap
-            current_user_id: The ID of the current user (for permission checks)
-        """
-        self.wrapped_service = wrapped_service
-        self.current_user_id = current_user_id
+    wrapped_service: UserService
+    current_user_id: str
 
     async def get_current_user(self) -> UserInfo | None:
         """Get the current user."""
-        return await self.wrapped_service.get_current_user()
+        return await self.wrapped_service.get_user(self.current_user_id)
 
     async def search_users(
         self,
-        created_by_user_id__eq: str | None = None,
+        name__contains: str | None = None,
+        email__contains: str | None = None,
+        user_scopes__contains: UserScope | None = None,
+        sort_order: UserSortOrder = UserSortOrder.EMAIL,
         page_id: str | None = None,
         limit: int = 100,
     ) -> UserInfoPage:
         """Search for users with security constraints."""
         # Check if current user has permission to search users
         current_user = await self.get_current_user()
-        if (
-            current_user is None
-            or UserScope.SUPER_ADMIN not in current_user.user_scopes
-        ):
+        if current_user is None:
+            raise AuthError("Not logged in!")
+        if UserScope.SUPER_ADMIN not in current_user.user_scopes:
             # Regular users can only see themselves
-            if self.current_user_id is None:
-                return UserInfoPage(items=[], next_page_id=None)
+            if (
+                _contains(name__contains, current_user.name)
+                and _contains(email__contains, current_user.email)
+                and _contains(user_scopes__contains, current_user.user_scopes)
+            ):
+                return UserInfoPage(items=[current_user], next_page_id=None)
 
-            user = await self.wrapped_service.get_user(self.current_user_id)
-            if user is None:
-                return UserInfoPage(items=[], next_page_id=None)
-
-            return UserInfoPage(items=[user], next_page_id=None)
+            return UserInfoPage(items=[], next_page_id=None)
 
         # Super admin can search all users - delegate to wrapped service
         return await self.wrapped_service.search_users(
-            created_by_user_id__eq=created_by_user_id__eq,
+            name__contains=name__contains,
+            email__contains=email__contains,
+            user_scopes__contains=user_scopes__contains,
+            sort_order=sort_order,
             page_id=page_id,
             limit=limit,
+        )
+
+    async def count_users(
+        self,
+        name__contains: str | None = None,
+        email__contains: str | None = None,
+        user_scopes__contains: UserScope | None = None,
+    ) -> int:
+        """Search for users with security constraints."""
+        # Check if current user has permission to search users
+        current_user = await self.get_current_user()
+        if current_user is None:
+            raise AuthError("Not logged in!")
+        if UserScope.SUPER_ADMIN not in current_user.user_scopes:
+            # Regular users can only see themselves
+            if (
+                _contains(name__contains, current_user.name)
+                and _contains(email__contains, current_user.email)
+                and _contains(user_scopes__contains, current_user.user_scopes)
+            ):
+                return 1
+
+            return 0
+
+        # Super admin can search all users - delegate to wrapped service
+        return await self.wrapped_service.count_users(
+            name__contains=name__contains,
+            email__contains=email__contains,
+            user_scopes__contains=user_scopes__contains,
         )
 
     async def get_user(self, id: str) -> UserInfo | None:
         """Get a single user with permission checks."""
         # Check permissions - users can only see themselves unless they're super admin
-        current_user = await self._get_current_user_for_permission_check()
+        current_user = await self.get_current_user()
         if (
             current_user is not None
             and UserScope.SUPER_ADMIN not in current_user.user_scopes
@@ -104,7 +135,7 @@ class ConstrainedUserService(UserService):
     async def create_user(self, request: CreateUserRequest) -> UserInfo:
         """
         Create a user with permission validation.
-        
+
         Raises:
             PermissionError: If current user lacks permission to create users
                            or grant the requested scopes
@@ -117,32 +148,18 @@ class ConstrainedUserService(UserService):
         ):
             raise PermissionError("Only super admins can create users")
 
-        # Check if requested scopes are valid
-        if UserScope.SUPER_ADMIN in request.user_scopes:
-            # Only super admins can create other super admins
-            if (
-                current_user is None
-                or UserScope.SUPER_ADMIN not in current_user.user_scopes
-            ):
-                raise PermissionError("Only super admins can create super admin users")
-
         # Permission checks passed - delegate to wrapped service
         return await self.wrapped_service.create_user(request)
 
     async def update_user(self, request: UpdateUserRequest) -> UserInfo:
         """
         Update a user with permission validation.
-        
+
         Raises:
             PermissionError: If current user lacks permission to update the user
                            or grant the requested scopes
             ValueError: If the user to update is not found
         """
-        # Check if user exists (delegate to wrapped service for existence check)
-        existing_user = await self.wrapped_service.get_user(request.id)
-        if existing_user is None:
-            raise ValueError(f"User with id {request.id} not found")
-
         # Check permissions
         current_user = await self.get_current_user()
         if current_user is None:
@@ -154,6 +171,11 @@ class ConstrainedUserService(UserService):
             and UserScope.SUPER_ADMIN not in current_user.user_scopes
         ):
             raise PermissionError("You can only update your own profile")
+
+        # Check if user exists (delegate to wrapped service for existence check)
+        existing_user = await self.wrapped_service.get_user(request.id)
+        if existing_user is None:
+            raise ValueError(f"User with id {request.id} not found")
 
         # Check scope permissions
         if UserScope.SUPER_ADMIN in request.user_scopes:
@@ -169,7 +191,7 @@ class ConstrainedUserService(UserService):
     async def delete_user(self, user_id: str) -> bool:
         """
         Delete a user with permission validation.
-        
+
         Raises:
             PermissionError: If current user lacks permission to delete users
         """
@@ -184,13 +206,10 @@ class ConstrainedUserService(UserService):
         # Permission check passed - delegate to wrapped service
         return await self.wrapped_service.delete_user(user_id)
 
-    async def _get_current_user_for_permission_check(self) -> UserInfo | None:
-        """Get current user for permission checks.
-        
-        This method is used internally for permission validation and delegates
-        to the wrapped service to avoid recursion issues.
-        """
-        if self.current_user_id is None:
-            return None
 
-        return await self.wrapped_service.get_user(self.current_user_id)
+def _contains(query, value):
+    if not query:
+        return True
+    if not value:
+        return False
+    return query in value

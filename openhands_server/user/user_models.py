@@ -35,12 +35,23 @@ class UserInfo(CreateUserRequest, table=True):
 
     id: str = SQLField(default=lambda: uuid4().hex, primary_key=True)
     email_verified: bool = False
-    created_at: datetime = SQLField(default_factory=utc_now)
-    updated_at: datetime = SQLField(default_factory=utc_now)
+    created_at: datetime = SQLField(default_factory=utc_now, index=True)
+    updated_at: datetime = SQLField(default_factory=utc_now, index=True)
 
 
 class UpdateUserRequest(CreateUserRequest):
     id: str = Field(default_factory=lambda: base62.encodebytes(os.urandom(16)))
+
+
+class UserSortOrder(Enum):
+    EMAIL = "EMAIL"
+    EMAIL_DESC = "EMAIL_DESC"
+    NAME = "NAME"
+    NAME_DESC = "NAME_DESC"
+    CREATED_AT = "CREATED_AT"
+    CREATED_AT_DESC = "CREATED_AT_DESC"
+    UPDATED_AT = "CREATED_AT"
+    UPDATED_AT_DESC = "CREATED_AT_DESC"
 
 
 class UserInfoPage(BaseModel):
