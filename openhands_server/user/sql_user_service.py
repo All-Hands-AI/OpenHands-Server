@@ -1,17 +1,16 @@
 # pyright: reportArgumentType=false, reportAttributeAccessIssue=false
 """SQL implementation of UserService.
 
-This implementation provides CRUD operations for users with the following features:
-- Permission-based access control (regular users can only see/modify themselves)
-- Super admin users can manage all users and create other users
-- Proper validation of user scopes and permissions
+This implementation provides CRUD operations for users focused purely on SQL operations:
+- Direct database access without permission checks
 - Pagination support for user search
 - Full async/await support using SQL async sessions
+
+Security and permission checks are handled by ConstrainedUserService wrapper.
 
 Key components:
 - SQLUserService: Main service class implementing all CRUD operations
 - SQLUserServiceResolver: Dependency injection resolver for FastAPI
-- StoredUser: Database model with proper Pydantic conversion methods
 """
 
 from __future__ import annotations
@@ -25,6 +24,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
+from openhands_server.user.constrained_user_service import ConstrainedUserService
 from openhands_server.user.user_models import (
     CreateUserRequest,
     UpdateUserRequest,
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 class SQLUserService(UserService):
-    """SQL implementation of UserService."""
+    """SQL implementation of UserService focused on database operations."""
 
     def __init__(self, session: AsyncSession, current_user_id: str | None = None):
         """
@@ -48,7 +48,7 @@ class SQLUserService(UserService):
 
         Args:
             session: The async SQL session
-            current_user_id: The ID of the current user (for permission checks)
+            current_user_id: The ID of the current user (stored for compatibility)
         """
         self.session = session
         self.current_user_id = current_user_id
@@ -66,24 +66,7 @@ class SQLUserService(UserService):
         page_id: str | None = None,
         limit: int = 100,
     ) -> UserInfoPage:
-        """Search for users."""
-        # Check if current user has permission to search users
-        current_user = await self.get_current_user()
-        if (
-            current_user is None
-            or UserScope.SUPER_ADMIN not in current_user.user_scopes
-        ):
-            # Regular users can only see themselves
-            if self.current_user_id is None:
-                return UserInfoPage(items=[], next_page_id=None)
-
-            user = await self.get_user(self.current_user_id)
-            if user is None:
-                return UserInfoPage(items=[], next_page_id=None)
-
-            return UserInfoPage(items=[user], next_page_id=None)
-
-        # Super admin can search all users
+        """Search for users without permission checks."""
         query = select(UserInfo)
 
         # Apply filters
@@ -127,43 +110,13 @@ class SQLUserService(UserService):
 
     async def get_user(self, id: str) -> UserInfo | None:
         """Get a single user. Return None if the user was not found."""
-        # Check permissions - users can only see themselves unless they're super admin
-        current_user = await self._get_current_user_without_recursion()
-        if (
-            current_user is not None
-            and UserScope.SUPER_ADMIN not in current_user.user_scopes
-            and current_user.id != id
-        ):
-            return None
-
         query = select(UserInfo).where(UserInfo.id == id)
         result = await self.session.execute(query)
         stored_user = result.scalar_one_or_none()
         return stored_user
 
     async def create_user(self, request: CreateUserRequest) -> UserInfo:
-        """
-        Create a user if possible. Raise a PermissionError if it is not - the
-        current user may not have permission to create users or grant the requested
-        scopes.
-        """
-        # Check if current user has permission to create users
-        current_user = await self.get_current_user()
-        if (
-            current_user is None
-            or UserScope.SUPER_ADMIN not in current_user.user_scopes
-        ):
-            raise PermissionError("Only super admins can create users")
-
-        # Check if requested scopes are valid
-        if UserScope.SUPER_ADMIN in request.user_scopes:
-            # Only super admins can create other super admins
-            if (
-                current_user is None
-                or UserScope.SUPER_ADMIN not in current_user.user_scopes
-            ):
-                raise PermissionError("Only super admins can create super admin users")
-
+        """Create a user."""
         # Create the user info with generated ID and timestamps
         from uuid import uuid4
 
@@ -188,35 +141,11 @@ class SQLUserService(UserService):
         return user_info
 
     async def update_user(self, request: UpdateUserRequest) -> UserInfo:
-        """
-        Update a user if possible. Raise a PermissionError if it is not - the
-        current user may not have permission to update users or grant the requested
-        scopes.
-        """
+        """Update a user."""
         # Check if user exists
-        existing_user = await self._get_user_by_id_direct(request.id)
+        existing_user = await self.get_user(request.id)
         if existing_user is None:
             raise ValueError(f"User with id {request.id} not found")
-
-        # Check permissions
-        current_user = await self.get_current_user()
-        if current_user is None:
-            raise PermissionError("Authentication required")
-
-        # Users can update themselves, super admins can update anyone
-        if (
-            current_user.id != request.id
-            and UserScope.SUPER_ADMIN not in current_user.user_scopes
-        ):
-            raise PermissionError("You can only update your own profile")
-
-        # Check scope permissions
-        if UserScope.SUPER_ADMIN in request.user_scopes:
-            # Only super admins can grant super admin privileges
-            if UserScope.SUPER_ADMIN not in current_user.user_scopes:
-                raise PermissionError(
-                    "Only super admins can grant super admin privileges"
-                )
 
         # Update the user
         for name in UpdateUserRequest.model_fields:
@@ -231,20 +160,9 @@ class SQLUserService(UserService):
         return existing_user
 
     async def delete_user(self, user_id: str) -> bool:
-        """
-        Delete a user if possible. Raise a PermissionError if it is not - the
-        current user may not have permission to delete users.
-        """
-        # Check if current user has permission to delete users
-        current_user = await self.get_current_user()
-        if (
-            current_user is None
-            or UserScope.SUPER_ADMIN not in current_user.user_scopes
-        ):
-            raise PermissionError("Only super admins can delete users")
-
+        """Delete a user. Returns True if deleted, False if not found."""
         # Check if user exists
-        existing_user = await self._get_user_by_id_direct(user_id)
+        existing_user = await self.get_user(user_id)
         if existing_user is None:
             return False
 
@@ -254,36 +172,29 @@ class SQLUserService(UserService):
 
         return True
 
-    async def _get_current_user_without_recursion(self) -> UserInfo | None:
-        """Get current user without causing recursion in permission checks."""
-        if self.current_user_id is None:
-            return None
 
-        query = select(UserInfo).where(UserInfo.id == self.current_user_id)
-        result = await self.session.execute(query)
-        stored_user = result.scalar_one_or_none()
-        return stored_user
-
-    async def _get_user_by_id_direct(self, user_id: str) -> UserInfo | None:
-        """Get user by ID directly without permission checks."""
-        query = select(UserInfo).where(UserInfo.id == user_id)
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
 
 
 class SQLUserServiceResolver(UserServiceResolver):
     current_user_id: str | None = None
 
     def get_unsecured_resolver(self) -> Callable:
-        return self.resolve
+        """Get resolver that returns SQLUserService without security constraints."""
+        return self._resolve_unsecured
 
     def get_resolver_for_user(self) -> Callable:
-        logger.warning(
-            "Using unsecured user service resolver - returning unsecured resolver"
-        )
-        return self.resolve
+        """Get resolver that returns ConstrainedUserService with security constraints."""
+        return self._resolve_constrained
 
-    def resolve(
+    def _resolve_unsecured(
         self, session: AsyncSession = Depends(async_session_dependency)
     ) -> UserService:
+        """Resolve to SQLUserService without security wrapper."""
         return SQLUserService(session, self.current_user_id)
+
+    def _resolve_constrained(
+        self, session: AsyncSession = Depends(async_session_dependency)
+    ) -> UserService:
+        """Resolve to ConstrainedUserService wrapping SQLUserService."""
+        sql_service = SQLUserService(session, self.current_user_id)
+        return ConstrainedUserService(sql_service, self.current_user_id)
