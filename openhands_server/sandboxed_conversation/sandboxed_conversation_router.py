@@ -44,7 +44,7 @@ async def search_sandboxed_conversations(
     assert limit > 0
     assert limit <= 100
     return await sandboxed_conversation_service.search_sandboxed_conversations(
-        page_id, limit
+        page_id=page_id, limit=limit
     )
 
 
