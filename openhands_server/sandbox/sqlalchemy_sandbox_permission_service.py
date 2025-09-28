@@ -1,3 +1,5 @@
+# pyright: reportArgumentType=false, reportAttributeAccessIssue=false
+# Disable for this file because SQLModel confuses pyright
 """SQLAlchemy implementation of SandboxPermissionService."""
 
 from __future__ import annotations
@@ -11,9 +13,6 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
-from openhands_server.sandbox.sandbox_permission_db_models import (
-    StoredSandboxPermission,
-)
 from openhands_server.sandbox.sandbox_permission_models import (
     SandboxPermission,
     SandboxPermissionPage,
@@ -48,9 +47,9 @@ class SQLAlchemySandboxPermissionService(SandboxPermissionService):
         # Build the base query - only show permissions for the current user
         conditions = []
         if self.current_user_id is not None:
-            conditions.append(StoredSandboxPermission.user_id == self.current_user_id)
+            conditions.append(SandboxPermission.user_id == self.current_user_id)
 
-        stmt = select(StoredSandboxPermission)
+        stmt = select(SandboxPermission)
         if conditions:
             stmt = stmt.where(and_(*conditions))
 
@@ -66,7 +65,7 @@ class SQLAlchemySandboxPermissionService(SandboxPermissionService):
             offset = 0
 
         # Apply limit and get one extra to check if there are more results
-        stmt = stmt.limit(limit + 1).order_by(StoredSandboxPermission.timestamp.desc())
+        stmt = stmt.limit(limit + 1).order_by(SandboxPermission.timestamp.desc())
 
         result = await self.session.execute(stmt)
         stored_permissions = result.scalars().all()
@@ -76,33 +75,28 @@ class SQLAlchemySandboxPermissionService(SandboxPermissionService):
         if has_more:
             stored_permissions = stored_permissions[:limit]
 
-        # Convert to Pydantic models
-        items = [permission.to_pydantic() for permission in stored_permissions]
-
         # Calculate next page ID
         next_page_id = None
         if has_more:
             next_page_id = str(offset + limit)
 
-        return SandboxPermissionPage(items=items, next_page_id=next_page_id)
+        return SandboxPermissionPage(
+            items=stored_permissions, next_page_id=next_page_id
+        )
 
     async def get_sandbox_permission(self, id: UUID) -> SandboxPermission | None:
         """Get a single sandbox permission, returning None if not found or not
         accessible."""
-        conditions = [StoredSandboxPermission.id == id]
+        conditions = [SandboxPermission.id == id]
 
         # Only allow access to permissions for the current user
         if self.current_user_id is not None:
-            conditions.append(StoredSandboxPermission.user_id == self.current_user_id)
+            conditions.append(SandboxPermission.user_id == self.current_user_id)
 
-        stmt = select(StoredSandboxPermission).where(and_(*conditions))
+        stmt = select(SandboxPermission).where(and_(*conditions))
         result = await self.session.execute(stmt)
         stored_permission = result.scalar_one_or_none()
-
-        if stored_permission is None:
-            return None
-
-        return stored_permission.to_pydantic()
+        return stored_permission
 
     async def add_sandbox_permission(
         self, sandbox_id: str, user_id: str, full_access: bool = False
@@ -115,11 +109,11 @@ class SQLAlchemySandboxPermissionService(SandboxPermissionService):
         """
         # Check if current user has full access to this sandbox
         if self.current_user_id is not None:
-            current_user_permission_stmt = select(StoredSandboxPermission).where(
+            current_user_permission_stmt = select(SandboxPermission).where(
                 and_(
-                    StoredSandboxPermission.sandbox_id == sandbox_id,
-                    StoredSandboxPermission.user_id == self.current_user_id,
-                    StoredSandboxPermission.full_access == True,  # noqa: E712
+                    SandboxPermission.sandbox_id == sandbox_id,
+                    SandboxPermission.user_id == self.current_user_id,
+                    SandboxPermission.full_access == True,  # noqa: E712
                 )
             )
             result = await self.session.execute(current_user_permission_stmt)
@@ -138,16 +132,13 @@ class SQLAlchemySandboxPermissionService(SandboxPermissionService):
             full_access=full_access,
         )
 
-        # Convert to database model
-        stored_permission = StoredSandboxPermission.from_pydantic(sandbox_permission)
-
         # Add to session and commit
-        self.session.add(stored_permission)
+        self.session.add(sandbox_permission)
         await self.session.commit()
-        await self.session.refresh(stored_permission)
+        await self.session.refresh(sandbox_permission)
 
         # Return the Pydantic model
-        return stored_permission.to_pydantic()
+        return sandbox_permission
 
     async def delete_sandbox_permission(self, sandbox_permission_id: UUID) -> bool:
         """
@@ -160,8 +151,8 @@ class SQLAlchemySandboxPermissionService(SandboxPermissionService):
           permissions)
         """
         # Get the permission to delete
-        stmt = select(StoredSandboxPermission).where(
-            StoredSandboxPermission.id == sandbox_permission_id
+        stmt = select(SandboxPermission).where(
+            SandboxPermission.id == sandbox_permission_id
         )
         result = await self.session.execute(stmt)
         permission_to_delete = result.scalar_one_or_none()
@@ -173,18 +164,17 @@ class SQLAlchemySandboxPermissionService(SandboxPermissionService):
         # own permission)
         if (
             self.current_user_id is not None
-            and permission_to_delete.user_id == self.current_user_id  # type: ignore
+            and permission_to_delete.user_id == self.current_user_id
         ):
             return False
 
         # Check if current user has full access to this sandbox
         if self.current_user_id is not None:
-            current_user_permission_stmt = select(StoredSandboxPermission).where(
+            current_user_permission_stmt = select(SandboxPermission).where(
                 and_(
-                    StoredSandboxPermission.sandbox_id
-                    == permission_to_delete.sandbox_id,
-                    StoredSandboxPermission.user_id == self.current_user_id,
-                    StoredSandboxPermission.full_access == True,  # noqa: E712
+                    SandboxPermission.sandbox_id == permission_to_delete.sandbox_id,
+                    SandboxPermission.user_id == self.current_user_id,
+                    SandboxPermission.full_access == True,  # noqa: E712
                 )
             )
             result = await self.session.execute(current_user_permission_stmt)
@@ -206,27 +196,22 @@ class SQLAlchemySandboxPermissionService(SandboxPermissionService):
         if not sandbox_permission_ids:
             return []
 
-        conditions = [StoredSandboxPermission.id.in_(sandbox_permission_ids)]
+        conditions = [SandboxPermission.id.in_(sandbox_permission_ids)]
 
         # Only allow access to permissions for the current user
         if self.current_user_id is not None:
-            conditions.append(
-                StoredSandboxPermission.user_id == self.current_user_id  # type: ignore
-            )
+            conditions.append(SandboxPermission.user_id == self.current_user_id)
 
-        stmt = select(StoredSandboxPermission).where(and_(*conditions))
+        stmt = select(SandboxPermission).where(and_(*conditions))
         result = await self.session.execute(stmt)
         stored_permissions = result.scalars().all()
 
         # Create a mapping of ID to permission
-        permission_map = {perm.id: perm.to_pydantic() for perm in stored_permissions}
+        permission_map = {perm.id: perm for perm in stored_permissions}
 
         # Return results in the same order as requested, with None for
         # missing permissions
-        return [
-            permission_map.get(perm_id)  # type: ignore
-            for perm_id in sandbox_permission_ids
-        ]
+        return [permission_map.get(perm_id) for perm_id in sandbox_permission_ids]
 
 
 class SQLAlchemySandboxPermissionServiceResolver(SandboxPermissionServiceResolver):

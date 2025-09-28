@@ -35,6 +35,7 @@ dependencies = [
   "pyjwt>=2.8",
   "python-jose[cryptography]>=3.3",
   "sqlalchemy>=2",
+  "sqlmodel>=0.0.25",
   "uvicorn>=0.31.1",
   "websockets>=12",
 ]

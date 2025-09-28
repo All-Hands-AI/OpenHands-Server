@@ -1,9 +1,9 @@
 import asyncio
-import logging
 from abc import ABC, abstractmethod
 from typing import Callable
 from uuid import UUID
 
+from openhands.sdk import EventBase
 from openhands.sdk.utils.models import DiscriminatedUnionMixin
 from openhands_server.event_callback.event_callback_models import (
     CreateEventCallbackRequest,
@@ -11,9 +11,6 @@ from openhands_server.event_callback.event_callback_models import (
     EventCallbackPage,
     EventKind,
 )
-
-
-_logger = logging.getLogger(__name__)
 
 
 class EventCallbackService(ABC):
@@ -60,6 +57,10 @@ class EventCallbackService(ABC):
             ]
         )
         return results
+
+    @abstractmethod
+    async def execute_callbacks(self, conversation_id: UUID, event: EventBase) -> None:
+        """Execute any applicable callbacks for the event and store the results."""
 
     # Lifecycle methods
 

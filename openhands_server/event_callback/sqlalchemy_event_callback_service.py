@@ -1,22 +1,28 @@
+# pyright: reportArgumentType=false
 """SQLAlchemy implementation of EventCallbackService."""
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Callable
 from uuid import UUID
 
 from fastapi import Depends
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from openhands.sdk import EventBase
 from openhands_server.database import async_session_dependency
-from openhands_server.event_callback.event_callback_db_models import StoredEventCallback
 from openhands_server.event_callback.event_callback_models import (
     CreateEventCallbackRequest,
     EventCallback,
     EventCallbackPage,
     EventKind,
+)
+from openhands_server.event_callback.event_callback_result_models import (
+    EventCallbackResult,
+    EventCallbackResultStatus,
 )
 from openhands_server.event_callback.event_callback_service import (
     EventCallbackService,
@@ -50,31 +56,22 @@ class SQLAlchemyEventCallbackService(EventCallbackService):
             event_kind=request.event_kind,
         )
 
-        # Convert to database model
-        stored_callback = StoredEventCallback.from_pydantic(event_callback)
-
         # Add to session and commit
-        self.session.add(stored_callback)
+        self.session.add(event_callback)
         await self.session.commit()
-        await self.session.refresh(stored_callback)
-
-        # Return the Pydantic model
-        return stored_callback.to_pydantic()
+        await self.session.refresh(event_callback)
+        return event_callback
 
     async def get_event_callback(self, id: UUID) -> EventCallback | None:
         """Get a single event callback, returning None if not found."""
-        stmt = select(StoredEventCallback).where(StoredEventCallback.id == id)
+        stmt = select(EventCallback).where(EventCallback.id == id)
         result = await self.session.execute(stmt)
         stored_callback = result.scalar_one_or_none()
-
-        if stored_callback is None:
-            return None
-
-        return stored_callback.to_pydantic()
+        return stored_callback
 
     async def delete_event_callback(self, id: UUID) -> bool:
         """Delete an event callback, returning True if deleted, False if not found."""
-        stmt = select(StoredEventCallback).where(StoredEventCallback.id == id)
+        stmt = select(EventCallback).where(EventCallback.id == id)
         result = await self.session.execute(stmt)
         stored_callback = result.scalar_one_or_none()
 
@@ -98,19 +95,17 @@ class SQLAlchemyEventCallbackService(EventCallbackService):
         conditions = []
 
         if conversation_id__eq is not None:
-            conditions.append(
-                StoredEventCallback.conversation_id == conversation_id__eq
-            )
+            conditions.append(EventCallback.conversation_id == conversation_id__eq)
 
         if event_kind__eq is not None:
-            conditions.append(StoredEventCallback.event_kind == event_kind__eq)
+            conditions.append(EventCallback.event_kind == event_kind__eq)
 
         # Note: event_id__eq is not stored in the event_callbacks table
         # This parameter might be used for filtering results after retrieval
         # or might be intended for a different use case
 
         # Build the base query
-        stmt = select(StoredEventCallback)
+        stmt = select(EventCallback)
 
         if conditions:
             stmt = stmt.where(and_(*conditions))
@@ -128,7 +123,7 @@ class SQLAlchemyEventCallbackService(EventCallbackService):
             offset = 0
 
         # Apply limit and get one extra to check if there are more results
-        stmt = stmt.limit(limit + 1).order_by(StoredEventCallback.created_at.desc())
+        stmt = stmt.limit(limit + 1).order_by(EventCallback.created_at.desc())  # type: ignore
 
         result = await self.session.execute(stmt)
         stored_callbacks = result.scalars().all()
@@ -138,15 +133,53 @@ class SQLAlchemyEventCallbackService(EventCallbackService):
         if has_more:
             stored_callbacks = stored_callbacks[:limit]
 
-        # Convert to Pydantic models
-        items = [callback.to_pydantic() for callback in stored_callbacks]
-
         # Calculate next page ID
         next_page_id = None
         if has_more:
             next_page_id = str(offset + limit)
 
-        return EventCallbackPage(items=items, next_page_id=next_page_id)
+        return EventCallbackPage(items=stored_callbacks, next_page_id=next_page_id)
+
+    async def execute_callbacks(self, conversation_id: UUID, event: EventBase) -> None:
+        query = (
+            select(EventCallback)
+            .where(
+                or_(
+                    EventCallback.event_kind == event.kind,
+                    EventCallback.event_kind.is_(None),  # type: ignore
+                )
+            )
+            .where(
+                or_(
+                    EventCallback.conversation_id == conversation_id,
+                    EventCallback.conversation_id.is_(None),  # type: ignore
+                )
+            )
+        )
+        callbacks = await self.session.execute(query)
+        await asyncio.gather(
+            *[
+                self.execute_callback(conversation_id, callback, event)
+                for callback in callbacks
+            ]
+        )
+
+    async def execute_callback(
+        self, conversation_id: UUID, callback: EventCallback, event: EventBase
+    ):
+        try:
+            result = await callback.processor(conversation_id, callback, event)
+        except Exception as exc:
+            _logger.exception(f"Exception in callback {callback.id}", stack_info=True)
+            result = EventCallbackResult(
+                status=EventCallbackResultStatus.ERROR,
+                event_callback_id=callback.id,
+                event_id=event.id,
+                conversation_id=conversation_id,
+                detail=str(exc),
+            )
+        self.session.add(result)
+        await self.session.commit()
 
 
 class SQLAlchemyEventCallbackServiceResolver(EventCallbackServiceResolver):

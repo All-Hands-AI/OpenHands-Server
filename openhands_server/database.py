@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.util import await_only
+from sqlmodel import SQLModel
 
 from openhands_server.config import get_global_config
 
@@ -172,9 +173,11 @@ async def create_tables() -> None:
     """Create all database tables."""
     async with get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(SQLModel.metadata.create_all)
 
 
 async def drop_tables() -> None:
     """Drop all database tables."""
     async with get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(SQLModel.metadata.drop_all)

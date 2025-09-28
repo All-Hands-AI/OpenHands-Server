@@ -35,7 +35,7 @@ class EventCallbackResultService(ABC):
         event_id__eq: EventID | None = None,
         conversation_id__eq: UUID | None = None,
         sort_order: EventCallbackResultSortOrder = (
-            EventCallbackResultSortOrder.created_at
+            EventCallbackResultSortOrder.CREATED_AT
         ),
         page_id: str | None = None,
         limit: int = 100,

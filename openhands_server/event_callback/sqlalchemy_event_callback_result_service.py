@@ -1,3 +1,5 @@
+# pyright: reportArgumentType=false
+# Disable for this file because SQLModel confuses pyright
 """SQLAlchemy implementation of EventCallbackResultService."""
 
 import logging
@@ -10,9 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands.sdk.event.types import EventID
 from openhands_server.database import async_session_dependency
-from openhands_server.event_callback.event_callback_result_db_models import (
-    StoredEventCallbackResult,
-)
 from openhands_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultPage,
@@ -49,16 +48,10 @@ class SQLAlchemyEventCallbackResultService(EventCallbackResultService):
         Returns:
             EventCallbackResult | None: The result if found, None otherwise
         """
-        query = select(StoredEventCallbackResult).where(
-            StoredEventCallbackResult.id == id
-        )
+        query = select(EventCallbackResult).where(EventCallbackResult.id == id)
         result = await self.session.execute(query)
         stored_result = result.scalar_one_or_none()
-
-        if stored_result is None:
-            return None
-
-        return stored_result.to_pydantic()
+        return stored_result
 
     async def search_event_callback_results(
         self,
@@ -66,7 +59,7 @@ class SQLAlchemyEventCallbackResultService(EventCallbackResultService):
         event_id__eq: EventID | None = None,
         conversation_id__eq: UUID | None = None,
         sort_order: EventCallbackResultSortOrder = (
-            EventCallbackResultSortOrder.created_at
+            EventCallbackResultSortOrder.CREATED_AT
         ),
         page_id: str | None = None,
         limit: int = 100,
@@ -87,19 +80,19 @@ class SQLAlchemyEventCallbackResultService(EventCallbackResultService):
         Returns:
             EventCallbackResultPage: Page of event callback results
         """
-        query = select(StoredEventCallbackResult)
+        query = select(EventCallbackResult)
 
         # Apply filters
         conditions = []
         if event_callback_id__eq is not None:
             conditions.append(
-                StoredEventCallbackResult.event_callback_id == event_callback_id__eq
+                EventCallbackResult.event_callback_id == event_callback_id__eq
             )
         if event_id__eq is not None:
-            conditions.append(StoredEventCallbackResult.event_id == event_id__eq)
+            conditions.append(EventCallbackResult.event_id == event_id__eq)
         if conversation_id__eq is not None:
             conditions.append(
-                StoredEventCallbackResult.conversation_id == conversation_id__eq
+                EventCallbackResult.conversation_id == conversation_id__eq
             )
 
         if conditions:
@@ -109,23 +102,19 @@ class SQLAlchemyEventCallbackResultService(EventCallbackResultService):
         if page_id:
             try:
                 page_uuid = UUID(page_id)
-                if sort_order == EventCallbackResultSortOrder.created_at_DESC:
-                    query = query.where(StoredEventCallbackResult.id < page_uuid)
+                if sort_order == EventCallbackResultSortOrder.CREATED_AT_DESC:
+                    query = query.where(EventCallbackResult.id < page_uuid)
                 else:
-                    query = query.where(StoredEventCallbackResult.id > page_uuid)
+                    query = query.where(EventCallbackResult.id > page_uuid)
             except ValueError:
                 # Invalid UUID, ignore pagination
                 pass
 
         # Apply sorting
-        if sort_order == EventCallbackResultSortOrder.created_at_DESC:
-            query = query.order_by(desc(StoredEventCallbackResult.created_at)).order_by(
-                desc(StoredEventCallbackResult.id)
-            )
+        if sort_order == EventCallbackResultSortOrder.CREATED_AT_DESC:
+            query = query.order_by(desc(EventCallbackResult.created_at))
         else:
-            query = query.order_by(StoredEventCallbackResult.created_at).order_by(
-                StoredEventCallbackResult.id
-            )
+            query = query.order_by(EventCallbackResult.created_at)
 
         query = query.limit(limit + 1)
 
@@ -133,7 +122,7 @@ class SQLAlchemyEventCallbackResultService(EventCallbackResultService):
         stored_results = result.scalars().all()
 
         # Convert to Pydantic models
-        results = [result.to_pydantic() for result in stored_results[:limit]]
+        results = list(stored_results[:limit])
 
         # Determine next page ID
         next_page_id = None
@@ -156,9 +145,7 @@ class SQLAlchemyEventCallbackResultService(EventCallbackResultService):
         Returns:
             bool: True if the result was deleted, False if not found
         """
-        query = select(StoredEventCallbackResult).where(
-            StoredEventCallbackResult.id == id
-        )
+        query = select(EventCallbackResult).where(EventCallbackResult.id == id)
         result = await self.session.execute(query)
         stored_result = result.scalar_one_or_none()
 
