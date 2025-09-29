@@ -25,6 +25,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openhands_server.database import async_session_dependency
+from openhands_server.user.constrained_user_service import ConstrainedUserService
 from openhands_server.user.user_models import (
     CreateUserRequest,
     UpdateUserRequest,
@@ -164,15 +165,9 @@ class SQLUserService(UserService):
 
         user_info = UserInfo(
             id=base62.encodebytes(uuid4().bytes),
-            name=request.name,
-            avatar_url=request.avatar_url,
-            language=request.language,
-            default_llm_model=request.default_llm_model,
-            email=request.email,
-            accepted_tos=request.accepted_tos,
-            user_scopes=request.user_scopes,
             created_at=utc_now(),
             updated_at=utc_now(),
+            **request.model_dump(),
         )
 
         # Add to session and commit
@@ -233,7 +228,10 @@ class SQLUserServiceResolver(UserServiceResolver):
     ) -> UserService:
         """Resolve to ConstrainedUserService wrapping SQLUserService."""
         service = SQLUserService(session)
-        # TODO: Add auth and fix
+
+        # TODO: This is a dummy for now - we mock a single superadmin and
+        # return them as the current user
         logger.warning("⚠️ Using Unsecured UserService!!!")
-        # service = ConstrainedUserService(service, self.current_user_id)
+        service = ConstrainedUserService(service, "root")
+
         return service

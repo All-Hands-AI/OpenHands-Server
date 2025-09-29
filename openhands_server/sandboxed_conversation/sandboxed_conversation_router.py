@@ -17,7 +17,7 @@ from openhands_server.sandboxed_conversation.sandboxed_conversation_service impo
 )
 
 
-router = APIRouter(prefix="/sandboxed-conversations")
+router = APIRouter(prefix="/sandboxed-conversations", tags=["Conversations"])
 sandboxed_conversation_service_dependency = Depends(
     get_dependency_resolver().sandboxed_conversation.get_resolver_for_user()
 )
@@ -54,7 +54,9 @@ async def search_sandboxed_conversations(
     limit: Annotated[
         int,
         Query(
-            title="The max number of results in the page", gt=0, lte=100, default=100
+            title="The max number of results in the page",
+            gt=0,
+            lte=100,
         ),
     ] = 100,
     sandboxed_conversation_service: SandboxedConversationService = (

@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
-from unittest.mock import MagicMock
+
+import httpx
 
 from openhands_server.config import get_global_config
 from openhands_server.event.event_service import EventServiceResolver
@@ -58,6 +59,17 @@ def get_dependency_resolver():
     return _dependency_resolver
 
 
+# TODO: have this initialize as part of the app lifespan
+_httpx_client: httpx.AsyncClient | None
+
+
+def get_httpx_client() -> httpx.AsyncClient:
+    global _httpx_client
+    if _httpx_client is None:
+        _httpx_client = httpx.AsyncClient()
+    return _httpx_client
+
+
 def _get_event_service_factory():
     from openhands_server.event.filesystem_event_service import (
         FilesystemEventServiceResolver,
@@ -99,7 +111,11 @@ def _get_sandbox_spec_service_factory():
 
 
 def _get_sandboxed_conversation_service_factory():
-    return MagicMock()  # TODO: Replace with real implementation!
+    from openhands_server.sandboxed_conversation.sql_sandboxed_conversation_service import (  # noqa: E501
+        SQLSandboxedConversationServiceResolver,
+    )
+
+    return SQLSandboxedConversationServiceResolver()
 
 
 def _get_user_service_factory():

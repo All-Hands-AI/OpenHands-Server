@@ -6,11 +6,15 @@ from enum import Enum
 from uuid import uuid4
 
 import base62
-from pydantic import BaseModel, Field
-from sqlalchemy import JSON, Column
+from pydantic import BaseModel, Field, SecretStr
+from sqlalchemy import Column
 from sqlmodel import Field as SQLField, SQLModel
 
 from openhands_server.utils.date_utils import utc_now
+from openhands_server.utils.sql_utils import (
+    SecretStrDecorator,
+    create_json_type_decorator,
+)
 
 
 class UserScope(Enum):
@@ -24,11 +28,16 @@ class CreateUserRequest(BaseModel):
     name: str | None = None
     avatar_url: str | None = None
     language: str | None = None
-    default_llm_model: str | None = None
     email: str | None
     accepted_tos: bool = False
     user_scopes: list[UserScope] = SQLField(
-        default_factory=list, sa_column=Column(JSON)
+        default_factory=list,
+        sa_column=Column(create_json_type_decorator(list[UserScope])),
+    )
+    llm_model: str | None = None
+    llm_base_url: str | None = None
+    llm_api_key: SecretStr | None = SQLField(
+        default=None, sa_column=Column(SecretStrDecorator, nullable=True)
     )
 
 

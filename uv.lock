@@ -1652,7 +1652,7 @@ wheels = [
 [[package]]
 name = "openhands-agent-server"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=f68681249d52297754ed6bd714c0c9102b834b39#f68681249d52297754ed6bd714c0c9102b834b39" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=693947c8aeb81991be677de4c30062161453ead4#693947c8aeb81991be677de4c30062161453ead4" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "alembic" },
@@ -1667,7 +1667,7 @@ dependencies = [
 [[package]]
 name = "openhands-sdk"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=f68681249d52297754ed6bd714c0c9102b834b39#f68681249d52297754ed6bd714c0c9102b834b39" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=693947c8aeb81991be677de4c30062161453ead4#693947c8aeb81991be677de4c30062161453ead4" }
 dependencies = [
     { name = "fastmcp" },
     { name = "litellm" },
@@ -1749,9 +1749,9 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.25" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1" },
-    { name = "openhands-agent-server", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=f68681249d52297754ed6bd714c0c9102b834b39" },
-    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=f68681249d52297754ed6bd714c0c9102b834b39" },
-    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=f68681249d52297754ed6bd714c0c9102b834b39" },
+    { name = "openhands-agent-server", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fagent_server&rev=693947c8aeb81991be677de4c30062161453ead4" },
+    { name = "openhands-sdk", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Fsdk&rev=693947c8aeb81991be677de4c30062161453ead4" },
+    { name = "openhands-tools", git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=693947c8aeb81991be677de4c30062161453ead4" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
     { name = "pybase62", specifier = ">=1" },
     { name = "pydantic", specifier = ">=2" },
@@ -1783,7 +1783,7 @@ dev = [
 [[package]]
 name = "openhands-tools"
 version = "1.0.0"
-source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=f68681249d52297754ed6bd714c0c9102b834b39#f68681249d52297754ed6bd714c0c9102b834b39" }
+source = { git = "https://github.com/All-Hands-AI/agent-sdk.git?subdirectory=openhands%2Ftools&rev=693947c8aeb81991be677de4c30062161453ead4#693947c8aeb81991be677de4c30062161453ead4" }
 dependencies = [
     { name = "bashlex" },
     { name = "binaryornot" },
