@@ -5,7 +5,8 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 from sqlmodel import Field as SQLField, SQLModel
 
-from openhands.core.schema import AgentState
+from openhands.agent_server.models import SendMessageRequest
+from openhands.sdk.conversation.state import AgentExecutionStatus
 from openhands_server.event_callback.event_callback_models import EventCallbackProcessor
 from openhands_server.sandbox.sandbox_models import SandboxStatus
 from openhands_server.utils.date_utils import utc_now
@@ -13,7 +14,7 @@ from openhands_server.utils.date_utils import utc_now
 
 class StoredConversationInfo(SQLModel):
     id: UUID = SQLField(default=uuid4, primary_key=True)
-    title: str | None
+    title: str | None = None
 
     # I'm removing this for now because I am not sure if events include metrics anymore
     # metrics: MetricsSnapshot | None = None
@@ -25,7 +26,7 @@ class StoredConversationInfo(SQLModel):
 
 class SandboxedConversationResponse(StoredConversationInfo):
     sandbox_status: SandboxStatus
-    agent_status: AgentState | None
+    agent_status: AgentExecutionStatus | None
 
 
 class SandboxedConversationResponseSortOrder(Enum):
@@ -52,4 +53,5 @@ class StartSandboxedConversationRequest(BaseModel):
     # Removed for now - just use value from UserInfo
     # model: str | None = None
 
+    initial_message: SendMessageRequest | None = None
     processors: list[EventCallbackProcessor] = Field(default_factory=list)
